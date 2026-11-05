@@ -72,10 +72,10 @@ export async function removeExpense(companyId: string, id: string) {
 export async function readOperatingSettings(companyId: string) {
   const { data, error } = await requireClient().from('operational_settings').select('*').eq('company_id', companyId).maybeSingle()
   if (error) throw error
-  return data as { working_days_per_month: number; productive_hours_per_day: number } | null
+  return data as { working_days_per_month: number; productive_hours_per_day: number; revenue_forecast_cents: number | null } | null
 }
 
-export async function saveOperatingSettings(companyId: string, settings: { working_days_per_month: number; productive_hours_per_day: number }) {
+export async function saveOperatingSettings(companyId: string, settings: { working_days_per_month: number; productive_hours_per_day: number; revenue_forecast_cents?: number | null }) {
   const { error } = await requireClient().from('operational_settings').upsert({ company_id: companyId, ...settings }, { onConflict: 'company_id' })
   if (error) throw error
 }

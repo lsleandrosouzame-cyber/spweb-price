@@ -21,6 +21,26 @@ function createSupabase(url: string, anonKey: string): SupabaseClient {
   })
 }
 
+async function fetchConfigWithRetry(retries = 3, delayMs = 1000): Promise<RuntimeSupabaseConfig> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch('/api/config', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      return await response.json() as RuntimeSupabaseConfig
+    } catch (error) {
+      if (attempt < retries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
+      } else {
+        console.error('Não foi possível carregar a configuração Supabase após tentativas.', error)
+      }
+    }
+  }
+  return {}
+}
+
 export function initializeSupabase(): Promise<void> {
   if (initialization) return initialization
 
@@ -32,19 +52,10 @@ export function initializeSupabase(): Promise<void> {
       url = import.meta.env.VITE_SUPABASE_URL?.trim() ?? ''
       anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
     } else {
-      try {
-        const response = await fetch('/api/config', {
-          headers: { Accept: 'application/json' },
-          cache: 'no-store',
-        })
-        if (!response.ok) throw new Error(`Runtime configuration returned HTTP ${response.status}.`)
-        const config = await response.json() as RuntimeSupabaseConfig
-        if (config.configured) {
-          url = config.supabaseUrl?.trim() ?? ''
-          anonKey = config.supabaseAnonKey?.trim() ?? ''
-        }
-      } catch (error) {
-        console.error('Não foi possível carregar a configuração Supabase em runtime.', error)
+      const config = await fetchConfigWithRetry()
+      if (config.configured) {
+        url = config.supabaseUrl?.trim() ?? ''
+        anonKey = config.supabaseAnonKey?.trim() ?? ''
       }
     }
 
