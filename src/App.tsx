@@ -16,14 +16,12 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 function Protected({ children, needsCompany = true }: { children: ReactNode; needsCompany?: boolean }) {
-  const { user, loading, companies, companiesLoading, companyError, refreshCompanies } = useAuth()
+  const { user, loading, companies, companyError, refreshCompanies } = useAuth()
   const location = useLocation()
-  // Only block on auth loading. companiesLoading gets a shorter grace period via the timeout in AuthContext.
+  // Only block render while auth state is being resolved
   if (loading) return <LoadingScreen label="Verificando sua sessão" />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (companyError) return <CompanyLookupFailure onRetry={() => void refreshCompanies()} />
-  // While companies are still being fetched show a brief spinner, but don't block > what AuthContext allows
-  if (needsCompany && companiesLoading) return <LoadingScreen label="Carregando empresa" />
   if (needsCompany && companies.length === 0) return <Navigate to="/setup" replace />
   return <>{children}</>
 }

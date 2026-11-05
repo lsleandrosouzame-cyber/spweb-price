@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 
@@ -26,9 +26,12 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [companies, setCompanies] = useState<CompanySummary[]>([])
+  // loading = true only until we know the auth state (first getSession resolves)
   const [loading, setLoading] = useState(true)
   const [companiesLoading, setCompaniesLoading] = useState(false)
   const [companyError, setCompanyError] = useState<string | null>(null)
+  // track whether companies have ever been loaded for this session
+  const companiesLoadedRef = useRef(false)
 
   const refreshCompanies = useCallback(async () => {
     if (!supabase || !session?.user) {
@@ -39,26 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setCompanyError(null)
     setCompaniesLoading(true)
-    // Safety timeout — never hang companies loading indefinitely
-    const companiesTimeout = setTimeout(() => {
-      setCompaniesLoading(false)
-    }, 6000)
+    const timeoutId = setTimeout(() => setCompaniesLoading(false), 5000)
     try {
       const { data, error } = await supabase
         .from('company_members')
         .select('company_id, companies(id, name, created_at)')
         .eq('user_id', session.user.id)
-      clearTimeout(companiesTimeout)
+      clearTimeout(timeoutId)
       if (error) {
         setCompanyError(error.message)
         setCompanies([])
       } else {
-        const next = (data ?? []).flatMap((row: any) => row.companies ? [row.companies as CompanySummary] : [])
+        const next = (data ?? []).flatMap((row: any) =>
+          row.companies ? [row.companies as CompanySummary] : []
+        )
         setCompanies(next)
         setCompanyError(null)
+        companiesLoadedRef.current = true
       }
     } catch (cause) {
-      clearTimeout(companiesTimeout)
+      clearTimeout(timeoutId)
       setCompanyError(cause instanceof Error ? cause.message : 'Erro ao carregar empresa.')
       setCompanies([])
     } finally {
@@ -72,25 +75,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     let active = true
-    // Timeout so the app never hangs indefinitely on getSession
     const sessionTimeout = setTimeout(() => {
       if (!active) return
       setLoading(false)
-    }, 8000)
+    }, 6000)
 
     supabase.auth.getSession().then(({ data, error }) => {
       clearTimeout(sessionTimeout)
       if (!active) return
       if (error) setCompanyError(error.message)
-      setCompaniesLoading(Boolean(data.session))
+      // Do NOT set companiesLoading here — refreshCompanies effect handles it
       setSession(data.session)
       setLoading(false)
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setCompaniesLoading(Boolean(nextSession))
+      if (!active) return
       setSession(nextSession)
       setLoading(false)
+      // Reset companies ref when session changes so we reload
+      if (!nextSession) {
+        setCompanies([])
+        companiesLoadedRef.current = false
+      }
     })
+
     return () => {
       active = false
       clearTimeout(sessionTimeout)
@@ -109,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setCompanies([])
     setCompaniesLoading(false)
+    companiesLoadedRef.current = false
   }, [])
 
   const value = useMemo<AuthContextValue>(() => ({

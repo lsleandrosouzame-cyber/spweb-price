@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft } from 'lucide-react'
+import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
@@ -14,6 +15,28 @@ const blank = { name: '', acquisition: '', other: '0', fees: '0', taxes: '0', de
 const inputLabel = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
 
 type Panel = 'list' | 'form' | 'details' | 'history'
+
+// Rich color palette for product details pie
+const DETAIL_COLORS = {
+  acquisition: '#3b82f6',   // blue — cost
+  other: '#8b5cf6',         // purple — other costs
+  fees: '#f97316',          // orange — fees
+  taxes: '#ef4444',         // red — taxes
+  contribution: '#22c55e',  // green — contribution (healthy)
+  contributionNeg: '#ef4444', // red — negative contribution
+}
+
+function PieTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null
+  const item = payload[0]
+  return (
+    <div className="rounded-xl border border-line bg-[#111] px-4 py-3 shadow-xl text-xs z-50">
+      <p className="font-semibold text-paper">{item.name}</p>
+      <p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Math.abs(item.value))}</p>
+      <p className="mt-0.5 text-muted">{item.payload.pct ? `${item.payload.pct}% do preço` : ''}</p>
+    </div>
+  )
+}
 
 export default function ProductsPage() {
   const { currentCompany, configReady } = useAuth()
@@ -31,6 +54,7 @@ export default function ProductsPage() {
   const [selectedDetails, setSelectedDetails] = useState<ProductRecord | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<'products' | 'services'>('products')
+  const [activeSlice, setActiveSlice] = useState<number | null>(null)
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -61,6 +85,43 @@ export default function ProductsPage() {
     sellingPriceCents: selectedDetails.current_price_cents === null ? undefined : Number(selectedDetails.current_price_cents),
   }) : null
 
+  // Build pie chart data for details panel
+  const detailsPieData = useMemo(() => {
+    if (!selectedDetails || !selectedPricing || !selectedDetails.current_price_cents) return []
+    const price = Number(selectedDetails.current_price_cents)
+    const acq = Number(selectedDetails.acquisition_cost_cents)
+    const other = Number(selectedDetails.other_cost_cents)
+    const fees = selectedPricing.feesCents ?? 0
+    const taxes = selectedPricing.taxesCents ?? 0
+    const contribution = selectedPricing.contributionCents ?? 0
+    const pct = (v: number) => price > 0 ? `${((Math.abs(v) / price) * 100).toFixed(1)}` : '0'
+    const data = [
+      { name: 'Custo de aquisição', value: acq, fill: DETAIL_COLORS.acquisition, pct: pct(acq) },
+      { name: 'Outros custos', value: other, fill: DETAIL_COLORS.other, pct: pct(other) },
+      { name: 'Taxas variáveis', value: fees, fill: DETAIL_COLORS.fees, pct: pct(fees) },
+      { name: 'Impostos', value: taxes, fill: DETAIL_COLORS.taxes, pct: pct(taxes) },
+      { name: 'Margem de contribuição', value: Math.max(0, contribution), fill: contribution >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg, pct: pct(contribution) },
+    ].filter(d => d.value > 0)
+    return data
+  }, [selectedDetails, selectedPricing])
+
+  // Smart footnote for product details
+  function getFootnote(): { text: string; tone: 'ok' | 'warn' | 'bad' } | null {
+    if (!selectedDetails || !selectedPricing) return null
+    const margin = selectedPricing.contributionMarginPercent
+    const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
+    const current = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : null
+    const recommended = selectedPricing.recommendedPriceCents
+    const minimum = selectedPricing.minimumPriceCents
+
+    if (margin === null) return { text: 'Cadastre um preço atual para visualizar a análise de margem deste produto.', tone: 'warn' }
+    if (margin < 0) return { text: `⚠️ Atenção: você está vendendo este produto com margem negativa (${formatPercent(margin)}). Cada unidade vendida gera prejuízo. Revise custos ou ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    if (current !== null && minimum !== null && current < minimum) return { text: `Seu preço atual (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    if (desired !== null && margin < desired) return { text: `Você está vendendo abaixo da sua meta de margem (${formatPercent(desired)}). Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
+    if (recommended && current !== null && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
+    return { text: `✓ Excelente! Sua margem atual de ${formatPercent(margin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
+  }
+
   function startCreate() { setEditing(null); setForm(blank); setError(null); setNotice(null); setPanel('form') }
   function startEdit(row: ProductRecord) {
     setEditing(row); setError(null); setNotice(null)
@@ -69,7 +130,7 @@ export default function ProductsPage() {
     setPanel('form')
   }
 
-  function openDetails(row: ProductRecord) { setSelectedDetails(row); setPanel('details') }
+  function openDetails(row: ProductRecord) { setSelectedDetails(row); setActiveSlice(null); setPanel('details') }
   async function openHistory(row: ProductRecord) {
     if (!supabase) return
     setHistoryTarget(row)
@@ -105,121 +166,266 @@ export default function ProductsPage() {
   async function duplicate(row: ProductRecord) {
     if (!currentCompany) return
     try {
-      const { id: _id, company_id: _company, created_at: _created, updated_at: _updated, ...copy } = row
+      const { id: _id, company_id: _c, created_at: _cr, updated_at: _up, ...copy } = row
       await saveProduct(currentCompany.id, { ...copy, name: `${row.name} (cópia)` })
       setNotice(`"${row.name}" foi duplicado.`); await refresh()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível duplicar.') }
   }
 
   async function deleteRow(row: ProductRecord) {
-    if (!currentCompany || !window.confirm(`Excluir "${row.name}"? Essa ação não pode ser desfeita.`)) return
+    if (!currentCompany || !window.confirm(`Excluir "${row.name}"?`)) return
     try { await removeProduct(currentCompany.id, row.id); setNotice('Produto excluído.'); await refresh() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
   }
 
   if (loading) return <LoadingScreen label="Carregando produtos cadastrados" />
 
-  return <div className="space-y-6">
-    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><p className="eyebrow text-gold">CATÁLOGO FINANCEIRO</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Produtos e serviços</h2><p className="mt-2 text-sm text-muted">Veja quanto cada venda contribui para a operação.</p></div>
-      {tab === 'products' && panel === 'list' && <button className="btn-primary w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
-    </div>
+  const footnote = panel === 'details' ? getFootnote() : null
 
-    <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
-      <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'products' ? 'bg-gold text-ink' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
-      <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'services' ? 'bg-gold text-ink' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
-    </div>
-
-    {tab === 'services' ? <ServicesPanel/> : <>
-      {panel === 'list' && <>
-        {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
-        {error && <InlineNotice>{error}</InlineNotice>}
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/><input className="field pl-10" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar produto"/></label>
-          <select aria-label="Filtrar situação da margem" className="field sm:w-56" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}><option value="todos">Todas as margens</option><option value="saudavel">Margem saudável</option><option value="atencao">Abaixo da desejada</option><option value="negativa">Margem negativa</option></select>
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="eyebrow text-gold">CATÁLOGO FINANCEIRO</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Produtos e serviços</h2>
+          <p className="mt-2 text-sm text-muted">Veja quanto cada venda contribui para a operação.</p>
         </div>
-        {rows.length === 0
-          ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com seu custo de aquisição, outros custos e preço atual." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
-          : <div className="surface overflow-hidden">
-              <div className="flex items-center justify-between border-b border-line px-5 py-4"><div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} item(ns)</p></div><Package className="text-gold" size={18}/></div>
-              <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left"><thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo total</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Markup</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
-              <tbody className="divide-y divide-line">{filtered.map(row => {
-                const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
-                const margin = result?.contributionMarginPercent ?? null
-                const status = margin === null ? { label: 'Preço pendente', color: 'text-muted' } : margin < 0 ? { label: 'Margem negativa', color: 'text-negative' } : row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent) ? { label: 'Abaixo da meta', color: 'text-attention' } : { label: 'Saudável', color: 'text-positive' }
-                return <tr key={row.id} className="hover:bg-white/[.018]">
-                  <td className="px-5 py-4"><button type="button" className="text-left text-sm font-medium hover:text-gold" onClick={() => openDetails(row)}>{row.name}</button><p className="mt-1 max-w-[220px] truncate text-[10px] text-muted">{row.notes || 'Produto'}</p></td>
-                  <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(Number(row.acquisition_cost_cents) + Number(row.other_cost_cents))}</td>
-                  <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
-                  <td className={`px-3 py-4 font-mono text-xs ${margin !== null && margin < 0 ? 'text-negative' : 'text-paper'}`}>{formatPercent(margin)}</td>
-                  <td className="px-3 py-4 font-mono text-xs">{formatMarkup(result?.markup)}</td>
-                  <td className={`px-3 py-4 font-mono text-xs ${(result?.contributionCents ?? 0) < 0 ? 'text-negative' : ''}`}>{formatBRLFromCents(result?.contributionCents)}</td>
-                  <td className={`px-3 py-4 text-xs ${status.color}`}>{status.label}</td>
-                  <td className="px-3 py-4"><div className="flex items-center justify-end gap-1">
-                    <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold" onClick={() => openDetails(row)}><Eye size={14}/></button>
-                    <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold" onClick={() => void openHistory(row)}><History size={14}/></button>
-                    <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper" onClick={() => startEdit(row)}><Pencil size={14}/></button>
-                    <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold" onClick={() => void duplicate(row)}><Copy size={14}/></button>
-                    <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-negative" onClick={() => void deleteRow(row)}><Trash2 size={14}/></button>
-                  </div></td>
-                </tr>
-              })}</tbody></table></div>
-              {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted">Nenhum produto corresponde à pesquisa/filtro.</p>}
-            </div>}
-      </>}
+        {tab === 'products' && panel === 'list' && <button className="btn-primary w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
+      </div>
 
-      {/* ── FORM PANEL ─────────────────────────────── */}
-      {panel === 'form' && <section className="surface p-5 sm:p-7 space-y-5">
-        <div className="flex items-start justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">PRECIFICAÇÃO DE PRODUTO</p><h3 className="mt-1 text-lg font-semibold">{editing ? 'Editar produto' : 'Novo produto'}</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => { setPanel('list'); setError(null) }}><ChevronLeft size={14}/>Voltar</button>
-        </div>
-        <form onSubmit={submit} className="space-y-5">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="sm:col-span-2"><span className={inputLabel}>Nome do produto</span><input className="field" maxLength={160} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Kit de café especial"/></label>
-            <label><span className={inputLabel}>Custo de aquisição/produção (R$)</span><CurrencyInput className="field" required value={form.acquisition} onChange={value => setForm({ ...form, acquisition: value })} placeholder="0,00"/></label>
-            <label><span className={inputLabel}>Outros custos unitários (R$)</span><CurrencyInput className="field" value={form.other} onChange={value => setForm({ ...form, other: value })} placeholder="0,00"/></label>
-            <label><span className={inputLabel}>Taxas variáveis (%)</span><input className="field" type="number" min="0" max="100" step="0.01" required value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })}/></label>
-            <label><span className={inputLabel}>Impostos sobre venda (%)</span><input className="field" type="number" min="0" max="100" step="0.01" required value={form.taxes} onChange={e => setForm({ ...form, taxes: e.target.value })}/></label>
-            <label><span className={inputLabel}>Preço atual (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
-            <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
-            <label className="sm:col-span-2"><span className={inputLabel}>Observação · opcional</span><textarea className="field min-h-20 resize-y" maxLength={1000} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
-          </div>
+      <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
+        <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'products' ? 'bg-gold text-ink' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
+        <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'services' ? 'bg-gold text-ink' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
+      </div>
+
+      {tab === 'services' ? <ServicesPanel/> : <>
+        {/* ── LIST ─────────────────────────────────── */}
+        {panel === 'list' && <>
+          {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
           {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex flex-col-reverse justify-end gap-2 border-t border-line pt-4 sm:flex-row">
-            <button type="button" className="btn-secondary" onClick={() => { setPanel('list'); setError(null) }}>Cancelar</button>
-            <button className="btn-primary" disabled={saving}>{saving ? <LoaderCircle className="animate-spin" size={15}/> : <Plus size={15}/>}Salvar produto</button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/><input className="field pl-10" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar produto"/></label>
+            <select aria-label="Filtrar situação da margem" className="field sm:w-56" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
+              <option value="todos">Todas as margens</option><option value="saudavel">Margem saudável</option><option value="atencao">Abaixo da desejada</option><option value="negativa">Margem negativa</option>
+            </select>
           </div>
-        </form>
-      </section>}
+          {rows.length === 0
+            ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com seu custo de aquisição, outros custos e preço atual." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
+            : <div className="surface overflow-hidden">
+                <div className="flex items-center justify-between border-b border-line px-5 py-4">
+                  <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} item(ns)</p></div>
+                  <Package className="text-gold" size={18}/>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px] text-left">
+                    <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo total</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Markup</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
+                    <tbody className="divide-y divide-line">
+                      {filtered.map(row => {
+                        const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
+                        const margin = result?.contributionMarginPercent ?? null
+                        const isNeg = margin !== null && margin < 0
+                        const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                        const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
+                        const statusColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
+                        return (
+                          <tr key={row.id} className="hover:bg-white/[.018] transition-colors">
+                            <td className="px-5 py-4"><button type="button" className="text-left text-sm font-medium hover:text-gold transition-colors" onClick={() => openDetails(row)}>{row.name}</button><p className="mt-1 max-w-[220px] truncate text-[10px] text-muted">{row.notes || 'Produto'}</p></td>
+                            <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(Number(row.acquisition_cost_cents) + Number(row.other_cost_cents))}</td>
+                            <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
+                            <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
+                            <td className="px-3 py-4 font-mono text-xs">{formatMarkup(result?.markup)}</td>
+                            <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
+                            <td className={`px-3 py-4 text-xs font-medium ${statusColor}`}>{statusLabel}</td>
+                            <td className="px-3 py-4">
+                              <div className="flex items-center justify-end gap-1">
+                                <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
+                                <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
+                                <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={14}/></button>
+                                <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
+                                <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={14}/></button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {filtered.length === 0 && <p className="p-8 text-center text-sm text-muted">Nenhum produto corresponde à pesquisa/filtro.</p>}
+              </div>}
+        </>}
 
-      {/* ── DETAILS PANEL ──────────────────────────── */}
-      {panel === 'details' && selectedDetails && selectedPricing && <section className="surface p-5 sm:p-7 space-y-5">
-        <div className="flex items-start justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">DETALHES DA PRECIFICAÇÃO</p><h3 className="mt-1 text-lg font-semibold">{selectedDetails.name}</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {([['Custo de aquisição', formatBRLFromCents(selectedDetails.acquisition_cost_cents)], ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents)], ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents)], ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`], ['Impostos', `${formatPercent(selectedDetails.tax_percent)} · ${formatBRLFromCents(selectedPricing.taxesCents)}`], ['Preço atual', formatBRLFromCents(selectedDetails.current_price_cents)], ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents)], ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents)], ['Resultado estimado / unidade', formatBRLFromCents(selectedPricing.contributionCents)], ['Margem de contribuição atual', formatPercent(selectedPricing.contributionMarginPercent)], ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent)], ['Markup', formatMarkup(selectedPricing.markup)]] as [string, string][]).map(([label, value]) =>
-            <div key={label} className="rounded-lg border border-line bg-[#151515] p-3"><p className="text-[10px] text-muted">{label}</p><p className="mt-1 font-mono text-sm text-paper">{value}</p></div>)}
-        </div>
-        {selectedDetails.notes && <p className="border-t border-line pt-4 text-sm text-muted">{selectedDetails.notes}</p>}
-        <div className="flex justify-end gap-2 border-t border-line pt-4">
-          <button className="btn-secondary" onClick={() => setPanel('list')}>Fechar</button>
-          <button className="btn-primary" onClick={() => { startEdit(selectedDetails) }}><Pencil size={14}/>Editar precificação</button>
-        </div>
-      </section>}
+        {/* ── FORM ─────────────────────────────────── */}
+        {panel === 'form' && <section className="surface p-5 sm:p-7 space-y-5">
+          <div className="flex items-start justify-between border-b border-line pb-4">
+            <div><p className="eyebrow text-gold">PRECIFICAÇÃO DE PRODUTO</p><h3 className="mt-1 text-lg font-semibold">{editing ? 'Editar produto' : 'Novo produto'}</h3></div>
+            <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => { setPanel('list'); setError(null) }}><ChevronLeft size={14}/>Voltar</button>
+          </div>
+          <form onSubmit={submit} className="space-y-5">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="sm:col-span-2"><span className={inputLabel}>Nome do produto</span><input className="field" maxLength={160} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Kit de café especial"/></label>
+              <label><span className={inputLabel}>Custo de aquisição/produção (R$)</span><CurrencyInput className="field" required value={form.acquisition} onChange={value => setForm({ ...form, acquisition: value })} placeholder="0,00"/></label>
+              <label><span className={inputLabel}>Outros custos unitários (R$)</span><CurrencyInput className="field" value={form.other} onChange={value => setForm({ ...form, other: value })} placeholder="0,00"/></label>
+              <label><span className={inputLabel}>Taxas variáveis (%)</span><input className="field" type="number" min="0" max="100" step="0.01" required value={form.fees} onChange={e => setForm({ ...form, fees: e.target.value })}/></label>
+              <label><span className={inputLabel}>Impostos sobre venda (%)</span><input className="field" type="number" min="0" max="100" step="0.01" required value={form.taxes} onChange={e => setForm({ ...form, taxes: e.target.value })}/></label>
+              <label><span className={inputLabel}>Preço atual (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
+              <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
+              <label className="sm:col-span-2"><span className={inputLabel}>Observação · opcional</span><textarea className="field min-h-20 resize-y" maxLength={1000} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
+            </div>
+            {error && <InlineNotice>{error}</InlineNotice>}
+            <div className="flex flex-col-reverse justify-end gap-2 border-t border-line pt-4 sm:flex-row">
+              <button type="button" className="btn-secondary" onClick={() => { setPanel('list'); setError(null) }}>Cancelar</button>
+              <button className="btn-primary" disabled={saving}>{saving ? <LoaderCircle className="animate-spin" size={15}/> : <Plus size={15}/>}Salvar produto</button>
+            </div>
+          </form>
+        </section>}
 
-      {/* ── HISTORY PANEL ──────────────────────────── */}
-      {panel === 'history' && <section className="surface p-5 space-y-4">
-        <div className="flex items-start justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">AUDITORIA DE PREÇOS</p><h3 className="mt-1 text-lg font-semibold">Histórico — {historyTarget?.name}</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
-        </div>
-        {history.length
-          ? <div className="divide-y divide-line">{history.map(item => <div key={item.id} className="py-3"><p className="text-xs text-muted">{new Date(item.created_at).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm">Preço atual: <span className="font-mono text-gold">{formatBRLFromCents(item.snapshot.current_price_cents)}</span></p><p className="mt-1 text-xs text-muted">Custo total: {formatBRLFromCents(Number(item.snapshot.acquisition_cost_cents) + Number(item.snapshot.other_cost_cents))} · margem desejada: {formatPercent(item.snapshot.desired_margin_percent)}</p></div>)}</div>
-          : <p className="text-sm text-muted">Ainda não há alterações de preço registradas.</p>}
-      </section>}
-    </>}
-  </div>
+        {/* ── DETAILS ──────────────────────────────── */}
+        {panel === 'details' && selectedDetails && selectedPricing && (
+          <section className="surface p-5 sm:p-7 space-y-6">
+            <div className="flex items-start justify-between border-b border-line pb-4">
+              <div><p className="eyebrow text-gold">DETALHES DA PRECIFICAÇÃO</p><h3 className="mt-1 text-lg font-semibold">{selectedDetails.name}</h3></div>
+              <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+              {/* Left: metrics grid */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {([
+                  ['Custo de aquisição', formatBRLFromCents(selectedDetails.acquisition_cost_cents), DETAIL_COLORS.acquisition],
+                  ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents), DETAIL_COLORS.other],
+                  ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents), '#6b7280'],
+                  ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`, DETAIL_COLORS.fees],
+                  ['Impostos', `${formatPercent(selectedDetails.tax_percent)} · ${formatBRLFromCents(selectedPricing.taxesCents)}`, DETAIL_COLORS.taxes],
+                  ['Preço atual', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
+                  ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
+                  ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
+                  ['Resultado est. / unidade', formatBRLFromCents(selectedPricing.contributionCents), (selectedPricing.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
+                  ['Margem de contribuição', formatPercent(selectedPricing.contributionMarginPercent), (selectedPricing.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
+                  ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
+                  ['Markup', formatMarkup(selectedPricing.markup), '#a855f7'],
+                ] as [string, string, string][]).map(([label, value, color]) => (
+                  <div key={label} className="rounded-xl border border-line bg-[#151515] p-4 transition hover:border-[#333]">
+                    <p className="text-[10px] text-muted">{label}</p>
+                    <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Right: colorful pie chart */}
+              {detailsPieData.length > 0 && (
+                <div className="flex flex-col items-center">
+                  <p className="eyebrow mb-3 self-start">COMPOSIÇÃO DO PREÇO</p>
+                  <div className="relative h-56 w-full max-w-[240px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={detailsPieData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%" cy="50%"
+                          innerRadius={52} outerRadius={88}
+                          paddingAngle={3}
+                          stroke="none"
+                          onMouseEnter={(_, index) => setActiveSlice(index)}
+                          onMouseLeave={() => setActiveSlice(null)}
+                        >
+                          {detailsPieData.map((entry, index) => (
+                            <Cell
+                              key={entry.name}
+                              fill={entry.fill}
+                              opacity={activeSlice === null || activeSlice === index ? 1 : 0.4}
+                              style={{
+                                filter: activeSlice === index
+                                  ? `drop-shadow(0 0 10px ${entry.fill}88)`
+                                  : 'drop-shadow(0 2px 4px rgba(0,0,0,.5))',
+                                transition: 'all 0.2s ease',
+                                cursor: 'pointer',
+                                transform: activeSlice === index ? 'scale(1.05)' : 'scale(1)',
+                                transformOrigin: 'center',
+                              }}
+                            />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip content={<PieTooltip/>}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    {/* Center label */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      {activeSlice !== null && detailsPieData[activeSlice] ? (
+                        <>
+                          <span className="text-[9px] text-muted text-center px-2 leading-3">{detailsPieData[activeSlice].name}</span>
+                          <span className="font-mono text-sm font-bold mt-1" style={{ color: detailsPieData[activeSlice].fill }}>{detailsPieData[activeSlice].pct}%</span>
+                        </>
+                      ) : (
+                        <>
+                          <TrendingUp size={16} className="text-gold"/>
+                          <span className="text-[9px] text-muted mt-1">passe o mouse</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {/* Legend */}
+                  <div className="mt-3 w-full space-y-1.5">
+                    {detailsPieData.map((entry, i) => (
+                      <div
+                        key={entry.name}
+                        className="flex items-center justify-between text-[11px] cursor-pointer rounded px-2 py-1 transition-colors hover:bg-white/5"
+                        onMouseEnter={() => setActiveSlice(i)}
+                        onMouseLeave={() => setActiveSlice(null)}
+                      >
+                        <span className="flex items-center gap-2 text-muted">
+                          <span className="size-2.5 rounded-full shrink-0" style={{ background: entry.fill }}/>
+                          {entry.name}
+                        </span>
+                        <span className="font-mono" style={{ color: entry.fill }}>{entry.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Smart footnote */}
+            {footnote && (
+              <div className={`rounded-xl border p-4 text-sm leading-6 flex items-start gap-3 ${
+                footnote.tone === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300'
+                : footnote.tone === 'bad' ? 'border-red-500/30 bg-red-500/5 text-red-300'
+                : 'border-amber-500/30 bg-amber-500/5 text-amber-300'
+              }`}>
+                {footnote.tone === 'ok' ? <CheckCircle2 size={16} className="mt-0.5 shrink-0"/> : <AlertTriangle size={16} className="mt-0.5 shrink-0"/>}
+                <p>{footnote.text}</p>
+              </div>
+            )}
+
+            {selectedDetails.notes && <p className="border-t border-line pt-4 text-sm text-muted">{selectedDetails.notes}</p>}
+
+            <div className="flex justify-end gap-2 border-t border-line pt-4">
+              <button className="btn-secondary" onClick={() => setPanel('list')}>Fechar</button>
+              <button className="btn-primary" onClick={() => startEdit(selectedDetails)}><Pencil size={14}/>Editar precificação</button>
+            </div>
+          </section>
+        )}
+
+        {/* ── HISTORY ──────────────────────────────── */}
+        {panel === 'history' && (
+          <section className="surface p-5 space-y-4">
+            <div className="flex items-start justify-between border-b border-line pb-4">
+              <div><p className="eyebrow text-gold">AUDITORIA DE PREÇOS</p><h3 className="mt-1 text-lg font-semibold">Histórico — {historyTarget?.name}</h3></div>
+              <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
+            </div>
+            {history.length
+              ? <div className="divide-y divide-line">{history.map(item => (
+                  <div key={item.id} className="py-3">
+                    <p className="text-xs text-muted">{new Date(item.created_at).toLocaleString('pt-BR')}</p>
+                    <p className="mt-1 text-sm">Preço: <span className="font-mono text-gold">{formatBRLFromCents(item.snapshot.current_price_cents)}</span></p>
+                    <p className="mt-1 text-xs text-muted">Custo total: {formatBRLFromCents(Number(item.snapshot.acquisition_cost_cents) + Number(item.snapshot.other_cost_cents))} · margem desejada: {formatPercent(item.snapshot.desired_margin_percent)}</p>
+                  </div>
+                ))}</div>
+              : <p className="text-sm text-muted">Ainda não há alterações de preço registradas.</p>}
+          </section>
+        )}
+      </>}
+    </div>
+  )
 }
