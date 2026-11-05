@@ -4,16 +4,23 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
 import { TooltipProvider } from './components/ui/tooltip'
+import { initializeSupabase } from './lib/supabase'
 import './index.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <TooltipProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </TooltipProvider>
-    </BrowserRouter>
-  </React.StrictMode>,
-)
+async function startApplication() {
+  await initializeSupabase()
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <TooltipProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </TooltipProvider>
+      </BrowserRouter>
+    </React.StrictMode>,
+  )
+}
+
+void startApplication()

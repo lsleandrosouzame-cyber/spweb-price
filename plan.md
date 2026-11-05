@@ -4,23 +4,25 @@
 
 Construir o SPWeb Lucro como SaaS brasileiro de precificação e inteligência financeira: “Pare de adivinhar seus preços. Descubra quanto você realmente ganha.” O usuário deve conseguir entrar, cadastrar um produto, informar custo e preço e entender imediatamente sua margem e contribuição.
 
-O brief exige React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, Supabase Auth, Lucide e biblioteca de gráficos. O usuário escolheu explicitamente Supabase; portanto, o banco Manus permanece desativado. O servidor Manus está habilitado para viabilizar a publicação server-capable e operações server-side necessárias. Não usar dados mock como reais, localStorage como persistência ou service-role key no navegador. Supabase Auth, Postgres, policies e migrations são a camada de identidade e dados; endpoints server-side só serão usados quando houver necessidade que não possa ser resolvida com segurança via Supabase/RLS. As chaves do Supabase serão obtidas por canal protegido, nunca armazenadas no Git.
+O brief exige React, Vite, TypeScript, Tailwind CSS, shadcn/ui, Supabase, PostgreSQL, Supabase Auth, Lucide e biblioteca de gráficos. O usuário escolheu explicitamente Supabase; portanto, o banco Manus permanece desativado. O servidor Manus está habilitado. Para publicação, usar um contêiner único: o Dockerfile compila o frontend, e um servidor Node atende os arquivos, `GET /health` e `GET /api/config`. Supabase Auth/Postgres, policies e migrations continuam como camada de identidade e dados; nenhuma chave service-role deve entrar no contêiner ou navegador. Em produção, o servidor lê somente `SUPABASE_URL` e `SUPABASE_ANON_KEY` do ambiente de runtime e envia esses dois valores públicos ao cliente pelo endpoint de configuração. Desenvolvimento continua usando `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no Vite. Nunca copiar valores de Development para Production nem armazenar credenciais no Git.
 
 ## Arquitetura e implementação
 
 - **Web:** React + Vite + TypeScript; roteamento de páginas protegidas; Tailwind e componentes shadcn/ui onde fizerem sentido; Lucide; charts leves para distribuição e indicadores.
-- **Dados/identidade:** Supabase JS client com variáveis de ambiente apropriadas ao Vite, Supabase Auth para cadastro, login, logout, recuperação e sessão. PostgreSQL com migrations versionadas em `supabase/migrations`; tabelas, chaves, constraints, índices, funções/policies e RLS para acesso por `company_members` e empresa autorizada. A chave anon/public pode ser usada no cliente somente acompanhada de RLS; nenhuma service-role key no bundle.
+- **Dados/identidade:** Supabase JS client inicializado antes do React. Em Development, usa valores `VITE_*`; em produção, busca configuração pública em `/api/config` do servidor Node. Supabase Auth para cadastro, login, logout, recuperação e sessão. PostgreSQL com migrations versionadas em `supabase/migrations`; tabelas, chaves, constraints, índices, funções/policies e RLS para acesso por `company_members` e empresa autorizada. A chave anon/public pode ser usada no cliente somente acompanhada de RLS; nenhuma service-role key no bundle.
 - **Domínio financeiro:** `src/finance` puro e independente da UI. Valores em centavos inteiros e percentuais com precisão definida; arredondamento somente na apresentação. Fórmulas centrais e validações compartilhadas por dashboard, formulários e relatórios.
 - **Serviços e validação:** `src/services` para Supabase e consultas, `src/validations` para formulários, `src/types` para modelos, `src/contexts`/`src/hooks` para sessão/estado e `src/lib` para formatadores e utilitários. Operações multiempresa sempre limitadas por membership e verificadas pelas políticas do banco.
 - **App:** layout com sidebar recolhível em desktop e navegação móvel; exatamente as cinco áreas principais Dashboard, Produtos, Cálculo, Vídeos e Lançamentos; Perfil, Configurações e Sair no rodapé. Calculadoras acessíveis também pelo fluxo de cadastro sem duplicar lógica.
-- **Integração externa:** formulário de onboarding da empresa. Não presumir que credenciais Supabase existem. A primeira solicitação protegida de URL do projeto e chave pública anon foi cancelada; só solicitar novamente se o usuário pedir. Até a configuração, autenticação, gravação, migrations aplicadas e persistência reais permanecem pendentes e a interface não simula dados. Nenhuma chave secreta administrativa é necessária no frontend. Não inserir registros fictícios para preencher o dashboard.
-- **Operação:** arquivo de rotas estático `/manus-routes.json` sincronizado com as rotas, diagnósticos TypeScript gerenciados pelo host, servidor de desenvolvimento na porta configurada 3000, build e testes. A publicação só será declarada concluída após resposta bem-sucedida da plataforma.
+- **Integração externa:** formulário de onboarding da empresa. A solicitação protegida de valores de Production foi cancelada; não reabri-la sem novo pedido. Até configuração dessas credenciais, Auth, gravação e persistência reais permanecem pendentes; o endpoint runtime informa `configured: false` e a interface mantém login/mutações desabilitados. Não usar service-role key nem dados simulados.
+- **Operação/publicação:** não manter a declaração `build` de site estático separada. Limpar esse domínio e configurar `deploy` para `Dockerfile` e `/health`, pois `features.server` já está habilitado. O contêiner escuta `PORT` em `0.0.0.0`, serve `dist` com fallback SPA e retorna 2xx sem autenticação em `/health`; configurar `/api/config` para somente dados públicos. Não adicionar roteamento híbrido. A rota `/manus-routes.json` continua sincronizada. `publishing.auto_publish` está habilitado: um novo checkpoint em `main` pode iniciar a publicação automaticamente. Não enviar um segundo POST para a mesma versão se a publicação automática já foi submetida. O sucesso só será declarado após confirmação de publicação.
 
 ## Estrutura pretendida
 
 ```text
 .
 ├── public/manus-routes.json
+├── Dockerfile             # build e runtime do contêiner publicado
+├── server.mjs             # estáticos, /health e configuração pública Supabase
 ├── src/
 │   ├── components/       # componentes de UI reutilizáveis
 │   ├── contexts/         # sessão e empresa selecionada
@@ -62,4 +64,4 @@ A estrutura será ajustada à medida que as capacidades reais do projeto flexív
 
 ## Organização de entrega
 
-Implementar em etapas funcionais preservando a ordem de negócio do brief: fundação e identidade; autenticação e persistência; produtos/serviços; calculadoras; lançamentos; motor financeiro; dashboard; central de conhecimento; validação e publicação. As credenciais externas e eventuais limitações de Supabase serão explicitadas, não mascaradas por conteúdo simulado.
+Implementar em etapas funcionais preservando a ordem de negócio do brief: fundação e identidade; autenticação e persistência; produtos/serviços; calculadoras; lançamentos; motor financeiro; dashboard; central de conhecimento; validação; contrato do contêiner e publicação. As credenciais externas e eventuais limitações de Supabase serão explicitadas, não mascaradas por conteúdo simulado.
