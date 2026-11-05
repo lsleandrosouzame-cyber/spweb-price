@@ -21,18 +21,22 @@ function createSupabase(url: string, anonKey: string): SupabaseClient {
   })
 }
 
-async function fetchConfigWithRetry(retries = 3, delayMs = 1000): Promise<RuntimeSupabaseConfig> {
+async function fetchConfigWithRetry(retries = 2, delayMs = 800): Promise<RuntimeSupabaseConfig> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 4000) // 4s per attempt
       const response = await fetch('/api/config', {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       return await response.json() as RuntimeSupabaseConfig
     } catch (error) {
       if (attempt < retries - 1) {
-        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)))
+        await new Promise(resolve => setTimeout(resolve, delayMs))
       } else {
         console.error('Não foi possível carregar a configuração Supabase após tentativas.', error)
       }

@@ -39,20 +39,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setCompanyError(null)
     setCompaniesLoading(true)
-    const { data, error } = await supabase
-      .from('company_members')
-      .select('company_id, companies(id, name, created_at)')
-      .eq('user_id', session.user.id)
-    if (error) {
-      setCompanyError(error.message)
-      setCompanies([])
+    // Safety timeout — never hang companies loading indefinitely
+    const companiesTimeout = setTimeout(() => {
       setCompaniesLoading(false)
-      return
+    }, 6000)
+    try {
+      const { data, error } = await supabase
+        .from('company_members')
+        .select('company_id, companies(id, name, created_at)')
+        .eq('user_id', session.user.id)
+      clearTimeout(companiesTimeout)
+      if (error) {
+        setCompanyError(error.message)
+        setCompanies([])
+      } else {
+        const next = (data ?? []).flatMap((row: any) => row.companies ? [row.companies as CompanySummary] : [])
+        setCompanies(next)
+        setCompanyError(null)
+      }
+    } catch (cause) {
+      clearTimeout(companiesTimeout)
+      setCompanyError(cause instanceof Error ? cause.message : 'Erro ao carregar empresa.')
+      setCompanies([])
+    } finally {
+      setCompaniesLoading(false)
     }
-    const next = (data ?? []).flatMap((row: any) => row.companies ? [row.companies as CompanySummary] : [])
-    setCompanies(next)
-    setCompanyError(null)
-    setCompaniesLoading(false)
   }, [session?.user?.id])
 
   useEffect(() => {
