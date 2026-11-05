@@ -61,7 +61,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     let active = true
+    // Timeout so the app never hangs indefinitely on getSession
+    const sessionTimeout = setTimeout(() => {
+      if (!active) return
+      setLoading(false)
+    }, 8000)
+
     supabase.auth.getSession().then(({ data, error }) => {
+      clearTimeout(sessionTimeout)
       if (!active) return
       if (error) setCompanyError(error.message)
       setCompaniesLoading(Boolean(data.session))
@@ -75,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     return () => {
       active = false
+      clearTimeout(sessionTimeout)
       subscription.unsubscribe()
     }
   }, [])

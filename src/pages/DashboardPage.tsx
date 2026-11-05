@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
-import { listExpenses, listProducts, listSalesRecords, listServices } from '../services/companyData'
+import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings } from '../services/companyData'
 import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
 import { calculateBreakEven, type SalesMixLine } from '../finance/operations'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
@@ -37,6 +37,8 @@ export default function DashboardPage() {
   const [services, setServices] = useState<ServiceRecord[]>([])
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
+  const [revenueForecastCents, setRevenueForecastCents] = useState<number | null>(null)
+  const [proLaboreCents, setProLaboreCents] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const monthKey = localDate().slice(0, 7)
@@ -48,14 +50,18 @@ export default function DashboardPage() {
       if (!configReady || !currentCompany) { setLoading(false); return }
       setLoading(true); setError(null)
       const from = `${monthKey}-01`
-      const [productResult, serviceResult, expenseResult, salesResult] = await Promise.allSettled([
-        listProducts(currentCompany.id), listServices(currentCompany.id), listExpenses(currentCompany.id), listSalesRecords(currentCompany.id, from),
+      const [productResult, serviceResult, expenseResult, salesResult, settingsResult] = await Promise.allSettled([
+        listProducts(currentCompany.id), listServices(currentCompany.id), listExpenses(currentCompany.id), listSalesRecords(currentCompany.id, from), readOperatingSettings(currentCompany.id),
       ])
       if (!active) return
       const failed = [productResult, serviceResult, expenseResult, salesResult].find(r => r.status === 'rejected')
       if (failed?.status === 'rejected') setError(String(failed.reason?.message ?? failed.reason))
       else if (productResult.status === 'fulfilled' && serviceResult.status === 'fulfilled' && expenseResult.status === 'fulfilled' && salesResult.status === 'fulfilled') {
         setProducts(productResult.value); setServices(serviceResult.value); setExpenses(expenseResult.value); setSales(salesResult.value)
+      }
+      if (settingsResult.status === 'fulfilled' && settingsResult.value) {
+        setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
+        setProLaboreCents(settingsResult.value.pro_labore_cents ?? null)
       }
       setLoading(false)
     }
@@ -159,7 +165,26 @@ export default function DashboardPage() {
 
     <section className="grid gap-4 xl:grid-cols-[1.45fr_.85fr]">
       <div className="surface overflow-hidden p-5 sm:p-7"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="eyebrow">PONTO DE EQUILÍBRIO</p><h3 className="mt-2 text-lg font-semibold">Quanto falta para cobrir a operação?</h3></div><span className="rounded-full border border-line px-3 py-1.5 text-[10px] text-muted">Sem estimativas inventadas</span></div>
-        {breakEven ? <><div className="mt-7 flex items-end justify-between gap-4"><div><p className="text-xs text-muted">Faturamento necessário</p><p className="mt-2 font-mono text-3xl font-semibold text-gold">{formatBRLFromCents(breakEven.breakEvenRevenueCents)}</p></div><div className="text-right"><p className="text-xs text-muted">Faturamento de referência</p><p className="mt-2 font-mono text-xl font-medium tabular-nums">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div></div><div className="mt-6 h-2 overflow-hidden rounded-full bg-[#262626]"><div className="h-full rounded-full bg-gold transition-all" style={{ width: `${breakEven.progressPercent}%` }}/></div><div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-muted">{formatPercent(breakEven.progressPercent, 0)} do ponto de equilíbrio</span><span className="text-paper">Faltam <strong className="font-mono text-gold">{formatBRLFromCents(breakEven.remainingRevenueCents)}</strong></span></div><div className="mt-6 grid gap-3 border-t border-line pt-5 sm:grid-cols-2"><div><span className="text-[11px] text-muted">Despesas fixas do período</span><p className="mt-1 font-mono text-sm">{formatBRLFromCents(fixedTotal)}</p></div><div><span className="text-[11px] text-muted">Margem ponderada pelo mix</span><p className="mt-1 font-mono text-sm">{formatPercent(breakEven.weightedContributionMarginPercent)}</p></div></div></> : <div className="mt-7"><EmptyState title="O ponto de equilíbrio depende do mix de vendas" description="Cadastre despesas fixas e registre quantidades vendidas com preço e contribuição por produto. Sem isso, não estimamos uma média simples nem inventamos o resultado." action={<Link to="/lancamentos" className="btn-secondary">Completar lançamentos <ArrowRight size={14}/></Link>}/></div>}
+        {breakEven ? <>
+          <div className="mt-7 flex items-end justify-between gap-4">
+            <div><p className="text-xs text-muted">Faturamento necessário</p><p className="mt-2 font-mono text-3xl font-semibold text-gold">{formatBRLFromCents(breakEven.breakEvenRevenueCents)}</p></div>
+            <div className="text-right"><p className="text-xs text-muted">Faturamento de referência</p><p className="mt-2 font-mono text-xl font-medium tabular-nums">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>
+          </div>
+          <div className="mt-6 h-2 overflow-hidden rounded-full bg-[#262626]"><div className="h-full rounded-full bg-gold transition-all" style={{ width: `${breakEven.progressPercent}%` }}/></div>
+          <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs"><span className="text-muted">{formatPercent(breakEven.progressPercent, 0)} do ponto de equilíbrio</span><span className="text-paper">Faltam <strong className="font-mono text-gold">{formatBRLFromCents(breakEven.remainingRevenueCents)}</strong></span></div>
+          <div className="mt-6 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div><span className="text-[11px] text-muted">Despesas fixas do período</span><p className="mt-1 font-mono text-sm">{formatBRLFromCents(fixedTotal)}</p></div>
+            <div><span className="text-[11px] text-muted">Margem ponderada pelo mix</span><p className="mt-1 font-mono text-sm">{formatPercent(breakEven.weightedContributionMarginPercent)}</p></div>
+            {revenueForecastCents !== null && <div><span className="text-[11px] text-muted">Previsão de faturamento</span><p className={`mt-1 font-mono text-sm ${revenueForecastCents >= breakEven.breakEvenRevenueCents ? 'text-positive' : 'text-negative'}`}>{formatBRLFromCents(revenueForecastCents)}</p></div>}
+            {proLaboreCents !== null && <div><span className="text-[11px] text-muted">Pró-labore mensal</span><p className="mt-1 font-mono text-sm">{formatBRLFromCents(proLaboreCents)}</p></div>}
+          </div>
+          {revenueForecastCents !== null && <div className="mt-4 rounded-lg border border-line bg-[#0b0b0b] p-3 text-xs flex items-center justify-between gap-4">
+            <span className="text-muted">Previsão vs. equilíbrio</span>
+            <span className={`font-mono font-semibold ${revenueForecastCents >= breakEven.breakEvenRevenueCents ? 'text-positive' : 'text-negative'}`}>
+              {revenueForecastCents >= breakEven.breakEvenRevenueCents ? '+' : ''}{formatBRLFromCents(revenueForecastCents - breakEven.breakEvenRevenueCents)}
+            </span>
+          </div>}
+        </> : <div className="mt-7"><EmptyState title="O ponto de equilíbrio depende do mix de vendas" description="Cadastre despesas fixas e registre quantidades vendidas com preço e contribuição por produto. Sem isso, não estimamos uma média simples nem inventamos o resultado." action={<Link to="/lancamentos" className="btn-secondary">Completar lançamentos <ArrowRight size={14}/></Link>}/></div>}
       </div>
       <div className="surface p-5 sm:p-7"><div className="flex items-start justify-between"><div><p className="eyebrow">DESPESAS FIXAS</p><h3 className="mt-2 text-lg font-semibold">Distribuição por categoria</h3></div><CircleHelp size={16} className="text-muted"/></div>
         {distribution.length ? <><div className="mt-4 h-48"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={distribution} dataKey="value" nameKey="name" innerRadius={54} outerRadius={76} paddingAngle={3} stroke="none">{distribution.map((item, index) => <Cell key={item.name} fill={COLORS[index % COLORS.length]}/>)}</Pie><RechartsTooltip formatter={value => moneyTooltip(Number(value))} contentStyle={{ background: '#141414', border: '1px solid #262626', borderRadius: 10, color: '#f5f5f5' }}/></PieChart></ResponsiveContainer></div><div className="space-y-2">{distribution.map((item, index) => <div key={item.name} className="flex items-center justify-between gap-3 text-xs"><span className="flex items-center gap-2 text-muted"><span className="size-2 rounded-full" style={{ background: COLORS[index % COLORS.length] }}/>{item.name}</span><span className="font-mono text-paper">{moneyTooltip(item.value)}</span></div>)}</div></> : <div className="mt-8"><EmptyState title="Nenhuma despesa cadastrada" description="Quando você registrar despesas no período, verá aqui a distribuição real por categoria." action={<Link to="/lancamentos" className="btn-secondary">Adicionar despesa <Plus size={14}/></Link>}/></div>}
