@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">Marca SPWeb Lucro</title>
+  <rect x="2" y="2" width="44" height="44" rx="13" fill="#141414"/>
+  <path d="M12 34V27M20 34V21M28 34V15" fill="none" stroke="#D4AF37" stroke-linecap="round" stroke-width="3.5"/>
+  <path d="m11 21 8-7 7 3 11-9" fill="none" stroke="#F5F5F5" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2"/>
+  <circle cx="37" cy="8" r="2.5" fill="#D4AF37"/>
+</svg>
