@@ -200,6 +200,7 @@ export default function DashboardPage() {
   })()
 
   const statusText = monthSales.length ? `${monthSales.length} registro(s) de venda no mês` : 'Aguardando registros de vendas'
+  void statusText // used for future reference
   const marginVariant: MetricVariant = !breakEven ? 'default' : breakEven.weightedContributionMarginPercent >= 30 ? 'green' : breakEven.weightedContributionMarginPercent >= 10 ? 'gold' : 'red'
   const breakEvenVariant: MetricVariant = !breakEven ? 'default' : breakEven.progressPercent >= 100 ? 'green' : 'blue'
 
@@ -236,7 +237,6 @@ export default function DashboardPage() {
 
       {/* Metric cards */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric title="Faturamento de referência" value={formatBRLFromCents(revenue)} detail={statusText} icon={Wallet} variant={revenue !== null ? 'green' : 'default'} to="/lancamentos"/>
         <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
         <Metric title="Margem de contribuição" value={formatPercent(breakEven?.weightedContributionMarginPercent)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
         <Metric title="Ponto de equilíbrio" value={breakEven ? formatBRLFromCents(breakEven.breakEvenRevenueCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>

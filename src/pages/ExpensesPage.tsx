@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Target, Trash2, Wallet, Pencil, ShoppingBag } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { CurrencyInput } from '../components/CurrencyInput'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
+void calculateProductPricing; void calculateServiceCost
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
-import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings, removeExpense, removeSalesRecord, saveExpense, saveOperatingSettings, saveSalesRecord } from '../services/companyData'
+import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings, removeExpense, saveExpense, saveOperatingSettings } from '../services/companyData'
 import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
@@ -20,22 +21,30 @@ const labelClass = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
-  const [tab, setTab] = useState<'expenses' | 'sales'>('expenses')
+  const [tab] = useState<'expenses'>('expenses')
+  void tab
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
-  const [products, setProducts] = useState<ProductRecord[]>([])
-  const [services, setServices] = useState<ServiceRecord[]>([])
+  const [products, setProducts] = useState<ProductRecord[]>([]); void products
+  const [services, setServices] = useState<ServiceRecord[]>([]); void services
 
   // operational settings
   const [workingDays, setWorkingDays] = useState('')
   const [productiveHours, setProductiveHours] = useState('')
   const [revenueForecast, setRevenueForecast] = useState('')
   const [proLabore, setProLabore] = useState('')
-  const [defaultVariableFees, setDefaultVariableFees] = useState('')
-  const [defaultTaxRate, setDefaultTaxRate] = useState('')
-  const [defaultDesiredMargin, setDefaultDesiredMargin] = useState('')
+  const [defaultVariableFees] = useState('')
+  const [defaultTaxRate] = useState('')
+  const [defaultDesiredMargin] = useState('')
+  void defaultVariableFees; void defaultTaxRate; void defaultDesiredMargin
   const [settingsSaved, setSettingsSaved] = useState(false)
+
+  // fee tags — dynamic list of { label, percent }
+  type FeeTag = { id: string; label: string; percent: string }
+  const [feeTags, setFeeTags] = useState<FeeTag[]>([])
+  const [feeInput, setFeeInput] = useState({ label: '', percent: '' })
+  const [showFeeInput, setShowFeeInput] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,8 +57,8 @@ export default function ExpensesPage() {
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [editing, setEditing] = useState<FixedExpenseRecord | null>(null)
   const [expenseForm, setExpenseForm] = useState(blankExpense)
-  const [showSaleForm, setShowSaleForm] = useState(false)
-  const [salesForm, setSalesForm] = useState({ item: '', quantity: '1', price: '', date: today() })
+  const [showSaleForm] = useState(false); void showSaleForm
+  const [salesForm] = useState({ item: '', quantity: '1', price: '', date: today() }); void salesForm
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -120,8 +129,10 @@ export default function ExpensesPage() {
   const totalContribution = salesRows.reduce((sum, row) => sum + Number(row.contribution_cents) * Number(row.quantity), 0)
   const weightedMarginPercent = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : null
 
-  // Use sales mix when available; fall back to default margin for break-even
-  const defaultMarginPct = defaultDesiredMargin ? Number(defaultDesiredMargin.replace(',', '.')) : null
+  // Use sales mix when available; fall back to total fees estimation
+  const totalFeesPercent = feeTags.reduce((sum, t) => sum + Number(t.percent.replace(',', '.') || 0), 0)
+  // effective margin = 100% - total fees (simple estimation when no sales)
+  const defaultMarginPct = totalFeesPercent > 0 ? Math.max(0, 100 - totalFeesPercent) : null
   const effectiveMarginPct = weightedMarginPercent ?? defaultMarginPct
 
   const breakEvenResult = fixedTotal !== null && effectiveMarginPct !== null && effectiveMarginPct > 0
@@ -214,58 +225,7 @@ export default function ExpensesPage() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') }
   }
 
-  function openSale() { setSalesForm({ item: '', quantity: '1', price: '', date: today() }); setError(null); setShowSaleForm(true) }
-  function selectedItem() {
-    const [kind, id] = salesForm.item.split(':')
-    if (kind === 'product') return products.find(row => row.id === id) ?? null
-    if (kind === 'service') return services.find(row => row.id === id) ?? null
-    return null
-  }
-  const selected = selectedItem()
-  const selectedPrice = selected?.current_price_cents ? Number(selected.current_price_cents) : null
-  const salePriceCents = salesForm.price ? parseBrazilianCurrency(salesForm.price) : selectedPrice
-
-  function getContributionPreview() {
-    if (!selected || !salePriceCents) return null
-    try {
-      if ('acquisition_cost_cents' in selected) {
-        return calculateProductPricing({ acquisitionCostCents: Number(selected.acquisition_cost_cents), otherCostCents: Number(selected.other_cost_cents), variableFeesPercent: Number(selected.variable_fees_percent), taxPercent: Number(selected.tax_percent), sellingPriceCents: salePriceCents }).contributionCents
-      }
-      const total = calculateServiceCost({ hours: Number(selected.hours), hourlyLaborCostCents: Number(selected.hourly_labor_cost_cents), materialsCents: Number(selected.materials_cents), otherCostCents: Number(selected.other_cost_cents), fixedCostPerHourCents: Number(selected.fixed_cost_per_hour_cents), includeFixedCostPerHour: selected.include_fixed_cost_per_hour })
-      return calculateProductPricing({ acquisitionCostCents: total, variableFeesPercent: Number(selected.variable_fees_percent), taxPercent: Number(selected.tax_percent), sellingPriceCents: salePriceCents }).contributionCents
-    } catch { return null }
-  }
-
-  async function submitSale(event: FormEvent) {
-    event.preventDefault()
-    if (!currentCompany || !selected) { setError('Selecione um produto ou serviço.'); return }
-    const quantity = Number(salesForm.quantity)
-    const price = salesForm.price ? parseBrazilianCurrency(salesForm.price) : selectedPrice
-    if (!Number.isFinite(quantity) || quantity <= 0 || price === null || price <= 0) { setError('Informe quantidade e preço de venda positivos.'); return }
-    let contribution = 0; let productId: string | null = null; let serviceId: string | null = null
-    try {
-      if ('acquisition_cost_cents' in selected) {
-        const calc = calculateProductPricing({ acquisitionCostCents: Number(selected.acquisition_cost_cents), otherCostCents: Number(selected.other_cost_cents), variableFeesPercent: Number(selected.variable_fees_percent), taxPercent: Number(selected.tax_percent), sellingPriceCents: price })
-        contribution = calc.contributionCents ?? 0; productId = selected.id
-      } else {
-        const total = calculateServiceCost({ hours: Number(selected.hours), hourlyLaborCostCents: Number(selected.hourly_labor_cost_cents), materialsCents: Number(selected.materials_cents), otherCostCents: Number(selected.other_cost_cents), fixedCostPerHourCents: Number(selected.fixed_cost_per_hour_cents), includeFixedCostPerHour: selected.include_fixed_cost_per_hour })
-        const calc = calculateProductPricing({ acquisitionCostCents: total, variableFeesPercent: Number(selected.variable_fees_percent), taxPercent: Number(selected.tax_percent), sellingPriceCents: price })
-        contribution = calc.contributionCents ?? 0; serviceId = selected.id
-      }
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível calcular a contribuição.'); return }
-    setBusy(true); setError(null)
-    try {
-      await saveSalesRecord(currentCompany.id, { item_type: productId ? 'product' : 'service', product_id: productId, service_id: serviceId, quantity, selling_price_cents: price, contribution_cents: contribution, sold_on: salesForm.date })
-      setShowSaleForm(false); setNotice('Venda registrada.'); await refresh()
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível registrar a venda.') }
-    finally { setBusy(false) }
-  }
-
-  async function deleteSale(row: SalesRecord) {
-    if (!currentCompany || !window.confirm('Excluir este registro de venda?')) return
-    try { await removeSalesRecord(currentCompany.id, row.id); setNotice('Registro excluído.'); await refresh() }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao excluir a venda.') }
-  }
+  // sales helpers removed (Vendas e mix tab removed)
 
   if (loading) return <LoadingScreen label="Carregando lançamentos reais" />
 
@@ -305,26 +265,42 @@ export default function ExpensesPage() {
         </label>
       </div>
 
-      {/* Contribution margin parameters */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <label>
-          <span className={labelClass}>Taxas variáveis padrão (%)</span>
-          <input className="field" type="number" min="0" max="100" step="any"
-            value={defaultVariableFees} onChange={e => setDefaultVariableFees(e.target.value)} placeholder="Ex.: 5"/>
-          <p className="mt-1 text-[10px] text-muted">Taxas médias sobre vendas (cartão, marketplace etc.)</p>
-        </label>
-        <label>
-          <span className={labelClass}>Imposto médio sobre venda (%)</span>
-          <input className="field" type="number" min="0" max="100" step="any"
-            value={defaultTaxRate} onChange={e => setDefaultTaxRate(e.target.value)} placeholder="Ex.: 6"/>
-          <p className="mt-1 text-[10px] text-muted">Simples Nacional, MEI ou regime tributário aplicável.</p>
-        </label>
-        <label>
-          <span className={labelClass}>Margem de contribuição desejada (%)</span>
-          <input className="field" type="number" min="0" max="100" step="any"
-            value={defaultDesiredMargin} onChange={e => setDefaultDesiredMargin(e.target.value)} placeholder="Ex.: 30"/>
-          <p className="mt-1 text-[10px] text-muted">Usada para estimar o ponto de equilíbrio sem vendas cadastradas.</p>
-        </label>
+      {/* Fee tags — dynamic list with + button */}
+      <div>
+        <p className={labelClass}>Taxas e encargos sobre vendas</p>
+        <div className="flex flex-wrap gap-2 min-h-[36px] items-center">
+          {feeTags.map(tag => (
+            <span key={tag.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-[#1a1a1a] px-3 py-1.5 text-xs font-medium text-paper">
+              <Percent size={11} className="text-gold"/>
+              {tag.label}
+              <span className="ml-1 font-mono text-gold">{tag.percent}%</span>
+              <button type="button" aria-label={`Remover ${tag.label}`} className="ml-1 rounded-full p-0.5 text-muted hover:text-red-400 transition-colors" onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
+                <X size={11}/>
+              </button>
+            </span>
+          ))}
+          {showFeeInput ? (
+            <span className="inline-flex items-center gap-2 rounded-xl border border-gold/40 bg-[#1a1a1a] px-3 py-1.5">
+              <input autoFocus className="bg-transparent text-xs outline-none w-28 placeholder:text-muted" placeholder="Ex.: Cartão de crédito" value={feeInput.label} onChange={e => setFeeInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowFeeInput(false), setFeeInput({ label: '', percent: '' }))}/>
+              <span className="text-muted text-xs">|</span>
+              <input className="bg-transparent text-xs outline-none w-14 font-mono placeholder:text-muted" placeholder="0,00" type="number" min="0" max="100" step="any" value={feeInput.percent} onChange={e => setFeeInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => {
+                if (e.key === 'Enter') { e.preventDefault(); const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }
+                if (e.key === 'Escape') { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }
+              }}/>
+              <span className="text-xs text-muted">%</span>
+              <button type="button" className="rounded-full bg-gold p-1 text-ink hover:bg-[#ead584] transition-colors" onClick={() => { const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }}><Plus size={11}/></button>
+              <button type="button" className="text-muted hover:text-paper p-0.5" onClick={() => { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }}><X size={11}/></button>
+            </span>
+          ) : (
+            <button type="button" onClick={() => setShowFeeInput(true)} className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:border-gold hover:text-gold transition-colors"><Plus size={12}/>Adicionar taxa</button>
+          )}
+        </div>
+        {feeTags.length > 0 && (
+          <p className="mt-2 text-[10px] text-muted">Total de encargos: <span className="font-mono text-gold">{totalFeesPercent.toFixed(2)}%</span>{defaultMarginPct !== null && <> · Margem estimada: <span className="font-mono text-emerald-400">{defaultMarginPct.toFixed(1)}%</span></>}</p>
+        )}
+        {feeTags.length === 0 && !showFeeInput && (
+          <p className="mt-1 text-[10px] text-muted">Adicione taxas de cartão, comissões, impostos e outros encargos para estimar o ponto de equilíbrio.</p>
+        )}
       </div>
 
       {/* Derived values — auto calculated */}
@@ -366,14 +342,13 @@ export default function ExpensesPage() {
       </div>
     </form>
 
-    {/* Tabs */}
+    {/* Tabs — only Despesas fixas (Vendas e mix removed) */}
     <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
-      <button onClick={() => setTab('expenses')} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'expenses' ? 'bg-gold text-ink' : 'text-muted'}`}><ReceiptText size={15}/>Despesas fixas</button>
-      <button onClick={() => setTab('sales')} className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'sales' ? 'bg-gold text-ink' : 'text-muted'}`}><ShoppingBag size={15}/>Vendas e mix</button>
+      <button className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium bg-gold text-ink"><ReceiptText size={15}/>Despesas fixas</button>
     </div>
 
     {/* ── DESPESAS ──────────────────────────────────────────────── */}
-    {tab === 'expenses' && <div className="space-y-5">
+    <div className="space-y-5">
       <section className="grid gap-3 sm:grid-cols-3">
         <Summary title="Total de despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} icon={Wallet}/>
         <Summary title="Custo fixo por dia" value={formatBRLFromCents(operating?.fixedDailyCents ?? null)} icon={CalendarDays}/>
@@ -431,62 +406,7 @@ export default function ExpensesPage() {
             : <p className="mt-6 text-sm text-muted">Sem despesas registradas no período.</p>}
         </div>
       </section>
-    </div>}
-
-    {/* ── VENDAS ────────────────────────────────────────────────── */}
-    {tab === 'sales' && <div className="space-y-5">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Summary title="Faturamento de referência" value={salesRows.length ? formatBRLFromCents(totalRevenue) : '—'} icon={Wallet}/>
-        <Summary title="Contribuição registrada" value={salesRows.length ? formatBRLFromCents(totalContribution) : '—'} icon={CircleDollarSign}/>
-        <Summary title="Vendas no período" value={salesRows.length ? String(salesRows.length) : '—'} icon={ShoppingBag}/>
-      </section>
-
-      {breakEvenRevenueCents !== null && <div className="surface p-4 flex flex-wrap gap-6 items-center">
-        <Target size={16} className="text-gold shrink-0"/>
-        <div><p className="text-xs text-muted">Ponto de equilíbrio estimado</p><p className="font-mono text-sm text-gold">{formatBRLFromCents(breakEvenRevenueCents)}</p></div>
-        {forecastCents !== null && <div><p className="text-xs text-muted">Previsão de faturamento</p><p className="font-mono text-sm">{formatBRLFromCents(forecastCents)}</p></div>}
-        {forecastSurplusDeficitCents !== null && <div><p className="text-xs text-muted">Diferença</p><p className={`font-mono text-sm ${forecastSurplusDeficitCents >= 0 ? 'text-positive' : 'text-negative'}`}>{forecastSurplusDeficitCents >= 0 ? '+' : ''}{formatBRLFromCents(forecastSurplusDeficitCents)}</p></div>}
-      </div>}
-
-      {showSaleForm && <section className="surface p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">REGISTRAR VENDA</p><h3 className="mt-1 text-sm font-semibold">Nova venda</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowSaleForm(false); setError(null) }}>Cancelar</button>
-        </div>
-        <form onSubmit={submitSale} className="space-y-4">
-          <label className="block"><span className={labelClass}>Produto ou serviço</span>
-            <select className="field" required value={salesForm.item} onChange={e => { setSalesForm({ ...salesForm, item: e.target.value, price: '' }); setError(null) }}>
-              <option value="">Selecione um item cadastrado</option>
-              <optgroup label="Produtos">{products.map(p => <option key={p.id} value={`product:${p.id}`}>{p.name}{p.current_price_cents ? ` · ${formatBRLFromCents(p.current_price_cents)}` : ' · sem preço atual'}</option>)}</optgroup>
-              <optgroup label="Serviços">{services.map(s => <option key={s.id} value={`service:${s.id}`}>{s.name}{s.current_price_cents ? ` · ${formatBRLFromCents(s.current_price_cents)}` : ' · sem preço atual'}</option>)}</optgroup>
-            </select>
-          </label>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label><span className={labelClass}>Quantidade</span><input className="field" type="number" min="0.001" step="any" required value={salesForm.quantity} onChange={e => setSalesForm({ ...salesForm, quantity: e.target.value })}/></label>
-            <label><span className={labelClass}>Preço de venda unitário (R$)</span><CurrencyInput className="field" value={salesForm.price} onChange={value => setSalesForm({ ...salesForm, price: value })} placeholder={selectedPrice ? (selectedPrice / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}/></label>
-            <label><span className={labelClass}>Data da venda</span><input className="field" type="date" required value={salesForm.date} onChange={e => setSalesForm({ ...salesForm, date: e.target.value })}/></label>
-          </div>
-          <div className="rounded-lg border border-line bg-[#0b0b0b] p-3 text-xs text-muted">
-            Contribuição unitária estimada: <span className="font-mono text-gold">{formatBRLFromCents(getContributionPreview())}</span>
-          </div>
-          {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="btn-secondary" type="button" onClick={() => { setShowSaleForm(false); setError(null) }}>Cancelar</button>
-            <button className="btn-primary" disabled={busy || !selected}>{busy ? 'Salvando…' : 'Salvar venda'}</button>
-          </div>
-        </form>
-      </section>}
-
-      <div className="surface overflow-hidden">
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <div><p className="eyebrow">MIX DE VENDAS · {month}</p><p className="mt-1 text-xs text-muted">O ponto de equilíbrio usa a contribuição ponderada por receita.</p></div>
-          {!showSaleForm && <button className="btn-primary !px-3 !py-2 text-xs" onClick={openSale}><Plus size={14}/>Registrar venda</button>}
-        </div>
-        {salesRows.length
-          ? <div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left"><thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Item</th><th className="px-3 py-3">Data</th><th className="px-3 py-3">Quantidade</th><th className="px-3 py-3">Preço / unidade</th><th className="px-3 py-3">Contribuição / unidade</th><th className="px-4 py-3"/></tr></thead><tbody className="divide-y divide-line">{salesRows.map(row => <tr key={row.id}><td className="px-5 py-4 text-sm">{row.item_name_snapshot || products.find(p => p.id === row.product_id)?.name || services.find(s => s.id === row.service_id)?.name || 'Item removido'}</td><td className="px-3 py-4 text-xs text-muted">{new Date(`${row.sold_on}T12:00:00`).toLocaleDateString('pt-BR')}</td><td className="px-3 py-4 font-mono text-xs">{row.quantity}</td><td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(Number(row.selling_price_cents))}</td><td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(Number(row.contribution_cents))}</td><td className="px-4 py-4 text-right"><button className="rounded p-2 text-muted hover:text-negative" aria-label="Excluir venda" onClick={() => void deleteSale(row)}><Trash2 size={14}/></button></td></tr>)}</tbody></table></div>
-          : <div className="p-5"><EmptyState title="Sem registros de venda no período" description="Informe quantidades, preço e data. A contribuição unitária é calculada a partir da precificação cadastrada." action={<button className="btn-secondary" onClick={openSale}><Plus size={14}/>Registrar venda</button>}/></div>}
-      </div>
-    </div>}
+    </div>
   </div>
 }
 
