@@ -267,7 +267,7 @@ export default function ServicesPanel() {
       return (
         <section className="surface p-5 sm:p-7 space-y-6">
           <div className="flex items-start justify-between border-b border-line pb-4">
-            <div><p className="eyebrow text-gold">DETALHES DO SERVIÇO</p><h3 className="mt-1 text-xl font-bold">{selectedDetails.name}</h3></div>
+            <div><p className="eyebrow text-gold">DETALHES DO SERVIÇO</p><h3 className="mt-1 text-2xl font-bold">{selectedDetails.name}</h3></div>
             <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
           </div>
 
@@ -275,10 +275,10 @@ export default function ServicesPanel() {
           {selectedDetails.current_price_cents && (
             <div className="grid gap-4 sm:grid-cols-2">
               {/* Current price (what they charge today) */}
-              <div className={`rounded-2xl border-2 p-4 ${(contribution ?? 0) >= 0 ? 'border-teal-border bg-teal-light/40' : 'border-red-400 bg-red-50'}`}>
+              <div className={`rounded-2xl border-2 p-4 ${(contribution ?? 0) >= 0 ? 'border-teal-border bg-teal-light/10' : 'border-red-200 bg-red-50/25'}`}>
                 <p className="eyebrow mb-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
-                <p className="font-mono text-3xl font-bold mt-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
-                <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 ${(contribution ?? 0) >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                <p className="font-mono text-4xl font-bold mt-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 ${(contribution ?? 0) >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
                   {(contribution ?? 0) >= 0 ? <CheckCircle2 size={16} style={{ color: '#047857' }}/> : <AlertTriangle size={16} style={{ color: '#991b1b' }}/>}
                   <div className="flex-1">
                     <p className="text-xs font-bold" style={{ color: (contribution ?? 0) >= 0 ? '#047857' : '#991b1b' }}>
@@ -286,18 +286,18 @@ export default function ServicesPanel() {
                     </p>
                     <p className="mt-0.5 text-[10px]" style={{ color: (contribution ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
                       {(contribution ?? 0) >= 0 
-                        ? `${formatBRLFromCents(contribution)} por serviço (${formatPercent(margin)} margem)` 
-                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo por execução`}
+                        ? `${formatBRLFromCents(contribution)} por serviço · ${formatPercent(margin)} de margem` 
+                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo · ${formatPercent(margin)} de margem`}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Recommended price (by the system) */}
-              <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-4">
+              <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/25 p-4">
                 <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
-                <p className="font-mono text-3xl font-bold text-emerald-700 mt-2">{formatBRLFromCents(recommended)}</p>
-                <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2">
+                <p className="font-mono text-4xl font-bold text-emerald-700 mt-2">{formatBRLFromCents(recommended)}</p>
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2">
                   <TrendingUp size={16} className="text-emerald-700"/>
                   <div className="flex-1">
                     <p className="text-xs font-bold text-emerald-900">Sistema calculado</p>
@@ -331,7 +331,7 @@ export default function ServicesPanel() {
               ] as [string, string, string][]).map(([label, value, color]) => (
                 <div key={label} className="rounded-xl border border-line bg-panel p-4 hover:border-teal-border transition-colors">
                   <p className="text-xs font-semibold text-muted">{label}</p>
-                  <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
+                  <p className="mt-2 font-mono text-base font-semibold" style={{ color }}>{value}</p>
                 </div>
               ))}
             </div>

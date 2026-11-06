@@ -359,7 +359,7 @@ export default function DashboardPage() {
                     <PieChart>
                       <Pie data={distribution} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={3} stroke="none">
                         {distribution.map((item, index) => (
-                          <Cell key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]} style={{ filter: 'drop-shadow(0 0 5px rgba(0,0,0,.5))', cursor: 'pointer' }}/>
+                          <Cell key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]} style={{ cursor: 'pointer' }}/>
                         ))}
                       </Pie>
                       <RechartsTooltip content={<PieTooltip/>}/>
@@ -412,7 +412,7 @@ export default function DashboardPage() {
                     <PieChart>
                       <Pie data={variableCostsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={3} stroke="none">
                         {variableCostsData.map((item, index) => (
-                          <Cell key={item.name} fill={VAR_COLORS[index % VAR_COLORS.length]} style={{ filter: 'drop-shadow(0 0 5px rgba(0,0,0,.5))', cursor: 'pointer' }}/>
+                          <Cell key={item.name} fill={VAR_COLORS[index % VAR_COLORS.length]} style={{ cursor: 'pointer' }}/>
                         ))}
                       </Pie>
                       <RechartsTooltip content={<PieTooltip/>}/>
