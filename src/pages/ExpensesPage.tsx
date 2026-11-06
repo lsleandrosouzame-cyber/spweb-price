@@ -239,7 +239,7 @@ export default function ExpensesPage() {
   return <div className="space-y-6">
     {/* Header */}
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Lançamentos</h2><p className="mt-2 text-sm text-muted">Acompanhe despesas fixas e o mix real de vendas.</p></div>
+      <div><p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2><p className="mt-2 text-sm text-muted">Acompanhe despesas fixas e o mix real de vendas.</p></div>
       <label className="block"><span className="mb-1 block text-[10px] text-muted">Período de referência</span><span className="flex items-center gap-2 rounded-lg border border-line bg-graphite px-3"><CalendarDays size={15} className="text-gold"/><input aria-label="Mês de referência" type="month" className="bg-transparent py-2 text-sm text-paper outline-none" value={month} onChange={e => setMonth(e.target.value)}/></span></label>
     </div>
 
@@ -517,5 +517,5 @@ export default function ExpensesPage() {
 }
 
 function Summary({ title, value, icon: Icon }: { title: string; value: string; icon: typeof Wallet }) {
-  return <div className="surface p-4"><div className="flex items-center justify-between"><p className="text-xs text-muted">{title}</p><Icon size={15} className="text-gold"/></div><p className="mt-3 font-mono text-xl font-semibold tabular-nums">{value}</p></div>
+  return <div className="surface p-4"><div className="flex items-center justify-between"><p className="text-xs text-muted">{title}</p><Icon size={15} className="text-gold"/></div><p className="mt-3 font-mono text-2xl font-bold tabular-nums">{value}</p></div>
 }

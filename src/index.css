@@ -42,6 +42,11 @@ button { color: inherit; cursor: pointer; }
     box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
   }
 
+  /* Global heading sizes */
+  h1 { @apply text-3xl font-bold tracking-tight; }
+  h2 { @apply text-2xl font-bold tracking-tight; }
+  h3 { @apply text-xl font-semibold; }
+  
   /* Eyebrow label */
   .eyebrow {
     @apply text-[11px] font-bold uppercase tracking-[.18em];

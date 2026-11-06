@@ -239,7 +239,7 @@ export default function DashboardPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow text-gold">VISÃO FINANCEIRA · {month.toUpperCase()}</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Os números do seu negócio, sem adivinhação.</h2>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">Os números do seu negócio, sem adivinhação.</h2>
           <p className="mt-2 text-sm text-muted">Indicadores vêm dos cadastros e vendas reais da sua empresa.</p>
         </div>
         <Link to="/calculo" className="btn-primary w-fit">Simular preço <ArrowRight size={15}/></Link>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="eyebrow">PONTO DE EQUILÍBRIO</p>
-              <h3 className="mt-2 text-lg font-semibold">Quanto falta para cobrir a operação?</h3>
+              <h3 className="mt-2 text-xl font-bold">Quanto falta para cobrir a operação?</h3>
             </div>
             <span className="rounded-full border border-line px-3 py-1.5 text-[10px] text-muted">Sem estimativas inventadas</span>
           </div>
@@ -289,8 +289,8 @@ export default function DashboardPage() {
                 <div className="flex-1 space-y-3">
                   <div className="flex items-end justify-between gap-4">
                     <div><p className="text-xs text-muted">Faturamento necessário</p><p className="mt-1 font-mono text-2xl font-bold text-gold">{formatBRLFromCents(effectiveBreakEvenCents)}</p></div>
-                    {breakEven && <div className="text-right"><p className="text-xs text-muted">Faturamento atual</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>}
-                    {breakEvenEstimated && revenueForecastCents && <div className="text-right"><p className="text-xs text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(revenueForecastCents)}</p></div>}
+                    {breakEven && <div className="text-right"><p className="text-xs text-muted">Faturamento atual</p><p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>}
+                    {breakEvenEstimated && revenueForecastCents && <div className="text-right"><p className="text-xs text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(revenueForecastCents)}</p></div>}
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-teal-light">
                     <div className={`h-full rounded-full transition-all ${progressPct >= 100 ? 'bg-emerald-500' : 'bg-gold'}`} style={{ width: `${progressPct}%` }}/>
@@ -467,7 +467,7 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-5 py-5 sm:px-7">
           <div>
             <p className="eyebrow">SIMULAÇÕES · NÃO SÃO GARANTIAS</p>
-            <h3 className="mt-2 text-lg font-semibold">Onde você pode lucrar mais?</h3>
+            <h3 className="mt-2 text-xl font-bold">Onde você pode lucrar mais?</h3>
             <p className="mt-1 text-xs text-muted">Oportunidades calculadas pelo preço mínimo ou pela margem desejada.</p>
           </div>
           <Link className="text-xs font-medium text-gold hover:text-[#ead584]" to="/produtos">Ver produtos <ArrowRight size={13} className="ml-1 inline"/></Link>

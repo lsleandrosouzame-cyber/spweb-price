@@ -227,7 +227,7 @@ export default function CalculationPage() {
 
   const current = calculated.result
   return <div className="space-y-6">
-    <div><p className="eyebrow text-gold">SIMULADOR DE PREÇOS</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Descubra o que sobra por unidade.</h2><p className="mt-2 text-sm text-muted">Os resultados mudam com os dados informados. Nada é salvo até você confirmar.</p></div>
+    <div><p className="eyebrow text-gold">SIMULADOR DE PREÇOS</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Descubra o que sobra por unidade.</h2><p className="mt-2 text-sm text-muted">Os resultados mudam com os dados informados. Nada é salvo até você confirmar.</p></div>
     <div className="inline-flex rounded-xl border border-line bg-panel p-1">
       <button className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition ${kind === 'product' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`} onClick={() => { setKind('product'); setError(null) }}><Package size={15}/>Produto</button>
       <button className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition ${kind === 'service' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`} onClick={() => { setKind('service'); setError(null) }}><Wrench size={15}/>Serviço</button>
@@ -279,7 +279,7 @@ export default function CalculationPage() {
       </form>
 
       <section className="surface h-fit p-5 sm:p-7">
-        <div><p className="eyebrow text-gold">RESULTADOS AUTOMÁTICOS</p><h3 className="mt-2 text-lg font-semibold">Resumo da precificação</h3><p className="mt-1 text-xs text-muted">Contribuição estimada não é lucro líquido.</p></div>
+        <div><p className="eyebrow text-gold">RESULTADOS AUTOMÁTICOS</p><h3 className="mt-2 text-xl font-bold">Resumo da precificação</h3><p className="mt-1 text-xs text-muted">Contribuição estimada não é lucro líquido.</p></div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <Result title="Custo total" value={formatBRLFromCents(calculated.cost)}/>
           <Result title="Preço atual" value={formatBRLFromCents(form.price.trim() ? parseBrazilianCurrency(form.price) : null)}/>

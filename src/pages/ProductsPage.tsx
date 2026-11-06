@@ -229,7 +229,7 @@ export default function ProductsPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow text-gold">CATÁLOGO FINANCEIRO</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">Produtos e serviços</h2>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">Produtos e serviços</h2>
           <p className="mt-2 text-sm text-muted">Veja quanto cada venda contribui para a operação.</p>
         </div>
         {tab === 'products' && panel === 'list' && <button className="btn-primary w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
@@ -314,7 +314,7 @@ export default function ProductsPage() {
         {/* ── FORM ─────────────────────────────────── */}
         {panel === 'form' && <section className="surface p-5 sm:p-7 space-y-5">
           <div className="flex items-start justify-between border-b border-line pb-4">
-            <div><p className="eyebrow text-gold">PRECIFICAÇÃO DE PRODUTO</p><h3 className="mt-1 text-lg font-semibold">{editing ? 'Editar produto' : 'Novo produto'}</h3></div>
+            <div><p className="eyebrow text-gold">PRECIFICAÇÃO DE PRODUTO</p><h3 className="mt-1 text-xl font-bold">{editing ? 'Editar produto' : 'Novo produto'}</h3></div>
             <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => { setPanel('list'); setError(null) }}><ChevronLeft size={14}/>Voltar</button>
           </div>
           <form onSubmit={submit} className="space-y-5">
@@ -346,7 +346,7 @@ export default function ProductsPage() {
         {panel === 'details' && selectedDetails && selectedPricing && (
           <section className="surface p-5 sm:p-7 space-y-6">
             <div className="flex items-start justify-between border-b border-line pb-4">
-              <div><p className="eyebrow text-gold">DETALHES DA PRECIFICAÇÃO</p><h3 className="mt-1 text-lg font-semibold">{selectedDetails.name}</h3></div>
+              <div><p className="eyebrow text-gold">DETALHES DA PRECIFICAÇÃO</p><h3 className="mt-1 text-xl font-bold">{selectedDetails.name}</h3></div>
               <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
             </div>
 
@@ -448,15 +448,17 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/* Smart footnote */}
+            {/* Smart footnote with enhanced visibility */}
             {footnote && (
-              <div className={`rounded-xl border p-4 text-sm leading-6 flex items-start gap-3 ${
-                footnote.tone === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300'
-                : footnote.tone === 'bad' ? 'border-red-500/30 bg-red-500/5 text-red-300'
-                : 'border-amber-500/30 bg-amber-500/5 text-amber-300'
+              <div className={`rounded-2xl border-2 px-6 py-5 text-sm font-medium leading-relaxed shadow-lg ${
+                footnote.tone === 'ok' ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+                : footnote.tone === 'bad' ? 'border-red-400 bg-red-50 text-red-800'
+                : 'border-amber-400 bg-amber-100 text-amber-900'
               }`}>
-                {footnote.tone === 'ok' ? <CheckCircle2 size={16} className="mt-0.5 shrink-0"/> : <AlertTriangle size={16} className="mt-0.5 shrink-0"/>}
-                <p>{footnote.text}</p>
+                <div className="flex items-start gap-3">
+                  {footnote.tone === 'ok' ? <CheckCircle2 size={22} className="mt-0.5 shrink-0"/> : <AlertTriangle size={22} className="mt-0.5 shrink-0"/>}
+                  <p className="text-[15px] leading-7">{footnote.text}</p>
+                </div>
               </div>
             )}
 
@@ -473,7 +475,7 @@ export default function ProductsPage() {
         {panel === 'history' && (
           <section className="surface p-5 space-y-4">
             <div className="flex items-start justify-between border-b border-line pb-4">
-              <div><p className="eyebrow text-gold">AUDITORIA DE PREÇOS</p><h3 className="mt-1 text-lg font-semibold">Histórico — {historyTarget?.name}</h3></div>
+              <div><p className="eyebrow text-gold">AUDITORIA DE PREÇOS</p><h3 className="mt-1 text-xl font-bold">Histórico — {historyTarget?.name}</h3></div>
               <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
             </div>
             {history.length
