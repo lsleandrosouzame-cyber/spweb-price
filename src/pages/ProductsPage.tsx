@@ -354,11 +354,11 @@ export default function ProductsPage() {
             {selectedDetails.current_price_cents && (
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Current price (what they charge today) */}
-                <div className={`rounded-2xl border-2 p-6 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'border-teal-border bg-teal-light/40' : 'border-red-400 bg-red-50'}`}>
+                <div className={`rounded-2xl border-2 p-4 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'border-teal-border bg-teal-light/40' : 'border-red-400 bg-red-50'}`}>
                   <p className="eyebrow mb-2" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
-                  <p className="font-mono text-4xl font-bold mt-3" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
-                  <div className={`mt-4 flex items-center gap-2 rounded-lg px-3 py-2 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
-                    {(selectedPricing.contributionCents ?? 0) >= 0 ? <CheckCircle2 size={18} style={{ color: '#047857' }}/> : <AlertTriangle size={18} style={{ color: '#991b1b' }}/>}
+                  <p className="font-mono text-3xl font-bold mt-2" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                  <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                    {(selectedPricing.contributionCents ?? 0) >= 0 ? <CheckCircle2 size={16} style={{ color: '#047857' }}/> : <AlertTriangle size={16} style={{ color: '#991b1b' }}/>}
                     <div className="flex-1">
                       <p className="text-xs font-bold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#991b1b' }}>
                         {(selectedPricing.contributionCents ?? 0) >= 0 ? 'Gerando lucro' : 'Gerando prejuízo'}
@@ -373,11 +373,11 @@ export default function ProductsPage() {
                 </div>
 
                 {/* Recommended price (by the system) */}
-                <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-6">
+                <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-4">
                   <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
-                  <p className="font-mono text-4xl font-bold text-emerald-700 mt-3">{formatBRLFromCents(selectedPricing.recommendedPriceCents)}</p>
-                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2">
-                    <TrendingUp size={18} className="text-emerald-700"/>
+                  <p className="font-mono text-3xl font-bold text-emerald-700 mt-2">{formatBRLFromCents(selectedPricing.recommendedPriceCents)}</p>
+                  <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2">
+                    <TrendingUp size={16} className="text-emerald-700"/>
                     <div className="flex-1">
                       <p className="text-xs font-bold text-emerald-900">Sistema calculado</p>
                       <p className="mt-0.5 text-[10px] text-emerald-800">
@@ -409,7 +409,7 @@ export default function ProductsPage() {
                   ['Markup', formatMarkup(selectedPricing.markup), '#a855f7'],
                 ] as [string, string, string][]).map(([label, value, color]) => (
                   <div key={label} className="rounded-xl border border-line bg-panel p-4 transition hover:border-teal-border">
-                    <p className="text-[10px] text-muted">{label}</p>
+                    <p className="text-xs font-semibold text-muted">{label}</p>
                     <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
                   </div>
                 ))}
