@@ -36,25 +36,25 @@ function buildOpportunity(input: { id: string; name: string; kind: 'Produto' | '
 type MetricVariant = 'default' | 'gold' | 'green' | 'red' | 'blue'
 function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: { title: string; value: string; detail: string; icon: typeof Wallet; variant?: MetricVariant; to?: string }) {
   const schemes: Record<MetricVariant, { border: string; bg: string; icon: string; value: string }> = {
-    default: { border: 'border-line', bg: 'bg-panel', icon: 'text-muted', value: 'text-paper' },
-    gold:    { border: 'border-gold/30', bg: 'bg-gold/10', icon: 'text-gold', value: 'text-gold' },
-    green:   { border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', icon: 'text-emerald-400', value: 'text-emerald-400' },
-    red:     { border: 'border-red-500/30', bg: 'bg-red-500/10', icon: 'text-red-400', value: 'text-red-400' },
-    blue:    { border: 'border-blue-500/30', bg: 'bg-blue-500/10', icon: 'text-blue-400', value: 'text-blue-400' },
+    default: { border: 'border-teal-border', bg: 'bg-teal-light', icon: 'text-teal', value: 'text-paper' },
+    gold:    { border: 'border-teal/30', bg: 'bg-teal/10', icon: 'text-teal', value: 'text-teal' },
+    green:   { border: 'border-emerald-500/40', bg: 'bg-emerald-50', icon: 'text-emerald-600', value: 'text-emerald-700' },
+    red:     { border: 'border-red-300', bg: 'bg-red-50', icon: 'text-red-500', value: 'text-red-600' },
+    blue:    { border: 'border-blue-300', bg: 'bg-blue-50', icon: 'text-blue-500', value: 'text-blue-700' },
   }
   const s = schemes[variant]
   const inner = (
-    <div className={`surface group relative overflow-hidden p-5 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-white/[.018]' : 'cursor-default'}`}>
+    <div className={`surface group relative overflow-hidden p-5 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-teal-light/30' : 'cursor-default'}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-muted">{title}</p>
-          <p className={`mt-4 font-mono text-2xl font-semibold tracking-tight tabular-nums ${s.value}`}>{value}</p>
+          <p className="text-xs font-semibold text-muted">{title}</p>
+          <p className={`mt-3 font-mono text-3xl font-bold tracking-tight tabular-nums ${s.value}`}>{value}</p>
         </div>
-        <span className={`grid size-10 place-items-center rounded-xl border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
-          <Icon size={18}/>
+        <span className={`grid size-11 place-items-center rounded-xl border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
+          <Icon size={20}/>
         </span>
       </div>
-      <p className="mt-3 text-[11px] leading-5 text-muted">{detail}</p>
+      <p className="mt-3 text-[12px] leading-5 font-medium text-muted">{detail}</p>
       {to && <span className="absolute bottom-3 right-4 text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
     </div>
   )

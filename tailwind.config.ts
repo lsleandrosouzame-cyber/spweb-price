@@ -16,7 +16,7 @@ export default {
         'gold-dark': '#1A3C34',   // dark teal — primary action text on gold
         // Text
         paper: '#0D1F1A',         // primary text — near-black with green tint
-        muted: '#6B7E78',         // secondary text
+        muted: '#3D5048',         // secondary text — darker for legibility
         // Status
         positive: '#00B87A',      // green
         negative: '#EF4444',      // red
@@ -24,6 +24,7 @@ export default {
         // Teal palette
         teal: '#1A3C34',          // dark teal (sidebar, heavy elements)
         'teal-mid': '#2D5E4E',    // medium teal
+      // Also update the teal palette secondary text
         'teal-light': '#E6F4EF',  // very light teal (hover bg, chips)
         'teal-border': '#C2DDD5', // teal-tinted border
       },

@@ -13,6 +13,7 @@
   color: #0D1F1A;
   font-feature-settings: 'ss01' on, 'cv01' on;
   font-optical-sizing: auto;
+  font-size: 15px; /* slightly larger base */
 }
 
 * { box-sizing: border-box; }
@@ -43,8 +44,8 @@ button { color: inherit; cursor: pointer; }
 
   /* Eyebrow label */
   .eyebrow {
-    @apply text-[10px] font-bold uppercase tracking-[.18em];
-    color: #6B7E78;
+    @apply text-[11px] font-bold uppercase tracking-[.18em];
+    color: #2D5E4E;
   }
 
   /* Form field */
@@ -164,14 +165,14 @@ button { color: inherit; cursor: pointer; }
 
 /* ── Utility overrides for new palette ──────────────────────── */
 .text-gold { color: #1A3C34 !important; } /* teal replaces gold for text */
-.text-positive { color: #00B87A; }
-.text-negative { color: #EF4444; }
-.text-attention { color: #F59E0B; }
+.text-positive { color: #00955F; }
+.text-negative { color: #DC2626; }
+.text-attention { color: #D97706; }
 .bg-ink { background-color: #F8FAF9; }
 .bg-graphite { background-color: #FFFFFF; }
 .border-line { border-color: #E8ECEB; }
 .text-paper { color: #0D1F1A; }
-.text-muted { color: #6B7E78; }
+.text-muted { color: #3D5048; }
 
 /* Scrollable table wrapper */
 .table-wrapper { @apply overflow-x-auto rounded-b-card; }

@@ -56,14 +56,14 @@ export default function AppShell() {
             {!collapsed && (
               <div className="text-left leading-tight">
                 <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>SPWeb <span style={{ color: '#1A3C34' }}>Lucro</span></span>
-                <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.18em]" style={{ color: '#6B7E78' }}>Inteligência financeira</span>
+                <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Inteligência financeira</span>
               </div>
             )}
           </button>
-          <button className="hidden rounded-lg p-1.5 transition-colors hover:bg-teal-light lg:block" style={{ color: '#6B7E78' }} onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? 'Expandir' : 'Recolher'}>
+          <button className="hidden rounded-lg p-1.5 transition-colors hover:bg-teal-light lg:block" style={{ color: '#3D5048' }} onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? 'Expandir' : 'Recolher'}>
             {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
           </button>
-          <button className="rounded-lg p-1.5 lg:hidden" style={{ color: '#6B7E78' }} onClick={() => setMobileOpen(false)}><X size={17} /></button>
+          <button className="rounded-lg p-1.5 lg:hidden" style={{ color: '#3D5048' }} onClick={() => setMobileOpen(false)}><X size={17} /></button>
         </div>
 
         {/* Company badge */}
@@ -76,7 +76,7 @@ export default function AppShell() {
 
         {/* Primary nav */}
         <nav aria-label="Navegação principal" className="mt-5 flex-1 px-3">
-          {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#6B7E78' }}>Visão geral</p>}
+          {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Visão geral</p>}
           <div className="space-y-0.5">
             {primaryNav.map(({ to, label, icon: Icon }) => (
               <NavLink key={to} to={to} onClick={() => setMobileOpen(false)} title={collapsed ? label : undefined}
@@ -98,7 +98,7 @@ export default function AppShell() {
 
         {/* Footer nav */}
         <div className="border-t border-line px-3 py-4">
-          {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#6B7E78' }}>Conta</p>}
+          {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Conta</p>}
           <div className="space-y-0.5">
             {footerNav.map(({ to, label, icon: Icon }) => (
               <NavLink key={to} to={to} onClick={() => setMobileOpen(false)} title={collapsed ? label : undefined}
@@ -108,7 +108,7 @@ export default function AppShell() {
             ))}
             <button onClick={logout} title={collapsed ? 'Sair' : undefined}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all hover:bg-red-50 hover:text-red-600 ${collapsed ? 'justify-center' : ''}`}
-              style={{ color: '#6B7E78' }}>
+              style={{ color: '#3D5048' }}>
               <LogOut size={16} /><span className={collapsed ? 'sr-only' : ''}>Sair</span>
             </button>
             {isAdmin && (
@@ -124,7 +124,7 @@ export default function AppShell() {
               <div className="grid size-9 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white" style={{ background: '#1A3C34' }}>{initials}</div>
               <div className="min-w-0">
                 <span className="block truncate text-xs font-semibold" style={{ color: '#0D1F1A' }}>{user?.email}</span>
-                <span className="mt-0.5 block text-[10px]" style={{ color: '#6B7E78' }}>Conta conectada</span>
+                <span className="mt-0.5 block text-[10px]" style={{ color: '#3D5048' }}>Conta conectada</span>
               </div>
             </div>
           )}
@@ -143,7 +143,7 @@ export default function AppShell() {
               <h1 className="mt-0.5 text-base font-extrabold tracking-tight sm:text-lg" style={{ color: '#0D1F1A' }}>{title}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px]" style={{ background: '#F2F4F3', color: '#6B7E78' }}>
+          <div className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px]" style={{ background: '#F2F4F3', color: '#3D5048' }}>
             <Command size={13} style={{ color: '#1A3C34' }} />
             <span className="hidden sm:inline font-semibold">Dados em tempo real</span>
             <span className="size-2 rounded-full" style={{ background: '#00B87A' }} />
