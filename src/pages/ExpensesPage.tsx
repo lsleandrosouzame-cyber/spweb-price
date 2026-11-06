@@ -32,6 +32,9 @@ export default function ExpensesPage() {
   const [productiveHours, setProductiveHours] = useState('')
   const [revenueForecast, setRevenueForecast] = useState('')
   const [proLabore, setProLabore] = useState('')
+  const [defaultVariableFees, setDefaultVariableFees] = useState('')
+  const [defaultTaxRate, setDefaultTaxRate] = useState('')
+  const [defaultDesiredMargin, setDefaultDesiredMargin] = useState('')
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   const [loading, setLoading] = useState(true)
@@ -117,24 +120,31 @@ export default function ExpensesPage() {
   const totalContribution = salesRows.reduce((sum, row) => sum + Number(row.contribution_cents) * Number(row.quantity), 0)
   const weightedMarginPercent = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : null
 
-  // Use sales mix when available; fall back to forecast-only break-even
-  const breakEvenResult = fixedTotal !== null
+  // Use sales mix when available; fall back to default margin for break-even
+  const defaultMarginPct = defaultDesiredMargin ? Number(defaultDesiredMargin.replace(',', '.')) : null
+  const effectiveMarginPct = weightedMarginPercent ?? defaultMarginPct
+
+  const breakEvenResult = fixedTotal !== null && effectiveMarginPct !== null && effectiveMarginPct > 0
     ? (() => {
         const mix = salesRows.map(s => ({ sellingPriceCents: Number(s.selling_price_cents), contributionCents: Number(s.contribution_cents), quantity: Number(s.quantity) }))
         if (mix.length > 0) return calculateBreakEven(fixedTotal, mix)
-        return null
+        // No sales: use default margin to estimate break-even
+        return {
+          weightedContributionMarginPercent: effectiveMarginPct,
+          breakEvenRevenueCents: fixedTotal / (effectiveMarginPct / 100),
+          referenceRevenueCents: 0,
+          remainingRevenueCents: fixedTotal / (effectiveMarginPct / 100),
+          progressPercent: 0,
+        }
       })()
     : null
 
-  // Forecast-based break-even (when margin known via sales mix)
   const breakEvenRevenueCents = breakEvenResult?.breakEvenRevenueCents ?? null
 
-  // Forecast vs break-even
   const forecastSurplusDeficitCents = forecastCents !== null && breakEvenRevenueCents !== null
     ? forecastCents - breakEvenRevenueCents
     : null
 
-  // Break-even using forecast as reference revenue (when no sales yet but margin known)
   const forecastBreakEvenProgress = forecastCents && breakEvenRevenueCents
     ? Math.min(100, (forecastCents / breakEvenRevenueCents) * 100)
     : null
@@ -295,6 +305,28 @@ export default function ExpensesPage() {
         </label>
       </div>
 
+      {/* Contribution margin parameters */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <label>
+          <span className={labelClass}>Taxas variáveis padrão (%)</span>
+          <input className="field" type="number" min="0" max="100" step="any"
+            value={defaultVariableFees} onChange={e => setDefaultVariableFees(e.target.value)} placeholder="Ex.: 5"/>
+          <p className="mt-1 text-[10px] text-muted">Taxas médias sobre vendas (cartão, marketplace etc.)</p>
+        </label>
+        <label>
+          <span className={labelClass}>Imposto médio sobre venda (%)</span>
+          <input className="field" type="number" min="0" max="100" step="any"
+            value={defaultTaxRate} onChange={e => setDefaultTaxRate(e.target.value)} placeholder="Ex.: 6"/>
+          <p className="mt-1 text-[10px] text-muted">Simples Nacional, MEI ou regime tributário aplicável.</p>
+        </label>
+        <label>
+          <span className={labelClass}>Margem de contribuição desejada (%)</span>
+          <input className="field" type="number" min="0" max="100" step="any"
+            value={defaultDesiredMargin} onChange={e => setDefaultDesiredMargin(e.target.value)} placeholder="Ex.: 30"/>
+          <p className="mt-1 text-[10px] text-muted">Usada para estimar o ponto de equilíbrio sem vendas cadastradas.</p>
+        </label>
+      </div>
+
       {/* Derived values — auto calculated */}
       {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-[#0b0b0b] p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
         {proLaborePerDay !== null && <div><p className="text-muted">Pró-labore por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerDay)}</p></div>}
@@ -307,7 +339,10 @@ export default function ExpensesPage() {
       {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-[#0b0b0b] p-4 space-y-3">
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div><p className="text-muted">Ponto de equilíbrio</p><p className="mt-1 font-mono text-sm text-gold">{formatBRLFromCents(breakEvenRevenueCents)}</p></div>
-          <div><p className="text-muted">Margem ponderada (mix real)</p><p className="mt-1 font-mono text-sm">{weightedMarginPercent !== null ? `${weightedMarginPercent.toFixed(1)}%` : '—'}</p></div>
+          <div>
+            <p className="text-muted">Margem usada {weightedMarginPercent !== null ? '(mix real)' : '(padrão estimado)'}</p>
+            <p className="mt-1 font-mono text-sm">{effectiveMarginPct !== null ? `${effectiveMarginPct.toFixed(1)}%` : '—'}</p>
+          </div>
           {forecastCents !== null && <div><p className="text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-sm">{formatBRLFromCents(forecastCents)}</p></div>}
         </div>
         {forecastSurplusDeficitCents !== null && <>

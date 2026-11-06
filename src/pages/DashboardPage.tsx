@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/toolti
 
 // Rich color palette
 const PIE_COLORS = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
+const VAR_COLORS = ['#f97316', '#ef4444', '#a855f7', '#06b6d4', '#ec4899', '#22c55e', '#3b82f6', '#D4AF37']
 const localDate = () => new Date().toLocaleDateString('sv-SE')
 
 type PriceOpportunity = {
@@ -33,7 +34,7 @@ function buildOpportunity(input: { id: string; name: string; kind: 'Produto' | '
 }
 
 type MetricVariant = 'default' | 'gold' | 'green' | 'red' | 'blue'
-function Metric({ title, value, detail, icon: Icon, variant = 'default' }: { title: string; value: string; detail: string; icon: typeof Wallet; variant?: MetricVariant }) {
+function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: { title: string; value: string; detail: string; icon: typeof Wallet; variant?: MetricVariant; to?: string }) {
   const schemes: Record<MetricVariant, { border: string; bg: string; icon: string; value: string }> = {
     default: { border: 'border-line', bg: 'bg-[#171717]', icon: 'text-muted', value: 'text-paper' },
     gold:    { border: 'border-gold/30', bg: 'bg-gold/10', icon: 'text-gold', value: 'text-gold' },
@@ -42,21 +43,25 @@ function Metric({ title, value, detail, icon: Icon, variant = 'default' }: { tit
     blue:    { border: 'border-blue-500/30', bg: 'bg-blue-500/10', icon: 'text-blue-400', value: 'text-blue-400' },
   }
   const s = schemes[variant]
+  const inner = (
+    <div className={`surface group relative overflow-hidden p-5 transition hover:border-[#414141] ${to ? 'cursor-pointer hover:bg-white/[.018]' : 'cursor-default'}`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs text-muted">{title}</p>
+          <p className={`mt-4 font-mono text-2xl font-semibold tracking-tight tabular-nums ${s.value}`}>{value}</p>
+        </div>
+        <span className={`grid size-10 place-items-center rounded-xl border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
+          <Icon size={18}/>
+        </span>
+      </div>
+      <p className="mt-3 text-[11px] leading-5 text-[#777]">{detail}</p>
+      {to && <span className="absolute bottom-3 right-4 text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
+    </div>
+  )
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <div tabIndex={0} className="surface group relative overflow-hidden p-5 transition hover:border-[#414141] cursor-default">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-muted">{title}</p>
-              <p className={`mt-4 font-mono text-2xl font-semibold tracking-tight tabular-nums ${s.value}`}>{value}</p>
-            </div>
-            <span className={`grid size-10 place-items-center rounded-xl border ${s.border} ${s.bg} ${s.icon}`}>
-              <Icon size={18}/>
-            </span>
-          </div>
-          <p className="mt-3 text-[11px] leading-5 text-[#777]">{detail}</p>
-        </div>
+        {to ? <Link to={to} className="block">{inner}</Link> : inner}
       </TooltipTrigger>
       <TooltipContent side="top">{title}: {detail}</TooltipContent>
     </Tooltip>
@@ -201,6 +206,19 @@ export default function DashboardPage() {
   // Radial bar data for break-even progress
   const radialData = breakEven ? [{ name: 'Progresso', value: Math.min(breakEven.progressPercent, 100), fill: breakEven.progressPercent >= 100 ? '#22c55e' : '#D4AF37' }] : []
 
+  // Variable costs from sales — group by item name, showing cost portion (selling price - contribution)
+  const variableCostsMap = new Map<string, number>()
+  for (const sale of monthSales) {
+    const name = sale.item_name_snapshot || products.find(p => p.id === sale.product_id)?.name || services.find(s => s.id === sale.service_id)?.name || 'Item'
+    const variableCost = (Number(sale.selling_price_cents) - Number(sale.contribution_cents)) * Number(sale.quantity)
+    if (variableCost > 0) variableCostsMap.set(name, (variableCostsMap.get(name) ?? 0) + variableCost)
+  }
+  const variableCostsData = Array.from(variableCostsMap.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8)
+  const variableCostsTotal = variableCostsData.reduce((s, d) => s + d.value, 0)
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -218,18 +236,19 @@ export default function DashboardPage() {
 
       {/* Metric cards */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric title="Faturamento de referência" value={formatBRLFromCents(revenue)} detail={statusText} icon={Wallet} variant={revenue !== null ? 'green' : 'default'}/>
-        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'}/>
-        <Metric title="Margem de contribuição" value={formatPercent(breakEven?.weightedContributionMarginPercent)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant}/>
-        <Metric title="Ponto de equilíbrio" value={breakEven ? formatBRLFromCents(breakEven.breakEvenRevenueCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant}/>
-        <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'}/>
-        <Metric title="Produtos cadastrados" value={String(products.length)} detail="Total de produtos desta empresa" icon={Package} variant="blue"/>
-        <Metric title="Margem saudável" value={productMargins.length ? String(healthy) : '—'} detail={productMargins.length ? 'Preço atual acima da margem desejada' : 'Ainda sem preços e margens completos'} icon={TrendingUp} variant={healthy > 0 ? 'green' : 'default'}/>
-        <Metric title="Baixa ou negativa" value={productMargins.length ? String(lowOrNegative) : '—'} detail="Itens com margem abaixo da desejada ou negativa" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'}/>
+        <Metric title="Faturamento de referência" value={formatBRLFromCents(revenue)} detail={statusText} icon={Wallet} variant={revenue !== null ? 'green' : 'default'} to="/lancamentos"/>
+        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
+        <Metric title="Margem de contribuição" value={formatPercent(breakEven?.weightedContributionMarginPercent)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
+        <Metric title="Ponto de equilíbrio" value={breakEven ? formatBRLFromCents(breakEven.breakEvenRevenueCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
+        <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
+        <Metric title="Produtos cadastrados" value={String(products.length)} detail="Total de produtos desta empresa" icon={Package} variant="blue" to="/produtos"/>
+        <Metric title="Margem saudável" value={productMargins.length ? String(healthy) : '—'} detail={productMargins.length ? 'Preço atual acima da margem desejada' : 'Ainda sem preços e margens completos'} icon={TrendingUp} variant={healthy > 0 ? 'green' : 'default'} to="/produtos"/>
+        <Metric title="Baixa ou negativa" value={productMargins.length ? String(lowOrNegative) : '—'} detail="Itens com margem abaixo da desejada ou negativa" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
       </section>
 
-      {/* Break-even + Expenses distribution */}
-      <section className="grid gap-4 xl:grid-cols-[1.45fr_.85fr]">
+      {/* Break-even + Expenses distribution + Variable costs */}
+      <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
         {/* Break-even card */}
         <div className="surface overflow-hidden p-5 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -292,54 +311,113 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Expenses distribution pie */}
-        <div className="surface p-5 sm:p-7">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="eyebrow">DESPESAS FIXAS</p>
-              <h3 className="mt-2 text-lg font-semibold">Distribuição por categoria</h3>
-            </div>
-            <CircleHelp size={16} className="text-muted"/>
-          </div>
-          {distribution.length ? (
-            <>
-              <div className="mt-4 h-52">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={distribution} dataKey="value" nameKey="name"
-                      cx="50%" cy="50%" innerRadius={48} outerRadius={76}
-                      paddingAngle={3} stroke="none"
-                      activeIndex={undefined}
-                    >
-                      {distribution.map((item, index) => (
-                        <Cell
-                          key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]}
-                          style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,.6))', cursor: 'pointer' }}
-                        />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip content={<PieTooltip/>}/>
-                  </PieChart>
-                </ResponsiveContainer>
+        {/* Right column: two pie charts stacked */}
+        <div className="flex flex-col gap-4">
+          {/* Fixed expenses pie + revenue relation */}
+          <div className="surface p-5 flex-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="eyebrow">DESPESAS FIXAS</p>
+                <h3 className="mt-1 text-base font-semibold">Por categoria</h3>
               </div>
-              <div className="mt-2 space-y-2">
-                {distribution.map((item, index) => (
-                  <div key={item.name} className="flex items-center justify-between gap-3 text-xs">
-                    <span className="flex items-center gap-2 text-muted">
-                      <span className="size-2.5 rounded-full shrink-0" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }}/>
-                      {item.name}
-                    </span>
-                    <span className="font-mono text-paper">{formatBRLFromCents(item.value)}</span>
+              <CircleHelp size={15} className="text-muted"/>
+            </div>
+            {/* Revenue relation bar */}
+            {fixedTotal !== null && (revenue !== null || revenueForecastCents !== null) && (() => {
+              const ref = revenue ?? revenueForecastCents!
+              const pct = Math.min(100, (fixedTotal / ref) * 100)
+              return (
+                <div className="mt-3 rounded-lg bg-[#0c0c0c] border border-line p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between text-muted">
+                    <span>Despesas fixas / {revenue !== null ? 'faturamento real' : 'previsão'}</span>
+                    <span className={`font-mono font-semibold ${pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct.toFixed(1)}%</span>
                   </div>
-                ))}
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#1e1e1e]">
+                    <div className={`h-full rounded-full transition-all ${pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}/>
+                  </div>
+                </div>
+              )
+            })()}
+            {distribution.length ? (
+              <>
+                <div className="mt-3 h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={distribution} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={3} stroke="none">
+                        {distribution.map((item, index) => (
+                          <Cell key={item.name} fill={PIE_COLORS[index % PIE_COLORS.length]} style={{ filter: 'drop-shadow(0 0 5px rgba(0,0,0,.5))', cursor: 'pointer' }}/>
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<PieTooltip/>}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-1 space-y-1.5">
+                  {distribution.map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="flex items-center gap-1.5 text-muted"><span className="size-2 rounded-full shrink-0" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }}/>{item.name}</span>
+                      <span className="font-mono text-paper">{formatBRLFromCents(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="mt-4"><EmptyState title="Nenhuma despesa" description="Cadastre despesas fixas para ver a distribuição." action={<Link to="/lancamentos" className="btn-secondary text-xs">Adicionar <Plus size={12}/></Link>}/></div>
+            )}
+          </div>
+
+          {/* Variable costs pie (from sales data) */}
+          <div className="surface p-5 flex-1">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="eyebrow">CUSTOS VARIÁVEIS</p>
+                <h3 className="mt-1 text-base font-semibold">Por produto/serviço</h3>
               </div>
-            </>
-          ) : (
-            <div className="mt-8">
-              <EmptyState title="Nenhuma despesa cadastrada" description="Quando registrar despesas, verá aqui a distribuição por categoria." action={<Link to="/lancamentos" className="btn-secondary">Adicionar despesa <Plus size={14}/></Link>}/>
+              <CircleHelp size={15} className="text-muted"/>
             </div>
-          )}
+            {/* Revenue relation bar for variable costs */}
+            {variableCostsTotal > 0 && (revenue !== null || revenueForecastCents !== null) && (() => {
+              const ref = revenue ?? revenueForecastCents!
+              const pct = Math.min(100, (variableCostsTotal / ref) * 100)
+              return (
+                <div className="mt-3 rounded-lg bg-[#0c0c0c] border border-line p-3 text-xs space-y-1.5">
+                  <div className="flex justify-between text-muted">
+                    <span>Custos variáveis / {revenue !== null ? 'faturamento real' : 'previsão'}</span>
+                    <span className={`font-mono font-semibold ${pct >= 70 ? 'text-red-400' : pct >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct.toFixed(1)}%</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#1e1e1e]">
+                    <div className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-red-500' : pct >= 40 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}/>
+                  </div>
+                </div>
+              )
+            })()}
+            {variableCostsData.length ? (
+              <>
+                <div className="mt-3 h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={variableCostsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={3} stroke="none">
+                        {variableCostsData.map((item, index) => (
+                          <Cell key={item.name} fill={VAR_COLORS[index % VAR_COLORS.length]} style={{ filter: 'drop-shadow(0 0 5px rgba(0,0,0,.5))', cursor: 'pointer' }}/>
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={<PieTooltip/>}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-1 space-y-1.5">
+                  {variableCostsData.map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="flex items-center gap-1.5 text-muted"><span className="size-2 rounded-full shrink-0" style={{ background: VAR_COLORS[index % VAR_COLORS.length] }}/>{item.name}</span>
+                      <span className="font-mono text-paper">{formatBRLFromCents(item.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="mt-4"><EmptyState title="Sem vendas registradas" description="Registre vendas em Lançamentos para ver os custos variáveis por item." action={<Link to="/lancamentos" className="btn-secondary text-xs">Registrar vendas <Plus size={12}/></Link>}/></div>
+            )}
+          </div>
         </div>
       </section>
 
