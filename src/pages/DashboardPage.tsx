@@ -89,6 +89,7 @@ export default function DashboardPage() {
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [revenueForecastCents, setRevenueForecastCents] = useState<number | null>(null)
   const [proLaboreCents, setProLaboreCents] = useState<number | null>(null)
+  const [feeTags, setFeeTags] = useState<Array<{ label: string; percent: string }>>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const monthKey = localDate().slice(0, 7)
@@ -115,6 +116,7 @@ export default function DashboardPage() {
       if (settingsResult.status === 'fulfilled' && settingsResult.value) {
         setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
         setProLaboreCents(settingsResult.value.pro_labore_cents ?? null)
+        setFeeTags(settingsResult.value.fee_tags ?? [])
       }
       setLoading(false)
     }
@@ -132,6 +134,15 @@ export default function DashboardPage() {
   const mix: SalesMixLine[] = monthSales.map(s => ({ sellingPriceCents: Number(s.selling_price_cents), contributionCents: Number(s.contribution_cents), quantity: Number(s.quantity) }))
   const breakEven = fixedTotal === null ? null : calculateBreakEven(fixedTotal, mix)
   const revenue = monthSales.length ? monthSales.reduce((sum, row) => sum + Number(row.selling_price_cents) * Number(row.quantity), 0) : null
+
+  // If no sales mix, estimate break-even using saved fee tags
+  const totalFeesFromTags = feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0)
+  const estimatedMarginPct = totalFeesFromTags > 0 ? Math.max(0, 100 - totalFeesFromTags) : null
+  const breakEvenEstimated = fixedTotal !== null && !breakEven && estimatedMarginPct !== null && estimatedMarginPct > 0
+    ? { breakEvenRevenueCents: fixedTotal / (estimatedMarginPct / 100), weightedContributionMarginPercent: estimatedMarginPct, isEstimated: true }
+    : null
+  const effectiveBreakEvenCents = breakEven?.breakEvenRevenueCents ?? breakEvenEstimated?.breakEvenRevenueCents ?? null
+  const effectiveMarginPct = breakEven?.weightedContributionMarginPercent ?? breakEvenEstimated?.weightedContributionMarginPercent ?? null
 
   const productMargins = products.flatMap(product => {
     if (!product.current_price_cents) return []
@@ -201,11 +212,13 @@ export default function DashboardPage() {
 
   const statusText = monthSales.length ? `${monthSales.length} registro(s) de venda no mês` : 'Aguardando registros de vendas'
   void statusText // used for future reference
-  const marginVariant: MetricVariant = !breakEven ? 'default' : breakEven.weightedContributionMarginPercent >= 30 ? 'green' : breakEven.weightedContributionMarginPercent >= 10 ? 'gold' : 'red'
-  const breakEvenVariant: MetricVariant = !breakEven ? 'default' : breakEven.progressPercent >= 100 ? 'green' : 'blue'
+  const marginVariant: MetricVariant = !breakEven && !breakEvenEstimated ? 'default' : (effectiveMarginPct ?? 0) >= 30 ? 'green' : (effectiveMarginPct ?? 0) >= 10 ? 'gold' : 'red'
+  const breakEvenVariant: MetricVariant = !effectiveBreakEvenCents ? 'default' : (breakEven?.progressPercent ?? 0) >= 100 ? 'green' : 'blue'
 
   // Radial bar data for break-even progress
-  const radialData = breakEven ? [{ name: 'Progresso', value: Math.min(breakEven.progressPercent, 100), fill: breakEven.progressPercent >= 100 ? '#22c55e' : '#D4AF37' }] : []
+  const progressPct = breakEven ? Math.min(breakEven.progressPercent, 100) : revenueForecastCents && effectiveBreakEvenCents ? Math.min((revenueForecastCents / effectiveBreakEvenCents) * 100, 100) : 0
+  const radialFill = progressPct >= 100 ? '#22c55e' : '#D4AF37'
+  const radialData = effectiveBreakEvenCents ? [{ name: 'Progresso', value: progressPct, fill: radialFill }] : []
 
   // Variable costs from sales — group by item name, showing cost portion (selling price - contribution)
   const variableCostsMap = new Map<string, number>()
@@ -238,8 +251,8 @@ export default function DashboardPage() {
       {/* Metric cards */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
-        <Metric title="Margem de contribuição" value={formatPercent(breakEven?.weightedContributionMarginPercent)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
-        <Metric title="Ponto de equilíbrio" value={breakEven ? formatBRLFromCents(breakEven.breakEvenRevenueCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? 'Estimada pelas taxas cadastradas' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
+        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : breakEvenEstimated ? 'Estimado pelas taxas e despesas cadastradas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
         <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Produtos cadastrados" value={String(products.length)} detail="Total de produtos desta empresa" icon={Package} variant="blue" to="/produtos"/>
@@ -259,10 +272,9 @@ export default function DashboardPage() {
             <span className="rounded-full border border-line px-3 py-1.5 text-[10px] text-muted">Sem estimativas inventadas</span>
           </div>
 
-          {breakEven ? (
+          {(breakEven || breakEvenEstimated) ? (
             <>
               <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
-                {/* Radial progress */}
                 <div className="relative mx-auto h-36 w-36 shrink-0 sm:mx-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart cx="50%" cy="50%" innerRadius="65%" outerRadius="100%" startAngle={90} endAngle={-270} data={radialData} barSize={12}>
@@ -270,36 +282,38 @@ export default function DashboardPage() {
                     </RadialBarChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`font-mono text-xl font-bold ${radialData[0]?.fill === '#22c55e' ? 'text-emerald-400' : 'text-gold'}`}>{Math.min(breakEven.progressPercent, 100).toFixed(0)}%</span>
+                    <span className={`font-mono text-xl font-bold ${radialFill === '#22c55e' ? 'text-emerald-400' : 'text-gold'}`}>{progressPct.toFixed(0)}%</span>
                     <span className="text-[9px] text-muted mt-0.5">do equilíbrio</span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-3">
                   <div className="flex items-end justify-between gap-4">
-                    <div><p className="text-xs text-muted">Faturamento necessário</p><p className="mt-1 font-mono text-2xl font-bold text-gold">{formatBRLFromCents(breakEven.breakEvenRevenueCents)}</p></div>
-                    <div className="text-right"><p className="text-xs text-muted">Faturamento atual</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>
+                    <div><p className="text-xs text-muted">Faturamento necessário</p><p className="mt-1 font-mono text-2xl font-bold text-gold">{formatBRLFromCents(effectiveBreakEvenCents)}</p></div>
+                    {breakEven && <div className="text-right"><p className="text-xs text-muted">Faturamento atual</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>}
+                    {breakEvenEstimated && revenueForecastCents && <div className="text-right"><p className="text-xs text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(revenueForecastCents)}</p></div>}
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[#1e1e1e]">
-                    <div className={`h-full rounded-full transition-all ${breakEven.progressPercent >= 100 ? 'bg-emerald-500' : 'bg-gold'}`} style={{ width: `${Math.min(breakEven.progressPercent, 100)}%` }}/>
+                    <div className={`h-full rounded-full transition-all ${progressPct >= 100 ? 'bg-emerald-500' : 'bg-gold'}`} style={{ width: `${progressPct}%` }}/>
                   </div>
-                  <p className={`text-xs font-medium ${breakEven.remainingRevenueCents > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  {breakEven && <p className={`text-xs font-medium ${breakEven.remainingRevenueCents > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {breakEven.remainingRevenueCents > 0
                       ? `Faltam ${formatBRLFromCents(breakEven.remainingRevenueCents)} para atingir o equilíbrio`
                       : `✓ Equilíbrio atingido com folga de ${formatBRLFromCents(Math.abs(breakEven.remainingRevenueCents))}`}
-                  </p>
+                  </p>}
+                  {breakEvenEstimated && <p className="text-xs text-amber-400">Estimativa baseada nas taxas cadastradas. Cadastre vendas para cálculo real.</p>}
                 </div>
               </div>
               <div className="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-2 lg:grid-cols-4">
                 <div><span className="text-[11px] text-muted">Despesas fixas</span><p className="mt-1 font-mono text-sm text-red-400">{formatBRLFromCents(fixedTotal)}</p></div>
-                <div><span className="text-[11px] text-muted">Margem ponderada</span><p className="mt-1 font-mono text-sm text-emerald-400">{formatPercent(breakEven.weightedContributionMarginPercent)}</p></div>
-                {revenueForecastCents !== null && <div><span className="text-[11px] text-muted">Previsão</span><p className={`mt-1 font-mono text-sm ${revenueForecastCents >= breakEven.breakEvenRevenueCents ? 'text-emerald-400' : 'text-red-400'}`}>{formatBRLFromCents(revenueForecastCents)}</p></div>}
+                <div><span className="text-[11px] text-muted">Margem {breakEvenEstimated ? '(estimada)' : 'ponderada'}</span><p className="mt-1 font-mono text-sm text-emerald-400">{formatPercent(effectiveMarginPct)}</p></div>
+                {revenueForecastCents !== null && <div><span className="text-[11px] text-muted">Previsão</span><p className={`mt-1 font-mono text-sm ${revenueForecastCents >= (effectiveBreakEvenCents ?? Infinity) ? 'text-emerald-400' : 'text-red-400'}`}>{formatBRLFromCents(revenueForecastCents)}</p></div>}
                 {proLaboreCents !== null && <div><span className="text-[11px] text-muted">Pró-labore</span><p className="mt-1 font-mono text-sm text-blue-400">{formatBRLFromCents(proLaboreCents)}</p></div>}
               </div>
-              {revenueForecastCents !== null && (
-                <div className={`mt-4 rounded-xl border p-3 text-xs flex items-center justify-between gap-4 ${revenueForecastCents >= breakEven.breakEvenRevenueCents ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+              {revenueForecastCents !== null && effectiveBreakEvenCents !== null && (
+                <div className={`mt-4 rounded-xl border p-3 text-xs flex items-center justify-between gap-4 ${revenueForecastCents >= effectiveBreakEvenCents ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
                   <span className="text-muted">Previsão vs. equilíbrio</span>
-                  <span className={`font-mono font-bold ${revenueForecastCents >= breakEven.breakEvenRevenueCents ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {revenueForecastCents >= breakEven.breakEvenRevenueCents ? '+' : ''}{formatBRLFromCents(revenueForecastCents - breakEven.breakEvenRevenueCents)}
+                  <span className={`font-mono font-bold ${revenueForecastCents >= effectiveBreakEvenCents ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {revenueForecastCents >= effectiveBreakEvenCents ? '+' : ''}{formatBRLFromCents(revenueForecastCents - effectiveBreakEvenCents)}
                   </span>
                 </div>
               )}

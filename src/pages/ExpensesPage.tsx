@@ -84,6 +84,10 @@ export default function ExpensesPage() {
         setProLabore(settingsResult.pro_labore_cents
           ? (settingsResult.pro_labore_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
           : '')
+        // Restore saved fee tags
+        if (settingsResult.fee_tags && settingsResult.fee_tags.length > 0) {
+          setFeeTags(settingsResult.fee_tags.map(t => ({ ...t, id: crypto.randomUUID() })))
+        }
         setSettingsSaved(true)
       }
     } catch (cause) {
@@ -182,6 +186,7 @@ export default function ExpensesPage() {
         productive_hours_per_day: hours,
         revenue_forecast_cents: forecastValue,
         pro_labore_cents: proLaboreValue,
+        fee_tags: feeTags.map(({ label, percent }) => ({ label, percent })),
       })
       setSettingsSaved(true)
       setNotice('Parâmetros operacionais salvos.')
