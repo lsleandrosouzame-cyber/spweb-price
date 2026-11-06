@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent, TrendingDown } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -8,24 +8,26 @@ import { calculateProductPricing, calculateServiceCost } from '../finance/pricin
 void calculateProductPricing; void calculateServiceCost
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
-import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings, removeExpense, saveExpense, saveOperatingSettings } from '../services/companyData'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost } from '../services/companyData'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
+const costTypes = ['Taxa', 'Comissão', 'Frete', 'Embalagem', 'Outros']
 // Rich color palette for expenses chart
 const PIE_COLORS_EXP = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f59e0b']
 const today = () => new Date().toLocaleDateString('sv-SE')
 const currentMonth = () => today().slice(0, 7)
 const firstDay = (month: string) => `${month}-01`
 const blankExpense = { description: '', category: categories[0], amount: '', date: today(), notes: '' }
+const blankVariableCost = { description: '', costType: costTypes[0] as typeof costTypes[number], percentValue: '', fixedValue: '', valueType: 'percent' as 'percent' | 'fixed', notes: '' }
 const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
-  const [tab] = useState<'expenses'>('expenses')
-  void tab
+  const [tab, setTab] = useState<'expenses' | 'variableCosts'>('expenses')
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
+  const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [products, setProducts] = useState<ProductRecord[]>([]); void products
   const [services, setServices] = useState<ServiceRecord[]>([]); void services
@@ -61,18 +63,25 @@ export default function ExpensesPage() {
   const [showSaleForm] = useState(false); void showSaleForm
   const [salesForm] = useState({ item: '', quantity: '1', price: '', date: today() }); void salesForm
 
+  // Variable costs forms
+  const [showVariableCostForm, setShowVariableCostForm] = useState(false)
+  const [editingVarCost, setEditingVarCost] = useState<VariableCostRecord | null>(null)
+  const [varCostForm, setVarCostForm] = useState(blankVariableCost)
+
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
     setLoading(true); setError(null)
     try {
-      const [expensesResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
+      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
         listExpenses(currentCompany.id),
+        listVariableCosts(currentCompany.id),
         listProducts(currentCompany.id),
         listServices(currentCompany.id),
         readOperatingSettings(currentCompany.id),
         listSalesRecords(currentCompany.id, firstDay(month)),
       ])
       setExpenses(expensesResult)
+      setVariableCosts(variableCostsResult)
       setProducts(productsResult)
       setServices(servicesResult)
       setSales(salesResult)
@@ -273,7 +282,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Fee tags — dynamic list with + button */}
-      <div className="rounded-xl border border-line bg-panel p-4 space-y-3">
+      <div className="rounded-xl border border-line bg-white p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-paper">Taxas e encargos sobre vendas</p>
@@ -295,7 +304,7 @@ export default function ExpensesPage() {
               const tagColors = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
               const color = tagColors[i % tagColors.length]
               return (
-                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-panel px-3 py-2.5 hover:border-teal-border transition-colors">
+                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-white px-3 py-2.5 hover:border-teal-border transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="size-2 rounded-full shrink-0" style={{ background: color }}/>
                     <span className="text-xs font-medium text-paper truncate">{tag.label}</span>
@@ -316,7 +325,7 @@ export default function ExpensesPage() {
 
         {/* Add input */}
         {showFeeInput ? (
-          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-panel px-4 py-3">
+          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-white px-4 py-3">
             <Percent size={13} className="text-gold shrink-0"/>
             <input autoFocus
               className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted"
@@ -376,7 +385,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Derived values — auto calculated */}
-      {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-panel p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+      {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
         {proLaborePerDay !== null && <div><p className="text-muted">Pró-labore por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerDay)}</p></div>}
         {proLaborePerHour !== null && <div><p className="text-muted">Pró-labore por hora</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerHour)}</p></div>}
         {operating && <div><p className="text-muted">Custo fixo por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(operating.fixedDailyCents)}</p></div>}
@@ -384,7 +393,7 @@ export default function ExpensesPage() {
       </div>}
 
       {/* Break-even panel */}
-      {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-panel p-4 space-y-3">
+      {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-white p-4 space-y-3">
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div><p className="text-muted">Ponto de equilíbrio</p><p className="mt-1 font-mono text-sm text-gold">{formatBRLFromCents(breakEvenRevenueCents)}</p></div>
           <div>
