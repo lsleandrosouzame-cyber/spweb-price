@@ -6,25 +6,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#090909',
-        graphite: '#141414',
-        panel: '#101010',
-        line: '#262626',
-        gold: '#D4AF37',
-        paper: '#F5F5F5',
-        muted: '#999999',
-        positive: '#22C55E',
-        negative: '#EF4444',
-        attention: '#EAB308',
+        // New design system — Finance Banking inspired
+        ink: '#F8FAF9',          // page background — soft off-white
+        graphite: '#FFFFFF',      // card/surface background — pure white
+        panel: '#F2F4F3',         // subtle section backgrounds
+        line: '#E8ECEB',          // borders — very light
+        // Brand
+        gold: '#C8FF00',          // lime neon accent (CTA, highlights)
+        'gold-dark': '#1A3C34',   // dark teal — primary action text on gold
+        // Text
+        paper: '#0D1F1A',         // primary text — near-black with green tint
+        muted: '#6B7E78',         // secondary text
+        // Status
+        positive: '#00B87A',      // green
+        negative: '#EF4444',      // red
+        attention: '#F59E0B',     // amber
+        // Teal palette
+        teal: '#1A3C34',          // dark teal (sidebar, heavy elements)
+        'teal-mid': '#2D5E4E',    // medium teal
+        'teal-light': '#E6F4EF',  // very light teal (hover bg, chips)
+        'teal-border': '#C2DDD5', // teal-tinted border
       },
       fontFamily: {
-        sans: ['Sora', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
       },
       boxShadow: {
-        gold: '0 0 0 1px rgba(212,175,55,.28), 0 12px 36px rgba(0,0,0,.24)',
+        card: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04)',
+        'card-hover': '0 4px 12px rgba(0,0,0,.10), 0 12px 32px rgba(0,0,0,.06)',
+        lime: '0 0 0 1px rgba(200,255,0,.4), 0 8px 24px rgba(200,255,0,.15)',
       },
       borderRadius: {
-        card: '14px',
+        card: '18px',
+        chip: '100px',
       },
     },
   },

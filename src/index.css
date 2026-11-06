@@ -2,34 +2,218 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design System: Finance Banking — Light Mode ─────────────── */
 :root {
-  color-scheme: dark;
-  font-family: 'Sora', sans-serif;
+  color-scheme: light;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  background: #090909;
-  color: #f5f5f5;
-  font-feature-settings: 'ss01' on;
+  background: #F8FAF9;
+  color: #0D1F1A;
+  font-feature-settings: 'ss01' on, 'cv01' on;
   font-optical-sizing: auto;
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: #090909; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #090909; }
+html { min-width: 320px; background: #F8FAF9; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #F8FAF9; }
 button, input, select, textarea { font: inherit; }
-button { color: inherit; }
-::selection { background: rgba(212, 175, 55, .28); color: #f5f5f5; }
-:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+button { color: inherit; cursor: pointer; }
+::selection { background: rgba(200,255,0,.35); color: #0D1F1A; }
+:focus-visible { outline: 2px solid #1A3C34; outline-offset: 3px; border-radius: 6px; }
 
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #C2DDD5; border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: #2D5E4E; }
+
+/* ── Component layer ────────────────────────────────────────── */
 @layer components {
-  .surface { @apply rounded-card border border-line bg-graphite; }
-  .eyebrow { @apply text-[10px] font-semibold uppercase tracking-[.2em] text-muted; }
-  .field { @apply w-full rounded-lg border border-line bg-[#0d0d0d] px-3.5 py-3 text-sm text-paper placeholder:text-[#626262] transition-colors focus:border-gold focus:outline-none; }
-  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-gold px-4 py-3 text-sm font-semibold text-ink transition hover:bg-[#e2c45a] disabled:cursor-not-allowed disabled:opacity-50; }
-  .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-[#171717] px-4 py-3 text-sm font-medium text-paper transition hover:border-[#4a4a4a] hover:bg-[#1c1c1c]; }
+
+  /* Surface card */
+  .surface {
+    @apply rounded-card border border-line bg-graphite;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  }
+  .surface:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+
+  /* Eyebrow label */
+  .eyebrow {
+    @apply text-[10px] font-bold uppercase tracking-[.18em];
+    color: #6B7E78;
+  }
+
+  /* Form field */
+  .field {
+    @apply w-full rounded-xl border border-line bg-panel px-4 py-3 text-sm text-paper
+           placeholder:text-muted/60 transition-all duration-150;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
+  }
+  .field:focus {
+    @apply outline-none border-teal;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.04), 0 0 0 3px rgba(26,60,52,.12);
+  }
+
+  /* Primary button — lime + dark teal text */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold
+           transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+    background: #C8FF00;
+    color: #0D1F1A;
+    box-shadow: 0 2px 8px rgba(200,255,0,.30);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #BAEC00;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(200,255,0,.40);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* Secondary button — teal outlined */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3
+           text-sm font-semibold transition-all duration-150;
+    border-color: #C2DDD5;
+    background: #FFFFFF;
+    color: #1A3C34;
+  }
+  .btn-secondary:hover {
+    background: #E6F4EF;
+    border-color: #2D5E4E;
+  }
+
+  /* Teal filled button (sidebar, nav active) */
+  .btn-teal {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3
+           text-sm font-bold transition-all duration-150;
+    background: #1A3C34;
+    color: #FFFFFF;
+  }
+  .btn-teal:hover {
+    background: #2D5E4E;
+  }
+
+  /* Chip / badge */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-xs font-semibold;
+  }
+  .chip-teal { background: #E6F4EF; color: #1A3C34; }
+  .chip-lime { background: #C8FF00; color: #0D1F1A; }
+  .chip-red  { background: #FEE2E2; color: #B91C1C; }
+  .chip-amber { background: #FEF3C7; color: #92400E; }
+  .chip-gray  { background: #F2F4F3; color: #6B7E78; }
+
+  /* Metric card */
+  .metric-card {
+    @apply surface p-5 flex flex-col gap-3 transition-all duration-200 cursor-default;
+  }
+  .metric-card:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium
+           transition-all duration-150;
+    color: #6B7E78;
+  }
+  .nav-item:hover {
+    background: #E6F4EF;
+    color: #1A3C34;
+  }
+  .nav-item.active {
+    background: #C8FF00;
+    color: #0D1F1A;
+    font-weight: 700;
+  }
+
+  /* Table styles */
+  .data-table { @apply w-full text-left; }
+  .data-table thead tr { @apply border-b border-line; }
+  .data-table thead th { @apply px-4 py-3 text-[10px] font-bold uppercase tracking-[.14em]; color: #6B7E78; }
+  .data-table tbody tr { @apply border-b border-line transition-colors; }
+  .data-table tbody tr:hover { background: #F8FAF9; }
+  .data-table tbody td { @apply px-4 py-3.5 text-sm; }
+  .data-table tbody tr:last-child { @apply border-0; }
+
+  /* Section heading */
+  .section-title {
+    @apply text-base font-bold;
+    color: #0D1F1A;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 overflow-hidden rounded-full;
+    background: #E8ECEB;
+  }
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-700;
+    background: linear-gradient(90deg, #1A3C34, #2D5E4E);
+  }
+  .progress-bar-fill.positive { background: linear-gradient(90deg, #00B87A, #34D399); }
+  .progress-bar-fill.accent { background: linear-gradient(90deg, #C8FF00, #BAEC00); }
+  .progress-bar-fill.danger { background: linear-gradient(90deg, #EF4444, #F87171); }
+}
+
+/* ── Utility overrides for new palette ──────────────────────── */
+.text-gold { color: #1A3C34 !important; } /* teal replaces gold for text */
+.text-positive { color: #00B87A; }
+.text-negative { color: #EF4444; }
+.text-attention { color: #F59E0B; }
+.bg-ink { background-color: #F8FAF9; }
+.bg-graphite { background-color: #FFFFFF; }
+.border-line { border-color: #E8ECEB; }
+.text-paper { color: #0D1F1A; }
+.text-muted { color: #6B7E78; }
+
+/* Scrollable table wrapper */
+.table-wrapper { @apply overflow-x-auto rounded-b-card; }
+
+/* Animated gradient for premium feel */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #F2F4F3 25%, #E8ECEB 50%, #F2F4F3 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Lime glow effect for primary elements */
+.lime-glow {
+  box-shadow: 0 0 0 1px rgba(200,255,0,.5), 0 8px 32px rgba(200,255,0,.20);
+}
+
+/* Teal card variant */
+.card-teal {
+  background: linear-gradient(135deg, #1A3C34 0%, #2D5E4E 100%);
+  color: white;
+  border-radius: 18px;
+  padding: 1.25rem;
+}
+
+/* Decorative orb */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.12;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
