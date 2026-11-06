@@ -14,6 +14,7 @@ const ExpensesPage = lazy(() => import('./pages/ExpensesPage'))
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const AdminPage = lazy(() => import('./pages/AdminPage'))
 
 function Protected({ children, needsCompany = true }: { children: ReactNode; needsCompany?: boolean }) {
   const { user, loading, companies, companyError, refreshCompanies } = useAuth()
@@ -45,6 +46,7 @@ export default function App() {
       <Route path="/recovery" element={<AuthPage mode="recovery" />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/setup" element={<Protected needsCompany={false}><OnboardingPage /></Protected>} />
+      <Route path="/admin" element={<Protected needsCompany={false}><AdminPage /></Protected>} />
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/produtos" element={<ProductsPage />} />

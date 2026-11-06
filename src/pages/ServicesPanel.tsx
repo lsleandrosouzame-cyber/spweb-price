@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, History, LoaderCircle, Plus, Search, Trash2, Pencil, Wrench, ChevronLeft } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Copy, Eye, History, LoaderCircle, Plus, Search, Trash2, Pencil, Wrench, ChevronLeft, TrendingUp } from 'lucide-react'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { CurrencyInput } from '../components/CurrencyInput'
@@ -8,11 +9,15 @@ import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency
 import { supabase } from '../lib/supabase'
 import { listServices, removeService, saveService } from '../services/companyData'
 import type { ServiceRecord } from '../types/database'
-import { FeeTagWidget, CostTagWidget, type FeeTag, type CostTag } from './CalculationPage'
+import { FeeTagWidget, CostTagWidget, TAG_COLORS, COST_COLORS, type FeeTag, type CostTag } from './CalculationPage'
 
 const empty = { name: '', hours: '1', hourly: '', materials: '', fixedHourly: '', includeFixed: false, desired: '', price: '' }
 const fieldLabel = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
-type Panel = 'list' | 'form' | 'history'
+
+// Detail colors matching product page
+const DETAIL_COLORS = { cost: '#3b82f6', fees: '#f97316', contribution: '#22c55e', contributionNeg: '#ef4444' }
+
+type Panel = 'list' | 'form' | 'details' | 'history'
 
 export default function ServicesPanel() {
   const { currentCompany } = useAuth()
@@ -23,6 +28,8 @@ export default function ServicesPanel() {
   const [search, setSearch] = useState('')
   const [panel, setPanel] = useState<Panel>('list')
   const [editing, setEditing] = useState<ServiceRecord | null>(null)
+  const [selectedDetails, setSelectedDetails] = useState<ServiceRecord | null>(null)
+  const [activeSlice, setActiveSlice] = useState<number | null>(null)
   const [form, setForm] = useState(empty)
   const [feeTags, setFeeTags] = useState<FeeTag[]>([])
   const [costTags, setCostTags] = useState<CostTag[]>([])
@@ -40,6 +47,8 @@ export default function ServicesPanel() {
   useEffect(() => { void refresh() }, [refresh])
 
   const filtered = useMemo(() => rows.filter(row => row.name.toLowerCase().includes(search.toLowerCase())), [rows, search])
+
+  function openDetails(row: ServiceRecord) { setSelectedDetails(row); setActiveSlice(null); setPanel('details') }
 
   function openForm(row?: ServiceRecord) {
     setEditing(row ?? null); setMessage(null); setError(null)
@@ -146,6 +155,7 @@ export default function ServicesPanel() {
                     <td className="px-3 py-4 font-mono text-xs">{formatMarkup(result?.markup)}</td>
                     <td className={`px-3 py-4 font-mono text-xs font-semibold ${(result?.contributionCents ?? 0) < 0 ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
                     <td className="px-3 py-4"><div className="flex justify-end gap-1">
+                      <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
                       <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
                       <button aria-label={`Editar ${row.name}`} className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => openForm(row)}><Pencil size={14}/></button>
                       <button aria-label={`Duplicar ${row.name}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
@@ -195,6 +205,118 @@ export default function ServicesPanel() {
         </div>
       </form>
     </section>}
+
+    {/* ── DETAILS ──────────────────────────────── */}
+    {panel === 'details' && selectedDetails && (() => {
+      const cost = calculateServiceCost({ hours: Number(selectedDetails.hours), hourlyLaborCostCents: Number(selectedDetails.hourly_labor_cost_cents), materialsCents: Number(selectedDetails.materials_cents), otherCostCents: Number(selectedDetails.other_cost_cents), fixedCostPerHourCents: Number(selectedDetails.fixed_cost_per_hour_cents), includeFixedCostPerHour: selectedDetails.include_fixed_cost_per_hour })
+      const pricing = selectedDetails.current_price_cents !== null ? calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(selectedDetails.variable_fees_percent), taxPercent: Number(selectedDetails.tax_percent), desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent), sellingPriceCents: Number(selectedDetails.current_price_cents) }) : null
+      const margin = pricing?.contributionMarginPercent ?? null
+      const isNeg = margin !== null && margin < 0
+      const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
+      const minimum = pricing?.minimumPriceCents ?? null
+      const recommended = pricing?.recommendedPriceCents ?? null
+      const contribution = pricing?.contributionCents ?? null
+
+      // Pie data
+      const pieData = [
+        { name: 'Custo total', value: cost, fill: DETAIL_COLORS.cost },
+        { name: 'Taxas/encargos', value: pricing?.feesCents ?? 0, fill: TAG_COLORS[2] },
+        { name: 'Margem de contribuição', value: Math.max(0, contribution ?? 0), fill: isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution },
+      ].filter(d => d.value > 0)
+
+      // Smart footnote
+      let footnote: { text: string; tone: 'ok' | 'warn' | 'bad' } | null = null
+      if (margin === null) footnote = { text: 'Cadastre um preço atual para visualizar a análise de margem.', tone: 'warn' }
+      else if (margin < 0) footnote = { text: `⚠️ Margem negativa (${formatPercent(margin)}). Cada execução gera prejuízo. Revise os custos ou ajuste o preço para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+      else if (desired !== null && margin < desired) footnote = { text: `Abaixo da meta de margem (${formatPercent(desired)}). Preço recomendado: ${formatBRLFromCents(recommended)}.`, tone: 'warn' }
+      else footnote = { text: `✓ Margem saudável de ${formatPercent(margin)}. Continue monitorando os custos para preservar este resultado.`, tone: 'ok' }
+
+      return (
+        <section className="surface p-5 sm:p-7 space-y-6">
+          <div className="flex items-start justify-between border-b border-line pb-4">
+            <div><p className="eyebrow text-gold">DETALHES DO SERVIÇO</p><h3 className="mt-1 text-lg font-semibold">{selectedDetails.name}</h3></div>
+            <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+            {/* Metrics */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {([
+                ['Horas de execução', `${selectedDetails.hours}h`, '#6b7280'],
+                ['Custo-hora de mão de obra', formatBRLFromCents(selectedDetails.hourly_labor_cost_cents), DETAIL_COLORS.cost],
+                ['Materiais e insumos', formatBRLFromCents(selectedDetails.materials_cents), COST_COLORS[0]],
+                ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents), COST_COLORS[1]],
+                ['Custo total do serviço', formatBRLFromCents(cost), '#6b7280'],
+                ['Taxas e encargos', `${formatPercent(Number(selectedDetails.variable_fees_percent) + Number(selectedDetails.tax_percent))} · ${formatBRLFromCents((pricing?.feesCents ?? 0) + (pricing?.taxesCents ?? 0))}`, TAG_COLORS[2]],
+                ['Preço atual', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
+                ['Preço mínimo', formatBRLFromCents(minimum), '#6b7280'],
+                ['Preço recomendado', formatBRLFromCents(recommended), '#22c55e'],
+                ['Resultado est. / unidade', formatBRLFromCents(contribution), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
+                ['Margem de contribuição', formatPercent(margin), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
+                ['Markup', formatMarkup(pricing?.markup ?? null), '#a855f7'],
+              ] as [string, string, string][]).map(([label, value, color]) => (
+                <div key={label} className="rounded-xl border border-line bg-[#151515] p-4 hover:border-[#333] transition-colors">
+                  <p className="text-[10px] text-muted">{label}</p>
+                  <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Pie chart */}
+            {pieData.length > 0 && (
+              <div className="flex flex-col items-center">
+                <p className="eyebrow mb-3 self-start">COMPOSIÇÃO DO PREÇO</p>
+                <div className="relative h-52 w-full max-w-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={84} paddingAngle={3} stroke="none"
+                        onMouseEnter={(_, i) => setActiveSlice(i)} onMouseLeave={() => setActiveSlice(null)}>
+                        {pieData.map((entry, i) => (
+                          <Cell key={entry.name} fill={entry.fill}
+                            opacity={activeSlice === null || activeSlice === i ? 1 : 0.35}
+                            style={{ filter: activeSlice === i ? `drop-shadow(0 0 10px ${entry.fill}88)` : 'drop-shadow(0 2px 4px rgba(0,0,0,.5))', transition: 'all 0.2s', cursor: 'pointer' }}/>
+                        ))}
+                      </Pie>
+                      <RechartsTooltip content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null
+                        const item = payload[0]
+                        return <div className="rounded-xl border border-line bg-[#111] px-4 py-3 text-xs shadow-xl"><p className="font-semibold" style={{ color: item.payload.fill }}>{item.name}</p><p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Number(item.value))}</p></div>
+                      }}/>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    {activeSlice !== null && pieData[activeSlice] ? (
+                      <><span className="text-[9px] text-muted text-center px-2">{pieData[activeSlice].name}</span><span className="font-mono text-sm font-bold mt-1" style={{ color: pieData[activeSlice].fill }}>{((pieData[activeSlice].value / pieData.reduce((s, d) => s + d.value, 0)) * 100).toFixed(1)}%</span></>
+                    ) : <TrendingUp size={16} className="text-gold"/>}
+                  </div>
+                </div>
+                <div className="mt-2 w-full space-y-1.5">
+                  {pieData.map((entry, i) => (
+                    <div key={entry.name} className="flex items-center justify-between text-[11px] cursor-pointer rounded px-2 py-1 hover:bg-white/5 transition-colors" onMouseEnter={() => setActiveSlice(i)} onMouseLeave={() => setActiveSlice(null)}>
+                      <span className="flex items-center gap-2 text-muted"><span className="size-2 rounded-full" style={{ background: entry.fill }}/>{entry.name}</span>
+                      <span className="font-mono" style={{ color: entry.fill }}>{formatBRLFromCents(entry.value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footnote */}
+          {footnote && (
+            <div className={`rounded-xl border p-4 text-sm leading-6 flex items-start gap-3 ${footnote.tone === 'ok' ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300' : footnote.tone === 'bad' ? 'border-red-500/30 bg-red-500/5 text-red-300' : 'border-amber-500/30 bg-amber-500/5 text-amber-300'}`}>
+              {footnote.tone === 'ok' ? <CheckCircle2 size={16} className="mt-0.5 shrink-0"/> : <AlertTriangle size={16} className="mt-0.5 shrink-0"/>}
+              <p>{footnote.text}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <button className="btn-secondary" onClick={() => setPanel('list')}>Fechar</button>
+            <button className="btn-primary" onClick={() => openForm(selectedDetails)}><Pencil size={14}/>Editar serviço</button>
+          </div>
+        </section>
+      )
+    })()}
 
     {/* ── HISTORY ───────────────────────────────── */}
     {panel === 'history' && <section className="surface p-5 space-y-4">
