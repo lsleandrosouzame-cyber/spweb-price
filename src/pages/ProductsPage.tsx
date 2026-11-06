@@ -58,6 +58,8 @@ export default function ProductsPage() {
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
   const [feeTags, setFeeTags] = useState<FeeTag[]>([])
   const [costTags, setCostTags] = useState<CostTag[]>([])
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'other_cost' | 'fees' | 'tax' } | null>(null)
+  const [cellValue, setCellValue] = useState('')
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -187,6 +189,37 @@ export default function ProductsPage() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
   }
 
+  function startEditCell(row: ProductRecord, field: 'other_cost' | 'fees' | 'tax') {
+    setEditingCell({ id: row.id, field })
+    if (field === 'other_cost') setCellValue((Number(row.other_cost_cents) / 100).toFixed(2))
+    else if (field === 'fees') setCellValue(String(row.variable_fees_percent))
+    else setCellValue(String(row.tax_percent))
+  }
+
+  async function saveCellEdit() {
+    if (!editingCell || !currentCompany) return
+    const row = rows.find(r => r.id === editingCell.id)
+    if (!row) return
+    const numValue = Number(cellValue.replace(',', '.'))
+    if (!Number.isFinite(numValue) || numValue < 0) { setError('Valor inválido.'); setEditingCell(null); return }
+    try {
+      const updates: ProductDraft = { 
+        name: row.name, 
+        acquisition_cost_cents: Number(row.acquisition_cost_cents), 
+        other_cost_cents: editingCell.field === 'other_cost' ? Math.round(numValue * 100) : Number(row.other_cost_cents), 
+        variable_fees_percent: editingCell.field === 'fees' ? numValue : Number(row.variable_fees_percent), 
+        tax_percent: editingCell.field === 'tax' ? numValue : Number(row.tax_percent), 
+        desired_margin_percent: row.desired_margin_percent, 
+        current_price_cents: row.current_price_cents, 
+        notes: row.notes 
+      }
+      await saveProduct(currentCompany.id, updates, row.id)
+      await refresh()
+      setEditingCell(null)
+      setNotice('Atualizado com sucesso.')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao salvar.') }
+  }
+
   if (loading) return <LoadingScreen label="Carregando produtos cadastrados" />
 
   const footnote = panel === 'details' ? getFootnote() : null
@@ -226,8 +259,8 @@ export default function ProductsPage() {
                   <Package className="text-gold" size={18}/>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px] text-left">
-                    <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo total</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Markup</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
+                  <table className="w-full min-w-[1200px] text-left">
+                    <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo aquis.</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Impostos %</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
                     <tbody className="divide-y divide-line">
                       {filtered.map(row => {
                         const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
@@ -237,12 +270,26 @@ export default function ProductsPage() {
                         const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
                         const statusColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
                         return (
-                          <tr key={row.id} className="hover:bg-white/[.018] transition-colors">
+                          <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
                             <td className="px-5 py-4"><button type="button" className="text-left text-sm font-medium hover:text-gold transition-colors" onClick={() => openDetails(row)}>{row.name}</button><p className="mt-1 max-w-[220px] truncate text-[10px] text-muted">{row.notes || 'Produto'}</p></td>
-                            <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(Number(row.acquisition_cost_cents) + Number(row.other_cost_cents))}</td>
+                            <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
+                            <td className="px-3 py-4 font-mono text-xs">
+                              {editingCell?.id === row.id && editingCell.field === 'other_cost'
+                                ? <input autoFocus className="field !py-1 !px-2 w-24 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
+                                : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'other_cost')}>{formatBRLFromCents(row.other_cost_cents)}</button>}
+                            </td>
+                            <td className="px-3 py-4 font-mono text-xs">
+                              {editingCell?.id === row.id && editingCell.field === 'fees'
+                                ? <input autoFocus className="field !py-1 !px-2 w-20 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
+                                : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'fees')}>{formatPercent(row.variable_fees_percent)}</button>}
+                            </td>
+                            <td className="px-3 py-4 font-mono text-xs">
+                              {editingCell?.id === row.id && editingCell.field === 'tax'
+                                ? <input autoFocus className="field !py-1 !px-2 w-20 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
+                                : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'tax')}>{formatPercent(row.tax_percent)}</button>}
+                            </td>
                             <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
                             <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
-                            <td className="px-3 py-4 font-mono text-xs">{formatMarkup(result?.markup)}</td>
                             <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
                             <td className={`px-3 py-4 text-xs font-medium ${statusColor}`}>{statusLabel}</td>
                             <td className="px-3 py-4">

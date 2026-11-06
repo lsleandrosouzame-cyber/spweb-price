@@ -36,6 +36,8 @@ export default function ServicesPanel() {
   const [busy, setBusy] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyTarget, setHistoryTarget] = useState<ServiceRecord | null>(null)
+  const [editingCell, setEditingCell] = useState<{ id: string; field: 'other_cost' | 'fees' } | null>(null)
+  const [cellValue, setCellValue] = useState('')
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -116,6 +118,27 @@ export default function ServicesPanel() {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
   }
 
+  function startEditCell(row: ServiceRecord, field: 'other_cost' | 'fees') {
+    setEditingCell({ id: row.id, field })
+    if (field === 'other_cost') setCellValue((Number(row.other_cost_cents) / 100).toFixed(2))
+    else setCellValue(String(row.variable_fees_percent))
+  }
+
+  async function saveCellEdit() {
+    if (!editingCell || !currentCompany) return
+    const row = rows.find(r => r.id === editingCell.id)
+    if (!row) return
+    const numValue = Number(cellValue.replace(',', '.'))
+    if (!Number.isFinite(numValue) || numValue < 0) { setError('Valor inválido.'); setEditingCell(null); return }
+    try {
+      const updates = { name: row.name, hours: Number(row.hours), hourly_labor_cost_cents: Number(row.hourly_labor_cost_cents), materials_cents: Number(row.materials_cents), other_cost_cents: editingCell.field === 'other_cost' ? Math.round(numValue * 100) : Number(row.other_cost_cents), fixed_cost_per_hour_cents: Number(row.fixed_cost_per_hour_cents), include_fixed_cost_per_hour: row.include_fixed_cost_per_hour, variable_fees_percent: editingCell.field === 'fees' ? numValue : Number(row.variable_fees_percent), tax_percent: Number(row.tax_percent), desired_margin_percent: row.desired_margin_percent, current_price_cents: row.current_price_cents }
+      await saveService(currentCompany.id, updates, row.id)
+      await refresh()
+      setEditingCell(null)
+      setMessage('Atualizado com sucesso.')
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao salvar.') }
+  }
+
   async function openHistory(row: ServiceRecord) {
     if (!supabase) return
     setHistoryTarget(row)
@@ -141,18 +164,28 @@ export default function ServicesPanel() {
         : <div className="surface overflow-hidden">
             <div className="flex items-center gap-2 border-b border-line px-5 py-4"><Wrench size={16} className="text-gold"/><div><p className="eyebrow">SERVIÇOS CADASTRADOS</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} serviço(s)</p></div></div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[780px] text-left">
-                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo total</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Markup</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
+              <table className="w-full min-w-[1100px] text-left">
+                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
                 <tbody className="divide-y divide-line">{filtered.map(row => {
                   const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
                   const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
-                  return <tr key={row.id} className="hover:bg-white/[.018] transition-colors">
+                  return <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
                     <td className="px-5 py-4"><p className="text-sm font-medium">{row.name}</p><p className="mt-1 text-[10px] text-muted">{row.include_fixed_cost_per_hour ? 'Inclui custo fixo/hora' : 'Sem rateio fixo'}</p></td>
                     <td className="px-3 py-4 font-mono text-xs">{row.hours}</td>
-                    <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(cost)}</td>
+                    <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(Number(row.hours) * Number(row.hourly_labor_cost_cents) + (row.include_fixed_cost_per_hour ? Number(row.hours) * Number(row.fixed_cost_per_hour_cents) : 0))}</td>
+                    <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(row.materials_cents)}</td>
+                    <td className="px-3 py-4 font-mono text-xs">
+                      {editingCell?.id === row.id && editingCell.field === 'other_cost'
+                        ? <input autoFocus className="field !py-1 !px-2 w-24 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
+                        : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'other_cost')}>{formatBRLFromCents(row.other_cost_cents)}</button>}
+                    </td>
+                    <td className="px-3 py-4 font-mono text-xs">
+                      {editingCell?.id === row.id && editingCell.field === 'fees'
+                        ? <input autoFocus className="field !py-1 !px-2 w-20 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
+                        : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'fees')}>{formatPercent(row.variable_fees_percent)}</button>}
+                    </td>
                     <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
                     <td className={`px-3 py-4 font-mono text-xs font-semibold ${(result?.contributionMarginPercent ?? 0) < 0 ? 'text-red-400' : (result?.contributionMarginPercent ?? 0) >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(result?.contributionMarginPercent)}</td>
-                    <td className="px-3 py-4 font-mono text-xs">{formatMarkup(result?.markup)}</td>
                     <td className={`px-3 py-4 font-mono text-xs font-semibold ${(result?.contributionCents ?? 0) < 0 ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
                     <td className="px-3 py-4"><div className="flex justify-end gap-1">
                       <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
