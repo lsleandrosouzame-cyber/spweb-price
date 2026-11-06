@@ -60,34 +60,47 @@ export default function AdminPage() {
     if (!supabase) return
     setLoading(true)
     try {
-      // Load all profiles (includes all users who have completed onboarding)
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, phone, created_at, updated_at')
-        .order('created_at', { ascending: false })
-      if (profilesError) throw profilesError
-
-      // Load company memberships with company names
-      const { data: members } = await supabase
-        .from('company_members')
-        .select('user_id, company_id, companies(name)')
-
-      const rows: UserRow[] = (profiles ?? []).map(p => {
-        const membership = members?.find(m => m.user_id === p.id)
-        const company = (membership?.companies as any)?.name ?? null
-        const companyId = membership?.company_id ?? null
-        return {
-          id: p.id,
-          email: p.email ?? '—',
-          created_at: p.created_at ?? p.updated_at ?? '',
-          last_sign_in_at: p.updated_at ?? null,
-          is_blocked: false,
-          full_name: p.full_name,
-          phone: p.phone,
-          company_name: company,
-          company_id: companyId,
-        }
-      })
+      // Use RPC to list all auth.users (bypasses RLS, includes users without profiles)
+      const { data, error } = await supabase.rpc('admin_list_users')
+      if (error) {
+        // Fallback: query profiles directly if RPC not yet deployed
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, phone, created_at, updated_at')
+          .order('created_at', { ascending: false })
+        if (profilesError) throw profilesError
+        const { data: members } = await supabase
+          .from('company_members')
+          .select('user_id, company_id, companies(name)')
+        const rows: UserRow[] = (profiles ?? []).map(p => {
+          const membership = members?.find(m => m.user_id === p.id)
+          return {
+            id: p.id,
+            email: p.email ?? '—',
+            created_at: p.created_at ?? p.updated_at ?? '',
+            last_sign_in_at: p.updated_at ?? null,
+            is_blocked: false,
+            full_name: p.full_name,
+            phone: p.phone,
+            company_name: (membership?.companies as any)?.name ?? null,
+            company_id: membership?.company_id ?? null,
+          }
+        })
+        setUsers(rows)
+        return
+      }
+      // Map RPC results
+      const rows: UserRow[] = (data ?? []).map((u: any) => ({
+        id: u.id,
+        email: u.email ?? '—',
+        created_at: u.created_at ?? '',
+        last_sign_in_at: u.last_sign_in_at ?? null,
+        is_blocked: false,
+        full_name: u.full_name,
+        phone: u.phone,
+        company_name: u.company_name,
+        company_id: u.company_id,
+      }))
       setUsers(rows)
     } catch (cause) {
       setNotice({ text: cause instanceof Error ? cause.message : 'Erro ao carregar usuários.', tone: 'error' })
