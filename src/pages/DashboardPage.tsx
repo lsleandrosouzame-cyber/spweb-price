@@ -13,7 +13,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/toolti
 
 // Rich color palette
 const PIE_COLORS = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
-const VAR_COLORS = ['#f97316', '#ef4444', '#a855f7', '#06b6d4', '#ec4899', '#22c55e', '#3b82f6', '#D4AF37']
 const localDate = () => new Date().toLocaleDateString('sv-SE')
 
 type PriceOpportunity = {
@@ -220,19 +219,6 @@ export default function DashboardPage() {
   const radialFill = progressPct >= 100 ? '#22c55e' : '#D4AF37'
   const radialData = effectiveBreakEvenCents ? [{ name: 'Progresso', value: progressPct, fill: radialFill }] : []
 
-  // Variable costs from sales — group by item name, showing cost portion (selling price - contribution)
-  const variableCostsMap = new Map<string, number>()
-  for (const sale of monthSales) {
-    const name = sale.item_name_snapshot || products.find(p => p.id === sale.product_id)?.name || services.find(s => s.id === sale.service_id)?.name || 'Item'
-    const variableCost = (Number(sale.selling_price_cents) - Number(sale.contribution_cents)) * Number(sale.quantity)
-    if (variableCost > 0) variableCostsMap.set(name, (variableCostsMap.get(name) ?? 0) + variableCost)
-  }
-  const variableCostsData = Array.from(variableCostsMap.entries())
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8)
-  const variableCostsTotal = variableCostsData.reduce((s, d) => s + d.value, 0)
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -242,7 +228,6 @@ export default function DashboardPage() {
           <h2 className="mt-2 text-3xl font-bold tracking-tight">Os números do seu negócio, sem adivinhação.</h2>
           <p className="mt-2 text-sm text-muted">Indicadores vêm dos cadastros e vendas reais da sua empresa.</p>
         </div>
-        <Link to="/calculo" className="btn-primary w-fit">Simular preço <ArrowRight size={15}/></Link>
       </div>
 
       {products.length === 0 && monthExpenses.length === 0 && monthSales.length === 0 &&
@@ -377,59 +362,6 @@ export default function DashboardPage() {
               </>
             ) : (
               <div className="mt-4"><EmptyState title="Nenhuma despesa" description="Cadastre despesas fixas para ver a distribuição." action={<Link to="/lancamentos" className="btn-secondary text-xs">Adicionar <Plus size={12}/></Link>}/></div>
-            )}
-          </div>
-
-          {/* Variable costs pie (from sales data) */}
-          <div className="surface p-5 flex-1">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="eyebrow">CUSTOS VARIÁVEIS</p>
-                <h3 className="mt-1 text-base font-semibold">Por produto/serviço</h3>
-              </div>
-              <CircleHelp size={15} className="text-muted"/>
-            </div>
-            {/* Revenue relation bar for variable costs */}
-            {variableCostsTotal > 0 && (revenue !== null || revenueForecastCents !== null) && (() => {
-              const ref = revenue ?? revenueForecastCents!
-              const pct = Math.min(100, (variableCostsTotal / ref) * 100)
-              return (
-                <div className="mt-3 rounded-lg bg-panel border border-line p-3 text-xs space-y-1.5">
-                  <div className="flex justify-between text-muted">
-                    <span>Custos variáveis / {revenue !== null ? 'faturamento real' : 'previsão'}</span>
-                    <span className={`font-mono font-semibold ${pct >= 70 ? 'text-red-400' : pct >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct.toFixed(1)}%</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-teal-light">
-                    <div className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-red-500' : pct >= 40 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}/>
-                  </div>
-                </div>
-              )
-            })()}
-            {variableCostsData.length ? (
-              <>
-                <div className="mt-3 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={variableCostsData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={38} outerRadius={60} paddingAngle={3} stroke="none">
-                        {variableCostsData.map((item, index) => (
-                          <Cell key={item.name} fill={VAR_COLORS[index % VAR_COLORS.length]} style={{ cursor: 'pointer' }}/>
-                        ))}
-                      </Pie>
-                      <RechartsTooltip content={<PieTooltip/>}/>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-1 space-y-1.5">
-                  {variableCostsData.map((item, index) => (
-                    <div key={item.name} className="flex items-center justify-between gap-2 text-[11px]">
-                      <span className="flex items-center gap-1.5 text-muted"><span className="size-2 rounded-full shrink-0" style={{ background: VAR_COLORS[index % VAR_COLORS.length] }}/>{item.name}</span>
-                      <span className="font-mono text-paper">{formatBRLFromCents(item.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="mt-4"><EmptyState title="Sem vendas registradas" description="Registre vendas em Lançamentos para ver os custos variáveis por item." action={<Link to="/lancamentos" className="btn-secondary text-xs">Registrar vendas <Plus size={12}/></Link>}/></div>
             )}
           </div>
         </div>
