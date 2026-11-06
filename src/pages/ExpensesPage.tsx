@@ -12,7 +12,8 @@ import { listExpenses, listProducts, listSalesRecords, listServices, readOperati
 import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
-const colors = ['#D4AF37', '#88752b', '#565044', '#3a3a3a', '#272727', '#1d1d1d']
+// Rich color palette for expenses chart
+const PIE_COLORS_EXP = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f59e0b']
 const today = () => new Date().toLocaleDateString('sv-SE')
 const currentMonth = () => today().slice(0, 7)
 const firstDay = (month: string) => `${month}-01`
@@ -203,7 +204,8 @@ export default function ExpensesPage() {
       : blankExpense)
     setError(null)
     setShowExpenseForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    // Only scroll to top for new expense; editing opens inline
+    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function submitExpense(event: FormEvent) {
@@ -360,9 +362,10 @@ export default function ExpensesPage() {
         <Summary title="Custo fixo por hora" value={formatBRLFromCents(operating?.fixedHourlyCents ?? null)} icon={Clock3}/>
       </section>
 
-      {showExpenseForm && <section className="surface p-5 space-y-4">
+      {/* Form for NEW expense only (editing is inline per row) */}
+      {showExpenseForm && !editing && <section className="surface p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">DESPESA FIXA</p><h3 className="mt-1 text-sm font-semibold">{editing ? 'Editar despesa' : 'Nova despesa'}</h3></div>
+          <div><p className="eyebrow text-gold">DESPESA FIXA</p><h3 className="mt-1 text-sm font-semibold">Nova despesa</h3></div>
           <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowExpenseForm(false); setError(null) }}>Cancelar</button>
         </div>
         <form onSubmit={submitExpense} className="space-y-4">
@@ -385,21 +388,48 @@ export default function ExpensesPage() {
         <div className="surface overflow-hidden">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
             <div><p className="eyebrow">DESPESAS · {month}</p><p className="mt-1 text-xs text-muted">{filteredExpenseRows.length} de {expenseRows.length} registro(s) neste período</p></div>
-            {!showExpenseForm && <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => startExpense()}><Plus size={14}/>Adicionar</button>}
+            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => startExpense()}><Plus size={14}/>Adicionar</button>
           </div>
           <div className="grid gap-2 border-b border-line p-4 sm:grid-cols-[1fr_200px]">
             <label className="relative block"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"/><input aria-label="Pesquisar despesas" className="field pl-9" value={expenseSearch} onChange={e => setExpenseSearch(e.target.value)} placeholder="Pesquisar descrição"/></label>
             <select aria-label="Filtrar por categoria" className="field" value={expenseCategory} onChange={e => setExpenseCategory(e.target.value)}><option value="">Todas as categorias</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
           </div>
           {expenseRows.length
-            ? <div className="divide-y divide-line">{filteredExpenseRows.map(row => <div key={row.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                <div className="min-w-0"><p className="truncate text-sm font-medium">{row.description}</p><p className="mt-1 text-[10px] text-muted">{row.category} · referência {row.reference_date}</p></div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="font-mono text-sm">{formatBRLFromCents(Number(row.amount_cents))}</span>
-                  <button title="Editar" aria-label={`Editar ${row.description}`} className="rounded p-2 text-muted hover:text-paper" onClick={() => startExpense(row)}><Pencil size={14}/></button>
-                  <button title="Excluir" aria-label={`Excluir ${row.description}`} className="rounded p-2 text-muted hover:text-negative" onClick={() => void deleteExpense(row)}><Trash2 size={14}/></button>
-                </div>
-              </div>)}</div>
+            ? <div className="divide-y divide-line">{filteredExpenseRows.map(row => {
+                const isEditing = editing?.id === row.id && showExpenseForm
+                if (isEditing) return (
+                  <div key={row.id} className="px-5 py-4 bg-[#0d0d0d]">
+                    <form onSubmit={submitExpense} className="space-y-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-semibold text-gold">Editando despesa</p>
+                        <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}>Cancelar</button>
+                      </div>
+                      <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} placeholder="Ex.: Aluguel"/></label>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label><span className={labelClass}>Categoria</span><select className="field" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></label>
+                        <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={expenseForm.amount} onChange={value => setExpenseForm({ ...expenseForm, amount: value })} placeholder="0,00"/></label>
+                        <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })}/></label>
+                        <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })}/></label>
+                      </div>
+                      {error && <InlineNotice>{error}</InlineNotice>}
+                      <div className="flex justify-end gap-2">
+                        <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}>Cancelar</button>
+                        <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+                      </div>
+                    </form>
+                  </div>
+                )
+                return (
+                  <div key={row.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                    <div className="min-w-0"><p className="truncate text-sm font-medium">{row.description}</p><p className="mt-1 text-[10px] text-muted">{row.category} · referência {row.reference_date}</p></div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="font-mono text-sm">{formatBRLFromCents(Number(row.amount_cents))}</span>
+                      <button title="Editar" aria-label={`Editar ${row.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startExpense(row)}><Pencil size={14}/></button>
+                      <button title="Excluir" aria-label={`Excluir ${row.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteExpense(row)}><Trash2 size={14}/></button>
+                    </div>
+                  </div>
+                )
+              })}</div>
             : <div className="p-5"><EmptyState title="Nenhuma despesa neste período" description="Cadastre aluguel, energia, salários e outros compromissos mensais." action={<button className="btn-secondary" onClick={() => startExpense()}><Plus size={14}/>Adicionar despesa</button>}/></div>}
           {expenseRows.length > 0 && filteredExpenseRows.length === 0 && <p className="px-5 py-4 text-center text-xs text-muted">Nenhum lançamento corresponde à pesquisa ou categoria.</p>}
         </div>
@@ -407,7 +437,13 @@ export default function ExpensesPage() {
         <div className="surface p-5">
           <div className="flex items-center gap-2"><BarChart3 size={16} className="text-gold"/><div><p className="eyebrow">DISTRIBUIÇÃO</p><h3 className="mt-1 text-sm font-semibold">Por categoria</h3></div></div>
           {chartData.length
-            ? <><div className="mt-4 h-44"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={68} paddingAngle={2} stroke="none">{chartData.map((item, i) => <Cell key={item.name} fill={colors[i % colors.length]}/>)}</Pie><Tooltip formatter={value => formatBRLFromCents(Number(value))} contentStyle={{ background: '#141414', border: '1px solid #262626', borderRadius: 10 }}/></PieChart></ResponsiveContainer></div><div className="space-y-2">{chartData.map((row, i) => <div key={row.name} className="flex justify-between text-[11px]"><span className="flex items-center gap-2 text-muted"><span className="size-2 rounded-full" style={{ background: colors[i % colors.length] }}/>{row.name}</span><span className="font-mono">{formatBRLFromCents(row.value)}</span></div>)}</div></>
+            ? <><div className="mt-4 h-44"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={68} paddingAngle={2} stroke="none">{chartData.map((item, i) => <Cell key={item.name} fill={PIE_COLORS_EXP[i % PIE_COLORS_EXP.length]} style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,.5))', cursor: 'pointer' }}/>)}</Pie><Tooltip content={({ active, payload }) => {
+              if (!active || !payload?.length) return null
+              const item = payload[0]
+              const color = PIE_COLORS_EXP[chartData.findIndex(d => d.name === item.name) % PIE_COLORS_EXP.length]
+              const total = chartData.reduce((s, d) => s + d.value, 0)
+              return <div className="rounded-xl border border-line bg-[#111] px-4 py-3 shadow-xl text-xs"><p className="font-semibold" style={{ color }}>{item.name}</p><p className="mt-1 font-mono" style={{ color }}>{formatBRLFromCents(Number(item.value))}</p><p className="mt-0.5 text-muted">{total > 0 ? `${((Number(item.value) / total) * 100).toFixed(1)}% do total` : ''}</p></div>
+            }}/></PieChart></ResponsiveContainer></div><div className="space-y-2">{chartData.map((row, i) => <div key={row.name} className="flex justify-between text-[11px]"><span className="flex items-center gap-2 text-muted"><span className="size-2.5 rounded-full shrink-0" style={{ background: PIE_COLORS_EXP[i % PIE_COLORS_EXP.length] }}/>{row.name}</span><span className="font-mono" style={{ color: PIE_COLORS_EXP[i % PIE_COLORS_EXP.length] }}>{formatBRLFromCents(row.value)}</span></div>)}</div></>
             : <p className="mt-6 text-sm text-muted">Sem despesas registradas no período.</p>}
         </div>
       </section>
