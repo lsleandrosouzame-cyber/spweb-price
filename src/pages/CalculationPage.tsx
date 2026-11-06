@@ -67,10 +67,10 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
       )}
 
       {showInput ? (
-        <div className="flex items-center gap-2 rounded-lg border border-gold/50 bg-panel px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-gold/50 bg-white px-3 py-2.5">
           <Percent size={12} className="text-gold shrink-0"/>
-          <input autoFocus className="bg-transparent text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Cartão de crédito" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', percent: '' }))}/>
-          <input className="bg-transparent text-xs outline-none w-12 font-mono text-center placeholder:text-muted" placeholder="%" type="number" min="0" max="100" step="any" value={input.percent} onChange={e => setInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', percent: '' }) } }}/>
+          <input autoFocus className="bg-white text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Cartão de crédito" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', percent: '' }))}/>
+          <input className="bg-white text-xs outline-none w-12 font-mono text-center placeholder:text-muted" placeholder="%" type="number" min="0" max="100" step="any" value={input.percent} onChange={e => setInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', percent: '' }) } }}/>
           <span className="text-[10px] text-muted">%</span>
           <button type="button" className="rounded-md bg-gold px-2 py-1 text-[10px] font-semibold text-ink hover:bg-[#ead584]" onClick={add}>OK</button>
           <button type="button" className="text-muted hover:text-paper" onClick={() => { setShowInput(false); setInput({ label: '', percent: '' }) }}><X size={12}/></button>
@@ -136,10 +136,10 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
       )}
 
       {showInput ? (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-panel px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-white px-3 py-2.5">
           <DollarSign size={12} className="text-emerald-400 shrink-0"/>
-          <input autoFocus className="bg-transparent text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Embalagem" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', value: '' }))}/>
-          <CurrencyInput className="bg-transparent text-xs outline-none w-20 font-mono text-right border-0 !ring-0 !p-0" value={input.value} onChange={v => setInput(f => ({ ...f, value: v }))} placeholder="R$" onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', value: '' }) } }}/>
+          <input autoFocus className="bg-white text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Embalagem" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', value: '' }))}/>
+          <CurrencyInput className="bg-white text-xs outline-none w-20 font-mono text-right border-0 !ring-0 !p-0" value={input.value} onChange={v => setInput(f => ({ ...f, value: v }))} placeholder="R$" onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', value: '' }) } }}/>
           <button type="button" className="rounded-md bg-emerald-500 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>OK</button>
           <button type="button" className="text-muted hover:text-paper" onClick={() => { setShowInput(false); setInput({ label: '', value: '' }) }}><X size={12}/></button>
         </div>

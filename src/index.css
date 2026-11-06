@@ -59,12 +59,14 @@ button { color: inherit; cursor: pointer; }
 
   /* Form field */
   .field {
-    @apply w-full rounded-xl border border-line bg-panel px-4 py-3 text-sm text-paper
+    @apply w-full rounded-xl border border-line px-4 py-3 text-sm text-paper
            placeholder:text-muted/60 transition-all duration-150;
+    background-color: #FFFFFF;
     box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
   }
   .field:focus {
     @apply outline-none border-teal;
+    background-color: #FFFFFF;
     box-shadow: inset 0 1px 2px rgba(0,0,0,.04), 0 0 0 3px rgba(26,60,52,.12);
   }
 
