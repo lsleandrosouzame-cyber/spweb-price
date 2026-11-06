@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent, TrendingDown } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -8,22 +8,26 @@ import { calculateProductPricing, calculateServiceCost } from '../finance/pricin
 void calculateProductPricing; void calculateServiceCost
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
-import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings, removeExpense, saveExpense, saveOperatingSettings } from '../services/companyData'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost } from '../services/companyData'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
+const costTypes = ['Taxa', 'Comissão', 'Frete', 'Embalagem', 'Outros'] as const
 // Rich color palette for expenses chart
 const PIE_COLORS_EXP = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f59e0b']
 const today = () => new Date().toLocaleDateString('sv-SE')
 const currentMonth = () => today().slice(0, 7)
 const firstDay = (month: string) => `${month}-01`
 const blankExpense = { description: '', category: categories[0], amount: '', date: today(), notes: '' }
+const blankVariableCost = { description: '', costType: 'Taxa' as typeof costTypes[number], valueType: 'percent' as 'percent' | 'fixed', percentValue: '', fixedValue: '', notes: '' }
 const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
+  const [tab, setTab] = useState<'expenses' | 'variableCosts'>('expenses')
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
+  const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [products, setProducts] = useState<ProductRecord[]>([]); void products
   const [services, setServices] = useState<ServiceRecord[]>([]); void services
@@ -59,18 +63,25 @@ export default function ExpensesPage() {
   const [showSaleForm] = useState(false); void showSaleForm
   const [salesForm] = useState({ item: '', quantity: '1', price: '', date: today() }); void salesForm
 
+  // Variable costs forms
+  const [showVariableCostForm, setShowVariableCostForm] = useState(false)
+  const [editingVarCost, setEditingVarCost] = useState<VariableCostRecord | null>(null)
+  const [varCostForm, setVarCostForm] = useState(blankVariableCost)
+
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
     setLoading(true); setError(null)
     try {
-      const [expensesResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
+      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
         listExpenses(currentCompany.id),
+        listVariableCosts(currentCompany.id),
         listProducts(currentCompany.id),
         listServices(currentCompany.id),
         readOperatingSettings(currentCompany.id),
         listSalesRecords(currentCompany.id, firstDay(month)),
       ])
       setExpenses(expensesResult)
+      setVariableCosts(variableCostsResult)
       setProducts(productsResult)
       setServices(servicesResult)
       setSales(salesResult)
@@ -228,6 +239,86 @@ export default function ExpensesPage() {
     if (!currentCompany || !window.confirm(`Excluir a despesa "${row.description}"?`)) return
     try { await removeExpense(currentCompany.id, row.id); setNotice('Despesa excluída.'); await refresh() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') }
+  }
+
+  // Variable costs CRUD
+  function startVariableCost(row?: VariableCostRecord) {
+    setEditingVarCost(row ?? null)
+    setVarCostForm(row
+      ? { 
+          description: row.description, 
+          costType: row.cost_type as typeof costTypes[number], 
+          valueType: row.percent_value !== null ? 'percent' : 'fixed',
+          percentValue: row.percent_value !== null ? String(row.percent_value) : '',
+          fixedValue: row.fixed_value_cents !== null ? (Number(row.fixed_value_cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '',
+          notes: row.notes ?? '' 
+        }
+      : blankVariableCost)
+    setError(null)
+    setShowVariableCostForm(true)
+    // Only scroll to top for new cost; editing opens inline
+    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function submitVariableCost(event: FormEvent) {
+    event.preventDefault()
+    if (!currentCompany) return
+    
+    if (!varCostForm.description.trim()) {
+      setError('Informe a descrição do custo.'); return
+    }
+
+    let draft: VariableCostDraft
+    
+    if (varCostForm.valueType === 'percent') {
+      const percentVal = parseFloat(varCostForm.percentValue)
+      if (isNaN(percentVal) || percentVal < 0 || percentVal > 100) {
+        setError('Informe um percentual válido entre 0 e 100.'); return
+      }
+      draft = {
+        description: varCostForm.description.trim(),
+        cost_type: varCostForm.costType,
+        percent_value: percentVal,
+        fixed_value_cents: null,
+        notes: varCostForm.notes.trim() || null
+      }
+    } else {
+      const cents = parseBrazilianCurrency(varCostForm.fixedValue)
+      if (cents === null || cents < 0) {
+        setError('Informe um valor fixo válido.'); return
+      }
+      draft = {
+        description: varCostForm.description.trim(),
+        cost_type: varCostForm.costType,
+        percent_value: null,
+        fixed_value_cents: cents,
+        notes: varCostForm.notes.trim() || null
+      }
+    }
+
+    setBusy(true); setError(null)
+    try {
+      await saveVariableCost(currentCompany.id, draft, editingVarCost?.id)
+      setShowVariableCostForm(false)
+      setEditingVarCost(null)
+      setNotice(editingVarCost ? 'Custo variável atualizado.' : 'Custo variável registrado.')
+      await refresh()
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o custo variável.') 
+    } finally { 
+      setBusy(false) 
+    }
+  }
+
+  async function deleteVariableCost(row: VariableCostRecord) {
+    if (!currentCompany || !window.confirm(`Excluir o custo variável "${row.description}"?`)) return
+    try { 
+      await removeVariableCost(currentCompany.id, row.id); 
+      setNotice('Custo variável excluído.'); 
+      await refresh() 
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
+    }
   }
 
   // sales helpers removed (Vendas e mix tab removed)
@@ -412,13 +503,24 @@ export default function ExpensesPage() {
       </div>
     </form>
 
-    {/* Tabs — only Despesas fixas (Vendas e mix removed) */}
+    {/* Tabs — Despesas fixas and Custos Variáveis */}
     <div className="inline-flex rounded-xl border border-line bg-panel p-1">
-      <button className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium bg-gold text-ink"><ReceiptText size={15}/>Despesas fixas</button>
+      <button 
+        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
+        onClick={() => setTab('expenses')}
+      >
+        <ReceiptText size={15}/>Despesas fixas
+      </button>
+      <button 
+        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'variableCosts' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
+        onClick={() => setTab('variableCosts')}
+      >
+        <TrendingDown size={15}/>Custos Variáveis
+      </button>
     </div>
 
-    {/* ── DESPESAS ──────────────────────────────────────────────── */}
-    <div className="space-y-5">
+    {/* ── DESPESAS FIXAS ──────────────────────────────────────────────── */}
+    {tab === 'expenses' && <div className="space-y-5">
       <section className="grid gap-3 sm:grid-cols-3">
         <Summary title="Total de despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} icon={Wallet}/>
         <Summary title="Custo fixo por dia" value={formatBRLFromCents(operating?.fixedDailyCents ?? null)} icon={CalendarDays}/>
@@ -510,7 +612,129 @@ export default function ExpensesPage() {
             : <p className="mt-6 text-sm text-muted">Sem despesas registradas no período.</p>}
         </div>
       </section>
-    </div>
+    </div>}
+
+    {/* ── CUSTOS VARIÁVEIS ──────────────────────────────────────────────── */}
+    {tab === 'variableCosts' && <div className="space-y-5">
+      <section className="grid gap-3 sm:grid-cols-3">
+        <Summary 
+          title="Total de custos variáveis" 
+          value={`${variableCosts.length} item(ns)`} 
+          icon={TrendingDown}
+        />
+        <Summary 
+          title="Custos percentuais" 
+          value={`${variableCosts.filter(vc => vc.percent_value !== null).length} item(ns)`} 
+          icon={Percent}
+        />
+        <Summary 
+          title="Custos fixos" 
+          value={formatBRLFromCents(variableCosts.filter(vc => vc.fixed_value_cents !== null).reduce((sum, vc) => sum + Number(vc.fixed_value_cents), 0))} 
+          icon={Wallet}
+        />
+      </section>
+
+      {/* Form for NEW variable cost only (editing is inline per row) */}
+      {showVariableCostForm && !editingVarCost && <section className="surface p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-line pb-4">
+          <div><p className="eyebrow text-gold">CUSTO VARIÁVEL</p><h3 className="mt-1 text-sm font-semibold">Novo custo</h3></div>
+          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowVariableCostForm(false); setError(null) }}>Cancelar</button>
+        </div>
+        <form onSubmit={submitVariableCost} className="space-y-4">
+          <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={varCostForm.description} onChange={e => setVarCostForm({ ...varCostForm, description: e.target.value })} placeholder="Ex.: ICMS, Comissão de vendas"/></label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label><span className={labelClass}>Tipo de custo</span><select className="field" value={varCostForm.costType} onChange={e => setVarCostForm({ ...varCostForm, costType: e.target.value as typeof costTypes[number] })}>{costTypes.map(c => <option key={c}>{c}</option>)}</select></label>
+            <label>
+              <span className={labelClass}>Formato do valor</span>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="valueType" value="percent" checked={varCostForm.valueType === 'percent'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
+                  <span className="text-xs">Percentual (%)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="valueType" value="fixed" checked={varCostForm.valueType === 'fixed'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
+                  <span className="text-xs">Valor fixo (R$)</span>
+                </label>
+              </div>
+            </label>
+            {varCostForm.valueType === 'percent' 
+              ? <label><span className={labelClass}>Percentual (%)</span><input className="field" type="number" step="0.01" min="0" max="100" required value={varCostForm.percentValue} onChange={e => setVarCostForm({ ...varCostForm, percentValue: e.target.value })} placeholder="Ex.: 18.00"/></label>
+              : <label><span className={labelClass}>Valor fixo (R$)</span><CurrencyInput className="field" required value={varCostForm.fixedValue} onChange={value => setVarCostForm({ ...varCostForm, fixedValue: value })} placeholder="0,00"/></label>
+            }
+            <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={varCostForm.notes} onChange={e => setVarCostForm({ ...varCostForm, notes: e.target.value })}/></label>
+          </div>
+          {error && <InlineNotice>{error}</InlineNotice>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button className="btn-secondary" type="button" onClick={() => { setShowVariableCostForm(false); setError(null) }}>Cancelar</button>
+            <button className="btn-primary" disabled={busy}>{busy ? 'Salvando…' : 'Salvar custo'}</button>
+          </div>
+        </form>
+      </section>}
+
+      <section className="surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <div><p className="eyebrow">CUSTOS VARIÁVEIS</p><p className="mt-1 text-xs text-muted">{variableCosts.length} custo(s) cadastrado(s)</p></div>
+          <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => startVariableCost()}><Plus size={14}/>Adicionar</button>
+        </div>
+        {variableCosts.length
+          ? <div className="divide-y divide-line">{variableCosts.map(vc => {
+              const isEditing = editingVarCost?.id === vc.id && showVariableCostForm
+              if (isEditing) return (
+                <div key={vc.id} className="px-5 py-4 bg-panel">
+                  <form onSubmit={submitVariableCost} className="space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gold">Editando custo</p>
+                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}>Cancelar</button>
+                    </div>
+                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={varCostForm.description} onChange={e => setVarCostForm({ ...varCostForm, description: e.target.value })} placeholder="Ex.: ICMS"/></label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label><span className={labelClass}>Tipo de custo</span><select className="field" value={varCostForm.costType} onChange={e => setVarCostForm({ ...varCostForm, costType: e.target.value as typeof costTypes[number] })}>{costTypes.map(c => <option key={c}>{c}</option>)}</select></label>
+                      <label>
+                        <span className={labelClass}>Formato do valor</span>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="valueTypeEdit" value="percent" checked={varCostForm.valueType === 'percent'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
+                            <span className="text-xs">Percentual (%)</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="valueTypeEdit" value="fixed" checked={varCostForm.valueType === 'fixed'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
+                            <span className="text-xs">Valor fixo (R$)</span>
+                          </label>
+                        </div>
+                      </label>
+                      {varCostForm.valueType === 'percent' 
+                        ? <label><span className={labelClass}>Percentual (%)</span><input className="field" type="number" step="0.01" min="0" max="100" required value={varCostForm.percentValue} onChange={e => setVarCostForm({ ...varCostForm, percentValue: e.target.value })} placeholder="Ex.: 18.00"/></label>
+                        : <label><span className={labelClass}>Valor fixo (R$)</span><CurrencyInput className="field" required value={varCostForm.fixedValue} onChange={value => setVarCostForm({ ...varCostForm, fixedValue: value })} placeholder="0,00"/></label>
+                      }
+                      <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={varCostForm.notes} onChange={e => setVarCostForm({ ...varCostForm, notes: e.target.value })}/></label>
+                    </div>
+                    {error && <InlineNotice>{error}</InlineNotice>}
+                    <div className="flex justify-end gap-2">
+                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}>Cancelar</button>
+                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+                    </div>
+                  </form>
+                </div>
+              )
+              return (
+                <div key={vc.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{vc.description}</p>
+                    <p className="mt-1 text-[10px] text-muted">{vc.cost_type}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-mono text-sm">
+                      {vc.percent_value !== null ? `${Number(vc.percent_value).toFixed(2)}%` : formatBRLFromCents(Number(vc.fixed_value_cents))}
+                    </span>
+                    <button title="Editar" aria-label={`Editar ${vc.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startVariableCost(vc)}><Pencil size={14}/></button>
+                    <button title="Excluir" aria-label={`Excluir ${vc.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteVariableCost(vc)}><Trash2 size={14}/></button>
+                  </div>
+                </div>
+              )
+            })}</div>
+          : <div className="p-5"><EmptyState title="Nenhum custo variável cadastrado" description="Cadastre taxas, comissões, fretes e outros custos que variam conforme as vendas." action={<button className="btn-secondary" onClick={() => startVariableCost()}><Plus size={14}/>Adicionar custo</button>}/></div>}
+      </section>
+    </div>}
   </div>
 }
 

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductDraft, ProductRecord, SalesRecord, SalesRecordDraft, ServiceRecord } from '../types/database'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductDraft, ProductRecord, SalesRecord, SalesRecordDraft, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
 
 function requireClient() {
   if (!supabase) throw new Error('Conexão Supabase não configurada.')
@@ -106,5 +106,26 @@ export async function saveSalesRecord(companyId: string, draft: SalesRecordDraft
 
 export async function removeSalesRecord(companyId: string, id: string) {
   const { error } = await requireClient().from('sales_records').delete().eq('company_id', companyId).eq('id', id)
+  if (error) throw error
+}
+
+export async function listVariableCosts(companyId: string) {
+  const { data, error } = await requireClient().from('variable_costs').select('*').eq('company_id', companyId).order('created_at', { ascending: false })
+  if (error) throw error
+  return (data ?? []) as VariableCostRecord[]
+}
+
+export async function saveVariableCost(companyId: string, draft: VariableCostDraft, id?: string) {
+  const client = requireClient()
+  const values = { ...draft, company_id: companyId }
+  const response = id
+    ? await client.from('variable_costs').update(values).eq('company_id', companyId).eq('id', id).select('*').single()
+    : await client.from('variable_costs').insert(values).select('*').single()
+  if (response.error) throw response.error
+  return response.data as VariableCostRecord
+}
+
+export async function removeVariableCost(companyId: string, id: string) {
+  const { error } = await requireClient().from('variable_costs').delete().eq('company_id', companyId).eq('id', id)
   if (error) throw error
 }

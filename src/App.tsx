@@ -9,7 +9,6 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const ProductsPage = lazy(() => import('./pages/ProductsPage'))
-const CalculationPage = lazy(() => import('./pages/CalculationPage'))
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage'))
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
@@ -50,7 +49,6 @@ export default function App() {
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/produtos" element={<ProductsPage />} />
-        <Route path="/calculo" element={<CalculationPage />} />
         <Route path="/videos" element={<KnowledgePage />} />
         <Route path="/lancamentos" element={<ExpensesPage />} />
         <Route path="/perfil" element={<ProfilePage />} />

@@ -43,6 +43,18 @@ export type FixedExpenseRecord = {
   updated_at: string
 }
 
+export type VariableCostRecord = {
+  id: string
+  company_id: string
+  description: string
+  cost_type: 'Taxa' | 'Comissão' | 'Frete' | 'Embalagem' | 'Outros'
+  percent_value: number | null
+  fixed_value_cents: number | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type SalesRecord = {
   id: string
   company_id: string
@@ -58,4 +70,5 @@ export type SalesRecord = {
 
 export type ProductDraft = Omit<ProductRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>
 export type FixedExpenseDraft = Omit<FixedExpenseRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>
+export type VariableCostDraft = Omit<VariableCostRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>
 export type SalesRecordDraft = Omit<SalesRecord, 'id' | 'company_id' | 'item_name_snapshot'>
