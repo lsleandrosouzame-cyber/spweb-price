@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent, TrendingDown } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, TrendingDown } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -42,12 +42,6 @@ export default function ExpensesPage() {
   const [defaultDesiredMargin] = useState('')
   void defaultVariableFees; void defaultTaxRate; void defaultDesiredMargin
   const [settingsSaved, setSettingsSaved] = useState(false)
-
-  // fee tags — dynamic list of { label, percent }
-  type FeeTag = { id: string; label: string; percent: string }
-  const [feeTags, setFeeTags] = useState<FeeTag[]>([])
-  const [feeInput, setFeeInput] = useState({ label: '', percent: '' })
-  const [showFeeInput, setShowFeeInput] = useState(false)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,10 +88,6 @@ export default function ExpensesPage() {
         setProLabore(settingsResult.pro_labore_cents
           ? (settingsResult.pro_labore_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
           : '')
-        // Restore saved fee tags
-        if (settingsResult.fee_tags && settingsResult.fee_tags.length > 0) {
-          setFeeTags(settingsResult.fee_tags.map(t => ({ ...t, id: crypto.randomUUID() })))
-        }
         setSettingsSaved(true)
       }
     } catch (cause) {
@@ -142,11 +132,13 @@ export default function ExpensesPage() {
   const totalContribution = salesRows.reduce((sum, row) => sum + Number(row.contribution_cents) * Number(row.quantity), 0)
   const weightedMarginPercent = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : null
 
-  // Use sales mix when available; fall back to total fees estimation
-  const totalFeesPercent = feeTags.reduce((sum, t) => sum + Number(t.percent.replace(',', '.') || 0), 0)
-  // effective margin = 100% - total fees (simple estimation when no sales)
-  const defaultMarginPct = totalFeesPercent > 0 ? Math.max(0, 100 - totalFeesPercent) : null
-  const effectiveMarginPct = weightedMarginPercent ?? defaultMarginPct
+  // Calculate total variable costs percentage from Variable Costs tab
+  const totalVariableCostsPercent = variableCosts
+    .filter(vc => vc.percent_value !== null)
+    .reduce((sum, vc) => sum + Number(vc.percent_value), 0)
+
+  // Break-even calculation using variable costs
+  const effectiveMarginPct = weightedMarginPercent ?? (totalVariableCostsPercent > 0 ? Math.max(0, 100 - totalVariableCostsPercent) : null)
 
   const breakEvenResult = fixedTotal !== null && effectiveMarginPct !== null && effectiveMarginPct > 0
     ? (() => {
@@ -187,7 +179,6 @@ export default function ExpensesPage() {
         productive_hours_per_day: hours,
         revenue_forecast_cents: forecastValue,
         pro_labore_cents: proLaboreValue,
-        fee_tags: feeTags.map(({ label, percent }) => ({ label, percent })),
       })
       setSettingsSaved(true)
       setNotice('Parâmetros operacionais salvos.')
@@ -347,10 +338,10 @@ export default function ExpensesPage() {
           <TrendingDown size={15} className="text-teal-border"/>
         </div>
         <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
-          {totalFeesPercent.toFixed(2)}%
+          {totalVariableCostsPercent.toFixed(2)}%
         </p>
         <p className="mt-1 text-[10px] text-muted">
-          {variableCosts.length} custo(s) + {feeTags.length} taxa(s)
+          {variableCosts.filter(vc => vc.percent_value !== null).length} custo(s) cadastrado(s)
         </p>
       </div>
 
@@ -361,7 +352,7 @@ export default function ExpensesPage() {
           <CircleDollarSign size={15} className="text-emerald-500"/>
         </div>
         <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
-          {proLaborePerDayCents ? formatBRLFromCents(proLaborePerDayCents) : 'R$ 0,00'}
+          {proLaboreCents ? formatBRLFromCents(proLaboreCents) : 'R$ 0,00'}
         </p>
         <p className="mt-1 text-[10px] text-muted">
           {proLaborePerDayCents ? `${formatBRLFromCents(proLaborePerDayCents)}/dia` : 'Configure abaixo'}
@@ -476,109 +467,6 @@ export default function ExpensesPage() {
           <span className={labelClass}>Previsão de faturamento (R$)</span>
           <CurrencyInput className="field" value={revenueForecast} onChange={setRevenueForecast} placeholder="Ex.: 15.000,00"/>
         </label>
-      </div>
-
-      {/* Fee tags — dynamic list with + button */}
-      <div className="rounded-xl border border-line bg-white p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-paper">Taxas e encargos sobre vendas</p>
-            <p className="mt-0.5 text-[10px] text-muted">Cartão, comissão, imposto, marketplace — cada um separado.</p>
-          </div>
-          {feeTags.length > 0 && (
-            <div className="text-right">
-              <p className="text-[10px] text-muted">Total</p>
-              <p className="font-mono text-sm font-bold text-gold">{totalFeesPercent.toFixed(2)}%</p>
-              {defaultMarginPct !== null && <p className="text-[10px] text-emerald-400">margem est. {defaultMarginPct.toFixed(1)}%</p>}
-            </div>
-          )}
-        </div>
-
-        {/* Existing tags as colored cards */}
-        {feeTags.length > 0 && (
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {feeTags.map((tag, i) => {
-              const tagColors = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
-              const color = tagColors[i % tagColors.length]
-              return (
-                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-white px-3 py-2.5 hover:border-teal-border transition-colors">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="size-2 rounded-full shrink-0" style={{ background: color }}/>
-                    <span className="text-xs font-medium text-paper truncate">{tag.label}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="font-mono text-sm font-bold" style={{ color }}>{tag.percent}%</span>
-                    <button type="button" aria-label={`Remover ${tag.label}`}
-                      className="size-5 rounded-full flex items-center justify-center text-muted hover:bg-red-500/15 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                      onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
-                      <X size={11}/>
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Add input */}
-        {showFeeInput ? (
-          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-white px-4 py-3">
-            <Percent size={13} className="text-gold shrink-0"/>
-            <input autoFocus
-              className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted"
-              placeholder="Nome da taxa (ex.: Cartão de crédito)"
-              value={feeInput.label}
-              onChange={e => setFeeInput(f => ({ ...f, label: e.target.value }))}
-              onKeyDown={e => e.key === 'Escape' && (setShowFeeInput(false), setFeeInput({ label: '', percent: '' }))}
-            />
-            <span className="text-muted text-xs mx-1">|</span>
-            <input
-              className="bg-transparent text-sm outline-none w-16 font-mono placeholder:text-muted text-center"
-              placeholder="0,00"
-              type="number" min="0" max="100" step="any"
-              value={feeInput.percent}
-              onChange={e => setFeeInput(f => ({ ...f, percent: e.target.value }))}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  const pct = feeInput.percent.replace(',', '.')
-                  if (feeInput.label.trim() && Number(pct) > 0) {
-                    setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }])
-                    setFeeInput({ label: '', percent: '' })
-                    setShowFeeInput(false)
-                  }
-                }
-                if (e.key === 'Escape') { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }
-              }}
-            />
-            <span className="text-xs font-semibold text-muted">%</span>
-            <button type="button"
-              className="ml-1 rounded-lg bg-gold px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[#ead584] transition-colors"
-              onClick={() => {
-                const pct = feeInput.percent.replace(',', '.')
-                if (feeInput.label.trim() && Number(pct) > 0) {
-                  setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }])
-                  setFeeInput({ label: '', percent: '' })
-                  setShowFeeInput(false)
-                }
-              }}>
-              Adicionar
-            </button>
-            <button type="button" className="text-muted hover:text-paper transition-colors" onClick={() => { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }}>
-              <X size={14}/>
-            </button>
-          </div>
-        ) : (
-          <button type="button" onClick={() => setShowFeeInput(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line py-2.5 text-xs text-muted hover:border-gold/60 hover:text-gold transition-colors">
-            <Plus size={13}/>
-            <span>Adicionar taxa ou encargo</span>
-          </button>
-        )}
-
-        {feeTags.length === 0 && !showFeeInput && (
-          <p className="text-center text-[10px] text-muted pb-1">Nenhuma taxa cadastrada. Adicione cartão, impostos, comissões etc.</p>
-        )}
       </div>
     </form>
 
