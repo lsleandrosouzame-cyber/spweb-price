@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, Eye, History, LoaderCircle, Package, Pencil, Percent, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, X } from 'lucide-react'
+import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -10,11 +10,10 @@ import type { ProductDraft, ProductRecord } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
 import ServicesPanel from './ServicesPanel'
+import { FeeTagWidget, CostTagWidget, type FeeTag, type CostTag } from './CalculationPage'
 
-const blank = { name: '', acquisition: '', other: '0', fees: '0', taxes: '0', desired: '', price: '', notes: '' }
+const blank = { name: '', acquisition: '', desired: '', price: '', notes: '' }
 const inputLabel = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
-const TAG_COLORS_P = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
-type FeeTagP = { id: string; label: string; percent: string }
 
 type Panel = 'list' | 'form' | 'details' | 'history'
 
@@ -57,9 +56,8 @@ export default function ProductsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<'products' | 'services'>('products')
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
-  const [feeTags, setFeeTags] = useState<FeeTagP[]>([])
-  const [showFeeInput, setShowFeeInput] = useState(false)
-  const [feeInput, setFeeInput] = useState({ label: '', percent: '' })
+  const [feeTags, setFeeTags] = useState<FeeTag[]>([])
+  const [costTags, setCostTags] = useState<CostTag[]>([])
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -127,16 +125,18 @@ export default function ProductsPage() {
     return { text: `✓ Excelente! Sua margem atual de ${formatPercent(margin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
   }
 
-  function startCreate() { setEditing(null); setForm(blank); setFeeTags([]); setError(null); setNotice(null); setPanel('form') }
+  function startCreate() { setEditing(null); setForm(blank); setFeeTags([]); setCostTags([]); setError(null); setNotice(null); setPanel('form') }
   function startEdit(row: ProductRecord) {
     setEditing(row); setError(null); setNotice(null)
     const money = (cents: number | null) => cents === null ? '' : (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-    setForm({ name: row.name, acquisition: money(Number(row.acquisition_cost_cents)), other: money(Number(row.other_cost_cents)), fees: String(row.variable_fees_percent), taxes: String(row.tax_percent), desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
-    // Reconstruct fee tags from stored fees+taxes
-    const tags: FeeTagP[] = []
+    setForm({ name: row.name, acquisition: money(Number(row.acquisition_cost_cents)), desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
+    const tags: FeeTag[] = []
     if (Number(row.variable_fees_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Taxas variáveis', percent: String(row.variable_fees_percent) })
     if (Number(row.tax_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Impostos', percent: String(row.tax_percent) })
     setFeeTags(tags)
+    const costs: CostTag[] = []
+    if (Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(Number(row.other_cost_cents)) })
+    setCostTags(costs)
     setPanel('form')
   }
 
@@ -154,17 +154,17 @@ export default function ProductsPage() {
     event.preventDefault()
     if (!currentCompany) return
     const acquisition = parseBrazilianCurrency(form.acquisition)
-    const other = parseBrazilianCurrency(form.other || '0')
+    const totalExtraCostsCents = costTags.reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
     const price = form.price.trim() ? parseBrazilianCurrency(form.price) : null
     const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
     const desired = form.desired.trim() ? Number(form.desired.replace(',', '.')) : null
-    if (!form.name.trim() || acquisition === null || other === null || (form.price.trim() && price === null)) {
-      setError('Confira nome, custos e preço informados.'); return
+    if (!form.name.trim() || acquisition === null || (form.price.trim() && price === null)) {
+      setError('Confira nome, custo e preço informados.'); return
     }
-    try { calculateProductPricing({ acquisitionCostCents: acquisition, otherCostCents: other, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined }) }
+    try { calculateProductPricing({ acquisitionCostCents: acquisition, otherCostCents: totalExtraCostsCents, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined }) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Percentuais incompatíveis.'); return }
     setSaving(true); setError(null)
-    const draft: ProductDraft = { name: form.name.trim(), acquisition_cost_cents: acquisition, other_cost_cents: other, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: form.notes.trim() || null }
+    const draft: ProductDraft = { name: form.name.trim(), acquisition_cost_cents: acquisition, other_cost_cents: totalExtraCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: form.notes.trim() || null }
     try {
       await saveProduct(currentCompany.id, draft, editing?.id)
       setPanel('list'); setNotice(editing ? 'Produto atualizado.' : 'Produto salvo.'); await refresh()
@@ -273,63 +273,13 @@ export default function ProductsPage() {
           <form onSubmit={submit} className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className={inputLabel}>Nome do produto</span><input className="field" maxLength={160} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Kit de café especial"/></label>
-              <label><span className={inputLabel}>Custo de aquisição/produção (R$) <span className="text-gold">*</span></span><CurrencyInput className="field" required value={form.acquisition} onChange={value => setForm({ ...form, acquisition: value })} placeholder="0,00"/></label>
-              <label><span className={inputLabel}>Outros custos unitários (R$)</span><CurrencyInput className="field" value={form.other} onChange={value => setForm({ ...form, other: value })} placeholder="0,00"/></label>
+              <label><span className={inputLabel}>Custo de aquisição/produção (R$) <span className="text-gold font-bold">*</span></span><CurrencyInput className="field" required value={form.acquisition} onChange={value => setForm({ ...form, acquisition: value })} placeholder="0,00"/></label>
             </div>
 
-            {/* Fee tags widget */}
-            <div className="rounded-xl border border-line bg-[#0d0d0d] p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-paper">Taxas e encargos sobre vendas</p>
-                  <p className="mt-0.5 text-[10px] text-muted">Cartão, imposto, comissão — cada um separado.</p>
-                </div>
-                {feeTags.length > 0 && (
-                  <div className="text-right shrink-0 ml-3">
-                    <p className="text-[10px] text-muted">Total</p>
-                    <p className="font-mono text-sm font-bold text-gold">{feeTags.reduce((s, t) => s + Number(t.percent || 0), 0).toFixed(2)}%</p>
-                  </div>
-                )}
-              </div>
-              {feeTags.length > 0 && (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {feeTags.map((tag, i) => (
-                    <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-[#141414] px-3 py-2.5 hover:border-[#333] transition-colors">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="size-2 rounded-full shrink-0" style={{ background: TAG_COLORS_P[i % TAG_COLORS_P.length] }}/>
-                        <span className="text-xs font-medium text-paper truncate">{tag.label}</span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="font-mono text-sm font-bold" style={{ color: TAG_COLORS_P[i % TAG_COLORS_P.length] }}>{tag.percent}%</span>
-                        <button type="button" aria-label={`Remover ${tag.label}`}
-                          className="size-5 rounded-full flex items-center justify-center text-muted hover:bg-red-500/15 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                          onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
-                          <X size={11}/>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {showFeeInput ? (
-                <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-[#1a1a1a] px-4 py-3">
-                  <Percent size={13} className="text-gold shrink-0"/>
-                  <input autoFocus className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted" placeholder="Nome da taxa (ex.: Simples Nacional)" value={feeInput.label} onChange={e => setFeeInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowFeeInput(false), setFeeInput({ label: '', percent: '' }))}/>
-                  <span className="text-muted text-xs mx-1">|</span>
-                  <input className="bg-transparent text-sm outline-none w-16 font-mono placeholder:text-muted text-center" placeholder="0,00" type="number" min="0" max="100" step="any" value={feeInput.percent} onChange={e => setFeeInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => {
-                    if (e.key === 'Enter') { e.preventDefault(); const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }
-                    if (e.key === 'Escape') { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }
-                  }}/>
-                  <span className="text-xs font-semibold text-muted">%</span>
-                  <button type="button" className="ml-1 rounded-lg bg-gold px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[#ead584] transition-colors" onClick={() => { const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }}>Adicionar</button>
-                  <button type="button" className="text-muted hover:text-paper transition-colors" onClick={() => { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }}><X size={14}/></button>
-                </div>
-              ) : (
-                <button type="button" onClick={() => setShowFeeInput(true)} className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line py-2.5 text-xs text-muted hover:border-gold/60 hover:text-gold transition-colors">
-                  <Plus size={13}/><span>Adicionar taxa ou encargo</span>
-                </button>
-              )}
-              {feeTags.length === 0 && !showFeeInput && <p className="text-center text-[10px] text-[#555] pb-1">Nenhuma taxa. Adicione cartão, impostos, comissões etc.</p>}
+            {/* Custos adicionais + Taxas lado a lado */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos adicionais"/>
+              <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
