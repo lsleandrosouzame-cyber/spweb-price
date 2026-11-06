@@ -440,7 +440,7 @@ export default function ExpensesPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="eyebrow">PARÂMETROS OPERACIONAIS</p>
-          <h3 className="mt-1 text-sm font-semibold">Configure capacidade produtiva e taxas sobre vendas</h3>
+          <h3 className="mt-1 text-sm font-semibold">Configure capacidade produtiva e previsão de faturamento</h3>
         </div>
         <button type="submit" className="btn-secondary" disabled={busy}>
           {busy ? <LoaderCircle className="animate-spin" size={14}/> : <CircleDollarSign size={14}/>}
@@ -563,7 +563,7 @@ export default function ExpensesPage() {
         <div className="surface p-5">
           <div className="flex items-center gap-2"><BarChart3 size={16} className="text-gold"/><div><p className="eyebrow">DISTRIBUIÇÃO</p><h3 className="mt-1 text-sm font-semibold">Por categoria</h3></div></div>
           {chartData.length
-            ? <><div className="mt-4 h-44"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={68} paddingAngle={2} stroke="none">{chartData.map((item, i) => <Cell key={item.name} fill={PIE_COLORS_EXP[i % PIE_COLORS_EXP.length]} style={{ filter: 'drop-shadow(0 0 6px rgba(0,0,0,.5))', cursor: 'pointer' }}/>)}</Pie><Tooltip content={({ active, payload }) => {
+            ? <><div className="mt-4 h-44"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} dataKey="value" nameKey="name" innerRadius={45} outerRadius={68} paddingAngle={2} stroke="none">{chartData.map((item, i) => <Cell key={item.name} fill={PIE_COLORS_EXP[i % PIE_COLORS_EXP.length]} style={{ cursor: 'pointer' }}/>)}</Pie><Tooltip content={({ active, payload }) => {
               if (!active || !payload?.length) return null
               const item = payload[0]
               const color = PIE_COLORS_EXP[chartData.findIndex(d => d.name === item.name) % PIE_COLORS_EXP.length]
