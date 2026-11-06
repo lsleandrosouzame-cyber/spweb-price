@@ -348,7 +348,7 @@ export default function ServicesPanel() {
                         {pieData.map((entry, i) => (
                           <Cell key={entry.name} fill={entry.fill}
                             opacity={activeSlice === null || activeSlice === i ? 1 : 0.35}
-                            style={{ filter: activeSlice === i ? `drop-shadow(0 0 10px ${entry.fill}88)` : 'drop-shadow(0 2px 4px rgba(0,0,0,.5))', transition: 'all 0.2s', cursor: 'pointer' }}/>
+                            style={{ transition: 'all 0.2s', cursor: 'pointer' }}/>
                         ))}
                       </Pie>
                       <RechartsTooltip content={({ active, payload }) => {

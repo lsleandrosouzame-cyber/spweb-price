@@ -439,9 +439,6 @@ export default function ProductsPage() {
                               fill={entry.fill}
                               opacity={activeSlice === null || activeSlice === index ? 1 : 0.4}
                               style={{
-                                filter: activeSlice === index
-                                  ? `drop-shadow(0 0 10px ${entry.fill}88)`
-                                  : 'drop-shadow(0 2px 4px rgba(0,0,0,.5))',
                                 transition: 'all 0.2s ease',
                                 cursor: 'pointer',
                                 transform: activeSlice === index ? 'scale(1.05)' : 'scale(1)',

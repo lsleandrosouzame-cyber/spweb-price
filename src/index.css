@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,11 +7,11 @@
 /* ── Design System: Finance Banking — Light Mode ─────────────── */
 :root {
   color-scheme: light;
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-family: 'Montserrat', 'Inter', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  background: #F8FAF9;
+  background: #FCFDFC;
   color: #0D1F1A;
   font-feature-settings: 'ss01' on, 'cv01' on;
   font-optical-sizing: auto;
@@ -17,8 +19,8 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; background: #F8FAF9; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: #F8FAF9; }
+html { min-width: 320px; background: #FCFDFC; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: #FCFDFC; }
 button, input, select, textarea { font: inherit; }
 button { color: inherit; cursor: pointer; }
 ::selection { background: rgba(200,255,0,.35); color: #0D1F1A; }
@@ -43,6 +45,7 @@ button { color: inherit; cursor: pointer; }
   }
 
   /* Global heading sizes */
+  h1, h2, h3, h4, h5, h6 { font-family: 'Sora', sans-serif; }
   h1 { @apply text-3xl font-bold tracking-tight; }
   h2 { @apply text-2xl font-bold tracking-tight; }
   h3 { @apply text-xl font-semibold; }
@@ -51,6 +54,7 @@ button { color: inherit; cursor: pointer; }
   .eyebrow {
     @apply text-[11px] font-bold uppercase tracking-[.18em];
     color: #2D5E4E;
+    font-family: 'Sora', sans-serif;
   }
 
   /* Form field */
@@ -173,7 +177,7 @@ button { color: inherit; cursor: pointer; }
 .text-positive { color: #00955F; }
 .text-negative { color: #DC2626; }
 .text-attention { color: #D97706; }
-.bg-ink { background-color: #F8FAF9; }
+.bg-ink { background-color: #FCFDFC; }
 .bg-graphite { background-color: #FFFFFF; }
 .border-line { border-color: #E8ECEB; }
 .text-paper { color: #0D1F1A; }
