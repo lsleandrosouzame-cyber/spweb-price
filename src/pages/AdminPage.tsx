@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Building2, CheckCircle2, Eye, Lock, LogOut, Mail, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldOff, Trash2, UserPlus, Users, X, XCircle } from 'lucide-react'
+import { Building2, CheckCircle2, Edit2, LayoutDashboard, Lock, LogOut, Mail, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldOff, Trash2, UserPlus, Users, X, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { InlineNotice, LoadingScreen } from '../components/Feedback'
 import { supabase } from '../lib/supabase'
@@ -41,6 +41,10 @@ export default function AdminPage() {
   const [createForm, setCreateForm] = useState({ name: '', email: '', password: '' })
   const [createBusy, setCreateBusy] = useState(false)
   const [createNotice, setCreateNotice] = useState<string | null>(null)
+  const [editUser, setEditUser] = useState<UserRow | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', phone: '' })
+  const [editBusy, setEditBusy] = useState(false)
+  const [editNotice, setEditNotice] = useState<string | null>(null)
 
   // Guard
   if (user?.email !== ADMIN_EMAIL) {
@@ -176,6 +180,36 @@ export default function AdminPage() {
     setSelected(u)
   }
 
+  function openEdit(u: UserRow) {
+    setEditUser(u)
+    setEditForm({ name: u.full_name ?? '', phone: u.phone ?? '' })
+    setEditNotice(null)
+  }
+
+  async function saveEditUser(event: FormEvent) {
+    event.preventDefault()
+    if (!supabase || !editUser) return
+    setEditBusy(true); setEditNotice(null)
+    try {
+      // Upsert profile with updated name and phone
+      const { error } = await supabase.from('profiles').upsert({
+        id: editUser.id,
+        full_name: editForm.name.trim() || null,
+        email: editUser.email,
+        phone: editForm.phone.replace(/\D/g, '') || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
+      if (error) throw error
+      setUsers(prev => prev.map(u => u.id === editUser.id
+        ? { ...u, full_name: editForm.name.trim() || null, phone: editForm.phone.replace(/\D/g, '') || null }
+        : u))
+      setNotice({ text: `Dados de ${editUser.email} atualizados.`, tone: 'success' })
+      setEditUser(null)
+    } catch (cause) {
+      setEditNotice(cause instanceof Error ? cause.message : 'Não foi possível salvar.')
+    } finally { setEditBusy(false) }
+  }
+
   const filtered = users.filter(u =>
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     (u.full_name ?? '').toLowerCase().includes(search.toLowerCase()) ||
@@ -204,6 +238,7 @@ export default function AdminPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-muted hidden sm:block">{user.email}</span>
+          <a href="/dashboard" className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted hover:text-gold transition-colors"><LayoutDashboard size={14}/>Dashboard</a>
           <button onClick={loadUsers} className="rounded-lg border border-line p-2 text-muted hover:text-paper transition-colors" title="Recarregar"><RefreshCw size={14}/></button>
           <button onClick={() => { void signOut(); window.location.href = '/login' }} className="flex items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted hover:text-red-400 transition-colors"><LogOut size={14}/>Sair</button>
         </div>
@@ -295,7 +330,8 @@ export default function AdminPage() {
                       <td className="px-3 py-4 text-xs text-muted">{u.created_at ? new Date(u.created_at).toLocaleDateString('pt-BR') : '—'}</td>
                       <td className="px-4 py-4">
                         <div className="flex items-center justify-end gap-1">
-                          <button title="Ver painel do usuário" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => viewUserPanel(u)}><Eye size={14}/></button>
+                          <button title="Editar usuário" className="rounded p-2 text-muted hover:text-emerald-400 transition-colors" onClick={() => openEdit(u)}><Edit2 size={14}/></button>
+                          <button title="Ver painel do usuário" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => viewUserPanel(u)}><Shield size={14}/></button>
                           <button title="Resetar senha" className="rounded p-2 text-muted hover:text-blue-400 transition-colors" onClick={() => sendPasswordReset(u.email)} disabled={busy || isAdmin}><Lock size={14}/></button>
                           <button title="Excluir usuário" className="rounded p-2 text-muted hover:text-red-400 transition-colors" disabled={isAdmin} onClick={() => !isAdmin && setDeleteConfirm(u.id)}><Trash2 size={14}/></button>
                         </div>
@@ -412,6 +448,39 @@ export default function AdminPage() {
             </form>
 
             <p className="text-[10px] text-muted border-t border-line pt-3">O usuário receberá um e-mail de confirmação. Após confirmar, poderá criar sua empresa e usar o sistema.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Edit user modal */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4">
+          <div className="surface max-w-md w-full p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="eyebrow text-gold">EDITAR USUÁRIO</p>
+                <h3 className="mt-1 text-lg font-semibold">Atualizar dados</h3>
+                <p className="text-xs text-muted mt-0.5">{editUser.email}</p>
+              </div>
+              <button className="rounded-lg p-2 text-muted hover:text-paper" onClick={() => setEditUser(null)}><X size={16}/></button>
+            </div>
+            <form onSubmit={saveEditUser} className="space-y-4">
+              <label className="block">
+                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">Nome completo</span>
+                <input className="field" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex.: João Silva"/>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">WhatsApp (com DDD)</span>
+                <input className="field" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-9999" inputMode="tel"/>
+              </label>
+              {editNotice && <p className="text-xs text-red-400">{editNotice}</p>}
+              <div className="flex justify-end gap-2 border-t border-line pt-4">
+                <button type="button" className="btn-secondary" onClick={() => setEditUser(null)}>Cancelar</button>
+                <button type="submit" className="btn-primary" disabled={editBusy}>
+                  <Edit2 size={14}/>{editBusy ? 'Salvando…' : 'Salvar alterações'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
