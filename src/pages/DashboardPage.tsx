@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom'
 import { Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
-import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings } from '../services/companyData'
-import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings } from '../services/companyData'
+import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostRecord } from '../types/database'
 import { calculateBreakEven, type SalesMixLine } from '../finance/operations'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent } from '../lib/money'
@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const [services, setServices] = useState<ServiceRecord[]>([])
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
+  const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
   const [revenueForecastCents, setRevenueForecastCents] = useState<number | null>(null)
   const [proLaboreCents, setProLaboreCents] = useState<number | null>(null)
   const [feeTags, setFeeTags] = useState<Array<{ label: string; percent: string }>>([])
@@ -100,10 +101,10 @@ export default function DashboardPage() {
       if (!configReady || !currentCompany) { setLoading(false); return }
       setLoading(true); setError(null)
       const from = `${monthKey}-01`
-      const [productResult, serviceResult, expenseResult, salesResult, settingsResult] = await Promise.allSettled([
+      const [productResult, serviceResult, expenseResult, salesResult, settingsResult, variableCostsResult] = await Promise.allSettled([
         listProducts(currentCompany.id), listServices(currentCompany.id),
         listExpenses(currentCompany.id), listSalesRecords(currentCompany.id, from),
-        readOperatingSettings(currentCompany.id),
+        readOperatingSettings(currentCompany.id), listVariableCosts(currentCompany.id),
       ])
       if (!active) return
       const failed = [productResult, serviceResult, expenseResult, salesResult].find(r => r.status === 'rejected')
@@ -111,6 +112,9 @@ export default function DashboardPage() {
       else if (productResult.status === 'fulfilled' && serviceResult.status === 'fulfilled' && expenseResult.status === 'fulfilled' && salesResult.status === 'fulfilled') {
         setProducts(productResult.value); setServices(serviceResult.value)
         setExpenses(expenseResult.value); setSales(salesResult.value)
+      }
+      if (variableCostsResult.status === 'fulfilled') {
+        setVariableCosts(variableCostsResult.value)
       }
       if (settingsResult.status === 'fulfilled' && settingsResult.value) {
         setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
@@ -134,9 +138,14 @@ export default function DashboardPage() {
   const breakEven = fixedTotal === null ? null : calculateBreakEven(fixedTotal, mix)
   const revenue = monthSales.length ? monthSales.reduce((sum, row) => sum + Number(row.selling_price_cents) * Number(row.quantity), 0) : null
 
-  // If no sales mix, estimate break-even using saved fee tags
-  const totalFeesFromTags = feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0)
-  const estimatedMarginPct = totalFeesFromTags > 0 ? Math.max(0, 100 - totalFeesFromTags) : null
+  // Calculate variable costs from Custos Variáveis tab (primary source)
+  const totalVariableCostsPercent = variableCosts
+    .filter(vc => vc.percent_value !== null)
+    .reduce((sum, vc) => sum + Number(vc.percent_value), 0)
+  
+  // Use Variable Costs as primary source, fallback to fee tags only if empty
+  const effectiveVariableCostsPercent = totalVariableCostsPercent > 0 ? totalVariableCostsPercent : feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0)
+  const estimatedMarginPct = effectiveVariableCostsPercent > 0 ? Math.max(0, 100 - effectiveVariableCostsPercent) : null
   const breakEvenEstimated = fixedTotal !== null && !breakEven && estimatedMarginPct !== null && estimatedMarginPct > 0
     ? { breakEvenRevenueCents: fixedTotal / (estimatedMarginPct / 100), weightedContributionMarginPercent: estimatedMarginPct, isEstimated: true }
     : null
@@ -236,8 +245,8 @@ export default function DashboardPage() {
       {/* Metric cards */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
-        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? 'Estimada pelas taxas cadastradas' : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
-        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Estimativa baseada nas despesas e mix real' : breakEvenEstimated ? 'Estimado pelas taxas e despesas cadastradas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? `Baseada nos custos variáveis (${effectiveVariableCostsPercent.toFixed(1)}% cadastrados)` : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
+        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
         <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Produtos cadastrados" value={String(products.length)} detail="Total de produtos desta empresa" icon={Package} variant="blue" to="/produtos"/>
