@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent, TrendingDown } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -8,26 +8,22 @@ import { calculateProductPricing, calculateServiceCost } from '../finance/pricin
 void calculateProductPricing; void calculateServiceCost
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
-import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost } from '../services/companyData'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, readOperatingSettings, removeExpense, saveExpense, saveOperatingSettings } from '../services/companyData'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
-const costTypes = ['Taxa', 'Comissão', 'Frete', 'Embalagem', 'Outros']
 // Rich color palette for expenses chart
 const PIE_COLORS_EXP = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899', '#84cc16', '#f59e0b']
 const today = () => new Date().toLocaleDateString('sv-SE')
 const currentMonth = () => today().slice(0, 7)
 const firstDay = (month: string) => `${month}-01`
 const blankExpense = { description: '', category: categories[0], amount: '', date: today(), notes: '' }
-const blankVariableCost = { description: '', costType: costTypes[0] as typeof costTypes[number], percentValue: '', fixedValue: '', valueType: 'percent' as 'percent' | 'fixed', notes: '' }
 const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
-  const [tab, setTab] = useState<'expenses' | 'variableCosts'>('expenses')
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
-  const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [products, setProducts] = useState<ProductRecord[]>([]); void products
   const [services, setServices] = useState<ServiceRecord[]>([]); void services
@@ -63,25 +59,18 @@ export default function ExpensesPage() {
   const [showSaleForm] = useState(false); void showSaleForm
   const [salesForm] = useState({ item: '', quantity: '1', price: '', date: today() }); void salesForm
 
-  // Variable costs forms
-  const [showVariableCostForm, setShowVariableCostForm] = useState(false)
-  const [editingVarCost, setEditingVarCost] = useState<VariableCostRecord | null>(null)
-  const [varCostForm, setVarCostForm] = useState(blankVariableCost)
-
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
     setLoading(true); setError(null)
     try {
-      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
+      const [expensesResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
         listExpenses(currentCompany.id),
-        listVariableCosts(currentCompany.id),
         listProducts(currentCompany.id),
         listServices(currentCompany.id),
         readOperatingSettings(currentCompany.id),
         listSalesRecords(currentCompany.id, firstDay(month)),
       ])
       setExpenses(expensesResult)
-      setVariableCosts(variableCostsResult)
       setProducts(productsResult)
       setServices(servicesResult)
       setSales(salesResult)
