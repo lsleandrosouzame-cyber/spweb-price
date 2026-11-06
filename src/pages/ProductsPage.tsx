@@ -119,9 +119,9 @@ export default function ProductsPage() {
     const recommended = selectedPricing.recommendedPriceCents
     const minimum = selectedPricing.minimumPriceCents
 
-    if (margin === null) return { text: 'Cadastre um preço atual para visualizar a análise de margem deste produto.', tone: 'warn' }
+    if (margin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
     if (margin < 0) return { text: `⚠️ Atenção: você está vendendo este produto com margem negativa (${formatPercent(margin)}). Cada unidade vendida gera prejuízo. Revise custos ou ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-    if (current !== null && minimum !== null && current < minimum) return { text: `Seu preço atual (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    if (current !== null && minimum !== null && current < minimum) return { text: `Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
     if (desired !== null && margin < desired) return { text: `Você está vendendo abaixo da sua meta de margem (${formatPercent(desired)}). Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
     if (recommended && current !== null && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
     return { text: `✓ Excelente! Sua margem atual de ${formatPercent(margin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
@@ -252,7 +252,7 @@ export default function ProductsPage() {
             </select>
           </div>
           {rows.length === 0
-            ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com seu custo de aquisição, outros custos e preço atual." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
+            ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com seu custo de aquisição, outros custos e Preço praticado hoje." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
             : <div className="surface overflow-hidden">
                 <div className="flex items-center justify-between border-b border-line px-5 py-4">
                   <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} item(ns)</p></div>
@@ -260,7 +260,7 @@ export default function ProductsPage() {
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[1200px] text-left">
-                    <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo aquis.</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Impostos %</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
+                    <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Produto</th><th className="px-3 py-3">Custo aquis.</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Impostos %</th><th className="px-3 py-3">Preço praticado hoje</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-3 py-3">Situação</th><th className="px-4 py-3"/></tr></thead>
                     <tbody className="divide-y divide-line">
                       {filtered.map(row => {
                         const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
@@ -330,7 +330,7 @@ export default function ProductsPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <label><span className={inputLabel}>Preço atual (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
+              <label><span className={inputLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
               <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
               <label className="sm:col-span-2"><span className={inputLabel}>Observação · opcional</span><textarea className="field min-h-20 resize-y" maxLength={1000} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
             </div>
@@ -350,6 +350,47 @@ export default function ProductsPage() {
               <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
             </div>
 
+            {/* Price comparison card */}
+            {selectedDetails.current_price_cents && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Current price (what they charge today) */}
+                <div className={`rounded-2xl border-2 p-6 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'border-teal-border bg-teal-light/40' : 'border-red-400 bg-red-50'}`}>
+                  <p className="eyebrow mb-2" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
+                  <p className="font-mono text-4xl font-bold mt-3" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                  <div className={`mt-4 flex items-center gap-2 rounded-lg px-3 py-2 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                    {(selectedPricing.contributionCents ?? 0) >= 0 ? <CheckCircle2 size={18} style={{ color: '#047857' }}/> : <AlertTriangle size={18} style={{ color: '#991b1b' }}/>}
+                    <div className="flex-1">
+                      <p className="text-xs font-bold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#991b1b' }}>
+                        {(selectedPricing.contributionCents ?? 0) >= 0 ? 'Gerando lucro' : 'Gerando prejuízo'}
+                      </p>
+                      <p className="mt-0.5 text-[10px]" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
+                        {(selectedPricing.contributionCents ?? 0) >= 0 
+                          ? `${formatBRLFromCents(selectedPricing.contributionCents)} por unidade (${formatPercent(selectedPricing.contributionMarginPercent)} margem)` 
+                          : `${formatBRLFromCents(Math.abs(selectedPricing.contributionCents ?? 0))} prejuízo por venda`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recommended price (by the system) */}
+                <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-6">
+                  <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
+                  <p className="font-mono text-4xl font-bold text-emerald-700 mt-3">{formatBRLFromCents(selectedPricing.recommendedPriceCents)}</p>
+                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2">
+                    <TrendingUp size={18} className="text-emerald-700"/>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-emerald-900">Sistema calculado</p>
+                      <p className="mt-0.5 text-[10px] text-emerald-800">
+                        {selectedDetails.desired_margin_percent 
+                          ? `Atinge margem de ${formatPercent(selectedDetails.desired_margin_percent)}`
+                          : 'Baseado em custo + taxas + impostos'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
               {/* Left: metrics grid */}
               <div className="grid gap-3 sm:grid-cols-2">
@@ -359,7 +400,7 @@ export default function ProductsPage() {
                   ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents), '#6b7280'],
                   ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`, DETAIL_COLORS.fees],
                   ['Impostos', `${formatPercent(selectedDetails.tax_percent)} · ${formatBRLFromCents(selectedPricing.taxesCents)}`, DETAIL_COLORS.taxes],
-                  ['Preço atual', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
+                  ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                   ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
                   ['Resultado est. / unidade', formatBRLFromCents(selectedPricing.contributionCents), (selectedPricing.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],

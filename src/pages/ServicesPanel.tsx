@@ -165,7 +165,7 @@ export default function ServicesPanel() {
             <div className="flex items-center gap-2 border-b border-line px-5 py-4"><Wrench size={16} className="text-gold"/><div><p className="eyebrow">SERVIÇOS CADASTRADOS</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} serviço(s)</p></div></div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px] text-left">
-                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço atual</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
+                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço praticado hoje</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
                 <tbody className="divide-y divide-line">{filtered.map(row => {
                   const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
                   const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
@@ -227,7 +227,7 @@ export default function ServicesPanel() {
 
         {/* Preço e margem */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <label><span className={fieldLabel}>Preço atual (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="0,00"/></label>
+          <label><span className={fieldLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="0,00"/></label>
           <label><span className={fieldLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
         </div>
 
@@ -259,7 +259,7 @@ export default function ServicesPanel() {
 
       // Smart footnote
       let footnote: { text: string; tone: 'ok' | 'warn' | 'bad' } | null = null
-      if (margin === null) footnote = { text: 'Cadastre um preço atual para visualizar a análise de margem.', tone: 'warn' }
+      if (margin === null) footnote = { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem.', tone: 'warn' }
       else if (margin < 0) footnote = { text: `⚠️ Margem negativa (${formatPercent(margin)}). Cada execução gera prejuízo. Revise os custos ou ajuste o preço para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
       else if (desired !== null && margin < desired) footnote = { text: `Abaixo da meta de margem (${formatPercent(desired)}). Preço recomendado: ${formatBRLFromCents(recommended)}.`, tone: 'warn' }
       else footnote = { text: `✓ Margem saudável de ${formatPercent(margin)}. Continue monitorando os custos para preservar este resultado.`, tone: 'ok' }
@@ -271,6 +271,47 @@ export default function ServicesPanel() {
             <button className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1" onClick={() => setPanel('list')}><ChevronLeft size={14}/>Voltar</button>
           </div>
 
+          {/* Price comparison card */}
+          {selectedDetails.current_price_cents && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Current price (what they charge today) */}
+              <div className={`rounded-2xl border-2 p-6 ${(contribution ?? 0) >= 0 ? 'border-teal-border bg-teal-light/40' : 'border-red-400 bg-red-50'}`}>
+                <p className="eyebrow mb-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
+                <p className="font-mono text-4xl font-bold mt-3" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                <div className={`mt-4 flex items-center gap-2 rounded-lg px-3 py-2 ${(contribution ?? 0) >= 0 ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                  {(contribution ?? 0) >= 0 ? <CheckCircle2 size={18} style={{ color: '#047857' }}/> : <AlertTriangle size={18} style={{ color: '#991b1b' }}/>}
+                  <div className="flex-1">
+                    <p className="text-xs font-bold" style={{ color: (contribution ?? 0) >= 0 ? '#047857' : '#991b1b' }}>
+                      {(contribution ?? 0) >= 0 ? 'Gerando lucro' : 'Gerando prejuízo'}
+                    </p>
+                    <p className="mt-0.5 text-[10px]" style={{ color: (contribution ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
+                      {(contribution ?? 0) >= 0 
+                        ? `${formatBRLFromCents(contribution)} por serviço (${formatPercent(margin)} margem)` 
+                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo por execução`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recommended price (by the system) */}
+              <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-6">
+                <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
+                <p className="font-mono text-4xl font-bold text-emerald-700 mt-3">{formatBRLFromCents(recommended)}</p>
+                <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-100 px-3 py-2">
+                  <TrendingUp size={18} className="text-emerald-700"/>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-emerald-900">Sistema calculado</p>
+                    <p className="mt-0.5 text-[10px] text-emerald-800">
+                      {desired !== null 
+                        ? `Atinge margem de ${formatPercent(desired)}`
+                        : 'Baseado em custo + taxas'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
             {/* Metrics */}
             <div className="grid gap-3 sm:grid-cols-2">
@@ -281,7 +322,7 @@ export default function ServicesPanel() {
                 ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents), COST_COLORS[1]],
                 ['Custo total do serviço', formatBRLFromCents(cost), '#6b7280'],
                 ['Taxas e encargos', `${formatPercent(Number(selectedDetails.variable_fees_percent) + Number(selectedDetails.tax_percent))} · ${formatBRLFromCents((pricing?.feesCents ?? 0) + (pricing?.taxesCents ?? 0))}`, TAG_COLORS[2]],
-                ['Preço atual', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
+                ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                 ['Preço mínimo', formatBRLFromCents(minimum), '#6b7280'],
                 ['Preço recomendado', formatBRLFromCents(recommended), '#22c55e'],
                 ['Resultado est. / unidade', formatBRLFromCents(contribution), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],

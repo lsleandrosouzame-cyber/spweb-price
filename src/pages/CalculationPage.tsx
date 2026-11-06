@@ -265,7 +265,7 @@ export default function CalculationPage() {
 
         {/* Preço e margem */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <label><span className={labelClass}>Preço atual (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="0,00"/></label>
+          <label><span className={labelClass}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="0,00"/></label>
           <label><span className={labelClass}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
         </div>
 
@@ -282,7 +282,7 @@ export default function CalculationPage() {
         <div><p className="eyebrow text-gold">RESULTADOS AUTOMÁTICOS</p><h3 className="mt-2 text-xl font-bold">Resumo da precificação</h3><p className="mt-1 text-xs text-muted">Contribuição estimada não é lucro líquido.</p></div>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <Result title="Custo total" value={formatBRLFromCents(calculated.cost)}/>
-          <Result title="Preço atual" value={formatBRLFromCents(form.price.trim() ? parseBrazilianCurrency(form.price) : null)}/>
+          <Result title="Preço praticado hoje" value={formatBRLFromCents(form.price.trim() ? parseBrazilianCurrency(form.price) : null)}/>
           <Result title="Preço mínimo" value={formatBRLFromCents(current?.minimumPriceCents ?? null)}/>
           <Result title="Preço recomendado" value={formatBRLFromCents(current?.recommendedPriceCents ?? null)} gold/>
           <Result title="Resultado / unidade" value={formatBRLFromCents(current?.contributionCents ?? null)}/>
