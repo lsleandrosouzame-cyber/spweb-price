@@ -120,13 +120,13 @@ export default function ExpensesPage() {
   const proLaboreCents = proLabore ? parseBrazilianCurrency(proLabore) : null
   const workingDaysNum = workingDays ? Number(workingDays) : null
   const productiveHoursNum = productiveHours ? Number(productiveHours) : null
-  const proLaborePerDay = proLaboreCents && workingDaysNum && workingDaysNum > 0 ? proLaboreCents / workingDaysNum : null
-  const proLaborePerHour = proLaboreCents && workingDaysNum && productiveHoursNum && workingDaysNum > 0 && productiveHoursNum > 0
-    ? proLaboreCents / (workingDaysNum * productiveHoursNum) : null
 
   const operating = fixedTotal !== null && workingDaysNum && productiveHoursNum
     ? (() => { try { return calculateOperatingCosts(fixedTotal, workingDaysNum, productiveHoursNum) } catch { return null } })()
     : null
+
+  // Calculate pró-labore per day for dashboard
+  const proLaborePerDayCents = proLaboreCents && workingDaysNum && workingDaysNum > 0 ? proLaboreCents / workingDaysNum : null
 
   const chartData = Object.values(
     expenseRows.reduce<Record<string, { name: string; value: number }>>((acc, row) => {
@@ -138,7 +138,6 @@ export default function ExpensesPage() {
   ).sort((a, b) => b.value - a.value)
 
   // Break-even calculation
-  const forecastCents = revenueForecast ? parseBrazilianCurrency(revenueForecast) : null
   const totalRevenue = salesRows.reduce((sum, row) => sum + Number(row.selling_price_cents) * Number(row.quantity), 0)
   const totalContribution = salesRows.reduce((sum, row) => sum + Number(row.contribution_cents) * Number(row.quantity), 0)
   const weightedMarginPercent = totalRevenue > 0 ? (totalContribution / totalRevenue) * 100 : null
@@ -165,14 +164,6 @@ export default function ExpensesPage() {
     : null
 
   const breakEvenRevenueCents = breakEvenResult?.breakEvenRevenueCents ?? null
-
-  const forecastSurplusDeficitCents = forecastCents !== null && breakEvenRevenueCents !== null
-    ? forecastCents - breakEvenRevenueCents
-    : null
-
-  const forecastBreakEvenProgress = forecastCents && breakEvenRevenueCents
-    ? Math.min(100, (forecastCents / breakEvenRevenueCents) * 100)
-    : null
 
   async function saveSettings(event: FormEvent) {
     event.preventDefault()
@@ -328,21 +319,147 @@ export default function ExpensesPage() {
   return <div className="space-y-6">
     {/* Header */}
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2><p className="mt-2 text-sm text-muted">Acompanhe despesas fixas e o mix real de vendas.</p></div>
+      <div><p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2><p className="mt-2 text-sm text-muted">Dashboard completo de custos fixos, variáveis e capacidade produtiva.</p></div>
       <label className="block"><span className="mb-1 block text-[10px] text-muted">Período de referência</span><span className="flex items-center gap-2 rounded-lg border border-line bg-graphite px-3"><CalendarDays size={15} className="text-gold"/><input aria-label="Mês de referência" type="month" className="bg-white py-2 text-sm text-paper outline-none" value={month} onChange={e => setMonth(e.target.value)}/></span></label>
     </div>
 
     {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
     {error && !showExpenseForm && !showSaleForm && <InlineNotice>{error}</InlineNotice>}
 
-    {/* ── CAPACIDADE PRODUTIVA — sempre no topo ─────────────────── */}
+    {/* ══════════════════════════════════════════════════════════════
+        DASHBOARD CONSOLIDADO — Todos os KPIs no topo
+    ══════════════════════════════════════════════════════════════ */}
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Despesas fixas mensais */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Despesas fixas mensais</p>
+          <ReceiptText size={15} className="text-gold"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">{formatBRLFromCents(fixedTotal)}</p>
+        <p className="mt-1 text-[10px] text-muted">{expenseRows.length} despesa(s) cadastradas</p>
+      </div>
+
+      {/* Custos variáveis totais */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Custos variáveis</p>
+          <TrendingDown size={15} className="text-teal-border"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {totalFeesPercent.toFixed(2)}%
+        </p>
+        <p className="mt-1 text-[10px] text-muted">
+          {variableCosts.length} custo(s) + {feeTags.length} taxa(s)
+        </p>
+      </div>
+
+      {/* Pró-labore */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Pró-labore mensal</p>
+          <CircleDollarSign size={15} className="text-emerald-500"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {proLaborePerDayCents ? formatBRLFromCents(proLaborePerDayCents) : 'R$ 0,00'}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">
+          {proLaborePerDayCents ? `${formatBRLFromCents(proLaborePerDayCents)}/dia` : 'Configure abaixo'}
+        </p>
+      </div>
+
+      {/* Previsão de faturamento */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Previsão de faturamento</p>
+          <BarChart3 size={15} className="text-blue-400"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {parseBrazilianCurrency(revenueForecast) ? formatBRLFromCents(parseBrazilianCurrency(revenueForecast)!) : 'R$ 0,00'}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">Meta do período</p>
+      </div>
+    </div>
+
+    {/* Segunda linha do dashboard */}
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Dias trabalhados */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Dias trabalhados/mês</p>
+          <CalendarDays size={15} className="text-gold"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {workingDays || '0'}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">dias úteis</p>
+      </div>
+
+      {/* Horas por dia */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Horas trabalhadas/dia</p>
+          <Clock3 size={15} className="text-gold"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {productiveHours || '0'}h
+        </p>
+        <p className="mt-1 text-[10px] text-muted">jornada diária</p>
+      </div>
+
+      {/* Custo fixo por dia */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Custo fixo por dia</p>
+          <CalendarDays size={15} className="text-amber-500"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {formatBRLFromCents(operating?.fixedDailyCents ?? null)}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">despesas ÷ dias</p>
+      </div>
+
+      {/* Custo fixo por hora */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Custo fixo por hora</p>
+          <Clock3 size={15} className="text-amber-500"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {formatBRLFromCents(operating?.fixedHourlyCents ?? null)}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">despesas ÷ horas</p>
+      </div>
+
+      {/* Ponto de equilíbrio */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted">Ponto de equilíbrio</p>
+          <Wallet size={15} className="text-red-400"/>
+        </div>
+        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+          {breakEvenRevenueCents !== null ? formatBRLFromCents(breakEvenRevenueCents) : 'R$ 0,00'}
+        </p>
+        <p className="mt-1 text-[10px] text-muted">faturamento mínimo</p>
+      </div>
+    </div>
+
+    {/* ── PARÂMETROS OPERACIONAIS (colapsável) ─────────────────── */}
     <form className="surface p-5 space-y-4" onSubmit={saveSettings}>
-      <div><p className="eyebrow">CAPACIDADE PRODUTIVA & PREVISÃO</p><h3 className="mt-1 text-sm font-semibold">Parâmetros operacionais e ponto de equilíbrio</h3><p className="mt-1 text-xs text-muted">Preencha os campos abaixo. O pró-labore, custo/dia e custo/hora são calculados automaticamente.</p></div>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="eyebrow">PARÂMETROS OPERACIONAIS</p>
+          <h3 className="mt-1 text-sm font-semibold">Configure capacidade produtiva e taxas sobre vendas</h3>
+        </div>
+        <button type="submit" className="btn-secondary" disabled={busy}>
+          {busy ? <LoaderCircle className="animate-spin" size={14}/> : <CircleDollarSign size={14}/>}
+          {settingsSaved ? 'Atualizar' : 'Salvar'}
+        </button>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label>
           <span className={labelClass}>Dias trabalhados no mês</span>
-          {/* step="any" + validação manual para evitar o erro do browser */}
           <input className="field" type="number" min="1" max="31" step="any" required
             value={workingDays} onChange={e => setWorkingDays(e.target.value)} placeholder="Ex.: 22"/>
         </label>
@@ -463,44 +580,6 @@ export default function ExpensesPage() {
           <p className="text-center text-[10px] text-muted pb-1">Nenhuma taxa cadastrada. Adicione cartão, impostos, comissões etc.</p>
         )}
       </div>
-
-      {/* Derived values — auto calculated */}
-      {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-white p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
-        {proLaborePerDay !== null && <div><p className="text-muted">Pró-labore por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerDay)}</p></div>}
-        {proLaborePerHour !== null && <div><p className="text-muted">Pró-labore por hora</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerHour)}</p></div>}
-        {operating && <div><p className="text-muted">Custo fixo por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(operating.fixedDailyCents)}</p></div>}
-        {operating && <div><p className="text-muted">Custo fixo por hora</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(operating.fixedHourlyCents)}</p></div>}
-      </div>}
-
-      {/* Break-even panel */}
-      {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-white p-4 space-y-3">
-        <div className="grid gap-3 sm:grid-cols-3 text-xs">
-          <div><p className="text-muted">Ponto de equilíbrio</p><p className="mt-1 font-mono text-sm text-gold">{formatBRLFromCents(breakEvenRevenueCents)}</p></div>
-          <div>
-            <p className="text-muted">Margem usada {weightedMarginPercent !== null ? '(mix real)' : '(padrão estimado)'}</p>
-            <p className="mt-1 font-mono text-sm">{effectiveMarginPct !== null ? `${effectiveMarginPct.toFixed(1)}%` : '—'}</p>
-          </div>
-          {forecastCents !== null && <div><p className="text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-sm">{formatBRLFromCents(forecastCents)}</p></div>}
-        </div>
-        {forecastSurplusDeficitCents !== null && <>
-          <div className="h-1.5 overflow-hidden rounded-full bg-teal-light">
-            <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${forecastBreakEvenProgress ?? 0}%` }}/>
-          </div>
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted">{(forecastBreakEvenProgress ?? 0).toFixed(0)}% do equilíbrio</span>
-            <span className={forecastSurplusDeficitCents >= 0 ? 'text-positive' : 'text-negative'}>
-              {forecastSurplusDeficitCents >= 0 ? 'Superávit' : 'Déficit'}: {forecastSurplusDeficitCents >= 0 ? '+' : ''}{formatBRLFromCents(forecastSurplusDeficitCents)}
-            </span>
-          </div>
-        </>}
-      </div>}
-
-      <div className="flex justify-end">
-        <button className="btn-secondary" disabled={busy}>
-          {busy ? <LoaderCircle className="animate-spin" size={14}/> : <CircleDollarSign size={14}/>}
-          {settingsSaved ? 'Atualizar parâmetros' : 'Salvar parâmetros'}
-        </button>
-      </div>
     </form>
 
     {/* Tabs — Despesas fixas and Custos Variáveis */}
@@ -521,12 +600,6 @@ export default function ExpensesPage() {
 
     {/* ── DESPESAS FIXAS ──────────────────────────────────────────────── */}
     {tab === 'expenses' && <div className="space-y-5">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Summary title="Total de despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} icon={Wallet}/>
-        <Summary title="Custo fixo por dia" value={formatBRLFromCents(operating?.fixedDailyCents ?? null)} icon={CalendarDays}/>
-        <Summary title="Custo fixo por hora" value={formatBRLFromCents(operating?.fixedHourlyCents ?? null)} icon={Clock3}/>
-      </section>
-
       {/* Form for NEW expense only (editing is inline per row) */}
       {showExpenseForm && !editing && <section className="surface p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-line pb-4">
@@ -616,24 +689,6 @@ export default function ExpensesPage() {
 
     {/* ── CUSTOS VARIÁVEIS ──────────────────────────────────────────────── */}
     {tab === 'variableCosts' && <div className="space-y-5">
-      <section className="grid gap-3 sm:grid-cols-3">
-        <Summary 
-          title="Total de custos variáveis" 
-          value={`${variableCosts.length} item(ns)`} 
-          icon={TrendingDown}
-        />
-        <Summary 
-          title="Custos percentuais" 
-          value={`${variableCosts.filter(vc => vc.percent_value !== null).length} item(ns)`} 
-          icon={Percent}
-        />
-        <Summary 
-          title="Custos fixos" 
-          value={formatBRLFromCents(variableCosts.filter(vc => vc.fixed_value_cents !== null).reduce((sum, vc) => sum + Number(vc.fixed_value_cents), 0))} 
-          icon={Wallet}
-        />
-      </section>
-
       {/* Form for NEW variable cost only (editing is inline per row) */}
       {showVariableCostForm && !editingVarCost && <section className="surface p-5 space-y-4">
         <div className="flex items-center justify-between border-b border-line pb-4">
@@ -736,8 +791,4 @@ export default function ExpensesPage() {
       </section>
     </div>}
   </div>
-}
-
-function Summary({ title, value, icon: Icon }: { title: string; value: string; icon: typeof Wallet }) {
-  return <div className="surface p-4"><div className="flex items-center justify-between"><p className="text-xs text-muted">{title}</p><Icon size={15} className="text-gold"/></div><p className="mt-3 font-mono text-2xl font-bold tabular-nums">{value}</p></div>
 }
