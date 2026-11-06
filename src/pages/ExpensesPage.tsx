@@ -273,40 +273,105 @@ export default function ExpensesPage() {
       </div>
 
       {/* Fee tags — dynamic list with + button */}
-      <div>
-        <p className={labelClass}>Taxas e encargos sobre vendas</p>
-        <div className="flex flex-wrap gap-2 min-h-[36px] items-center">
-          {feeTags.map(tag => (
-            <span key={tag.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-[#1a1a1a] px-3 py-1.5 text-xs font-medium text-paper">
-              <Percent size={11} className="text-gold"/>
-              {tag.label}
-              <span className="ml-1 font-mono text-gold">{tag.percent}%</span>
-              <button type="button" aria-label={`Remover ${tag.label}`} className="ml-1 rounded-full p-0.5 text-muted hover:text-red-400 transition-colors" onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
-                <X size={11}/>
-              </button>
-            </span>
-          ))}
-          {showFeeInput ? (
-            <span className="inline-flex items-center gap-2 rounded-xl border border-gold/40 bg-[#1a1a1a] px-3 py-1.5">
-              <input autoFocus className="bg-transparent text-xs outline-none w-28 placeholder:text-muted" placeholder="Ex.: Cartão de crédito" value={feeInput.label} onChange={e => setFeeInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowFeeInput(false), setFeeInput({ label: '', percent: '' }))}/>
-              <span className="text-muted text-xs">|</span>
-              <input className="bg-transparent text-xs outline-none w-14 font-mono placeholder:text-muted" placeholder="0,00" type="number" min="0" max="100" step="any" value={feeInput.percent} onChange={e => setFeeInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => {
-                if (e.key === 'Enter') { e.preventDefault(); const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }
-                if (e.key === 'Escape') { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }
-              }}/>
-              <span className="text-xs text-muted">%</span>
-              <button type="button" className="rounded-full bg-gold p-1 text-ink hover:bg-[#ead584] transition-colors" onClick={() => { const pct = feeInput.percent.replace(',', '.'); if (feeInput.label.trim() && Number(pct) > 0) { setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }]); setFeeInput({ label: '', percent: '' }); setShowFeeInput(false) } }}><Plus size={11}/></button>
-              <button type="button" className="text-muted hover:text-paper p-0.5" onClick={() => { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }}><X size={11}/></button>
-            </span>
-          ) : (
-            <button type="button" onClick={() => setShowFeeInput(true)} className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-line px-3 py-1.5 text-xs text-muted hover:border-gold hover:text-gold transition-colors"><Plus size={12}/>Adicionar taxa</button>
+      <div className="rounded-xl border border-line bg-[#0d0d0d] p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold text-paper">Taxas e encargos sobre vendas</p>
+            <p className="mt-0.5 text-[10px] text-muted">Cartão, comissão, imposto, marketplace — cada um separado.</p>
+          </div>
+          {feeTags.length > 0 && (
+            <div className="text-right">
+              <p className="text-[10px] text-muted">Total</p>
+              <p className="font-mono text-sm font-bold text-gold">{totalFeesPercent.toFixed(2)}%</p>
+              {defaultMarginPct !== null && <p className="text-[10px] text-emerald-400">margem est. {defaultMarginPct.toFixed(1)}%</p>}
+            </div>
           )}
         </div>
+
+        {/* Existing tags as colored cards */}
         {feeTags.length > 0 && (
-          <p className="mt-2 text-[10px] text-muted">Total de encargos: <span className="font-mono text-gold">{totalFeesPercent.toFixed(2)}%</span>{defaultMarginPct !== null && <> · Margem estimada: <span className="font-mono text-emerald-400">{defaultMarginPct.toFixed(1)}%</span></>}</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {feeTags.map((tag, i) => {
+              const tagColors = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
+              const color = tagColors[i % tagColors.length]
+              return (
+                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-[#141414] px-3 py-2.5 hover:border-[#333] transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="size-2 rounded-full shrink-0" style={{ background: color }}/>
+                    <span className="text-xs font-medium text-paper truncate">{tag.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="font-mono text-sm font-bold" style={{ color }}>{tag.percent}%</span>
+                    <button type="button" aria-label={`Remover ${tag.label}`}
+                      className="size-5 rounded-full flex items-center justify-center text-muted hover:bg-red-500/15 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
+                      <X size={11}/>
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
+
+        {/* Add input */}
+        {showFeeInput ? (
+          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-[#1a1a1a] px-4 py-3">
+            <Percent size={13} className="text-gold shrink-0"/>
+            <input autoFocus
+              className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted"
+              placeholder="Nome da taxa (ex.: Cartão de crédito)"
+              value={feeInput.label}
+              onChange={e => setFeeInput(f => ({ ...f, label: e.target.value }))}
+              onKeyDown={e => e.key === 'Escape' && (setShowFeeInput(false), setFeeInput({ label: '', percent: '' }))}
+            />
+            <span className="text-muted text-xs mx-1">|</span>
+            <input
+              className="bg-transparent text-sm outline-none w-16 font-mono placeholder:text-muted text-center"
+              placeholder="0,00"
+              type="number" min="0" max="100" step="any"
+              value={feeInput.percent}
+              onChange={e => setFeeInput(f => ({ ...f, percent: e.target.value }))}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  const pct = feeInput.percent.replace(',', '.')
+                  if (feeInput.label.trim() && Number(pct) > 0) {
+                    setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }])
+                    setFeeInput({ label: '', percent: '' })
+                    setShowFeeInput(false)
+                  }
+                }
+                if (e.key === 'Escape') { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }
+              }}
+            />
+            <span className="text-xs font-semibold text-muted">%</span>
+            <button type="button"
+              className="ml-1 rounded-lg bg-gold px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[#ead584] transition-colors"
+              onClick={() => {
+                const pct = feeInput.percent.replace(',', '.')
+                if (feeInput.label.trim() && Number(pct) > 0) {
+                  setFeeTags(prev => [...prev, { id: crypto.randomUUID(), label: feeInput.label.trim(), percent: pct }])
+                  setFeeInput({ label: '', percent: '' })
+                  setShowFeeInput(false)
+                }
+              }}>
+              Adicionar
+            </button>
+            <button type="button" className="text-muted hover:text-paper transition-colors" onClick={() => { setShowFeeInput(false); setFeeInput({ label: '', percent: '' }) }}>
+              <X size={14}/>
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={() => setShowFeeInput(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line py-2.5 text-xs text-muted hover:border-gold/60 hover:text-gold transition-colors">
+            <Plus size={13}/>
+            <span>Adicionar taxa ou encargo</span>
+          </button>
+        )}
+
         {feeTags.length === 0 && !showFeeInput && (
-          <p className="mt-1 text-[10px] text-muted">Adicione taxas de cartão, comissões, impostos e outros encargos para estimar o ponto de equilíbrio.</p>
+          <p className="text-center text-[10px] text-[#555] pb-1">Nenhuma taxa cadastrada. Adicione cartão, impostos, comissões etc.</p>
         )}
       </div>
 
