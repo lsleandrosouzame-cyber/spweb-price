@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, ArrowUpRight, CircleHelp, Package, Plus, ShieldAlert, Target, Wallet, Scale, ChartNoAxesCombined, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
@@ -36,7 +36,7 @@ function buildOpportunity(input: { id: string; name: string; kind: 'Produto' | '
 type MetricVariant = 'default' | 'gold' | 'green' | 'red' | 'blue'
 function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: { title: string; value: string; detail: string; icon: typeof Wallet; variant?: MetricVariant; to?: string }) {
   const schemes: Record<MetricVariant, { border: string; bg: string; icon: string; value: string }> = {
-    default: { border: 'border-line', bg: 'bg-[#171717]', icon: 'text-muted', value: 'text-paper' },
+    default: { border: 'border-line', bg: 'bg-panel', icon: 'text-muted', value: 'text-paper' },
     gold:    { border: 'border-gold/30', bg: 'bg-gold/10', icon: 'text-gold', value: 'text-gold' },
     green:   { border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', icon: 'text-emerald-400', value: 'text-emerald-400' },
     red:     { border: 'border-red-500/30', bg: 'bg-red-500/10', icon: 'text-red-400', value: 'text-red-400' },
@@ -44,7 +44,7 @@ function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: {
   }
   const s = schemes[variant]
   const inner = (
-    <div className={`surface group relative overflow-hidden p-5 transition hover:border-[#414141] ${to ? 'cursor-pointer hover:bg-white/[.018]' : 'cursor-default'}`}>
+    <div className={`surface group relative overflow-hidden p-5 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-white/[.018]' : 'cursor-default'}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs text-muted">{title}</p>
@@ -54,7 +54,7 @@ function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: {
           <Icon size={18}/>
         </span>
       </div>
-      <p className="mt-3 text-[11px] leading-5 text-[#777]">{detail}</p>
+      <p className="mt-3 text-[11px] leading-5 text-muted">{detail}</p>
       {to && <span className="absolute bottom-3 right-4 text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
     </div>
   )
@@ -73,7 +73,7 @@ function PieTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const item = payload[0]
   return (
-    <div className="rounded-xl border border-line bg-[#111] px-4 py-3 shadow-xl text-xs">
+    <div className="rounded-xl border border-line bg-graphite px-4 py-3 shadow-xl text-xs">
       <p className="font-semibold text-paper">{item.name}</p>
       <p className="mt-1 font-mono text-gold">{formatBRLFromCents(item.value)}</p>
       <p className="mt-0.5 text-muted">{item.payload.percent ? `${(item.payload.percent * 100).toFixed(1)}% do total` : ''}</p>
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                 <div className="relative mx-auto h-36 w-36 shrink-0 sm:mx-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart cx="50%" cy="50%" innerRadius="65%" outerRadius="100%" startAngle={90} endAngle={-270} data={radialData} barSize={12}>
-                      <RadialBar dataKey="value" cornerRadius={6} background={{ fill: '#1e1e1e' }}/>
+                      <RadialBar dataKey="value" cornerRadius={6} background={{ fill: '#E8ECEB' }}/>
                     </RadialBarChart>
                   </ResponsiveContainer>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -292,7 +292,7 @@ export default function DashboardPage() {
                     {breakEven && <div className="text-right"><p className="text-xs text-muted">Faturamento atual</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(breakEven.referenceRevenueCents)}</p></div>}
                     {breakEvenEstimated && revenueForecastCents && <div className="text-right"><p className="text-xs text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-lg font-semibold">{formatBRLFromCents(revenueForecastCents)}</p></div>}
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[#1e1e1e]">
+                  <div className="h-2 overflow-hidden rounded-full bg-teal-light">
                     <div className={`h-full rounded-full transition-all ${progressPct >= 100 ? 'bg-emerald-500' : 'bg-gold'}`} style={{ width: `${progressPct}%` }}/>
                   </div>
                   {breakEven && <p className={`text-xs font-medium ${breakEven.remainingRevenueCents > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
@@ -341,12 +341,12 @@ export default function DashboardPage() {
               const ref = revenue ?? revenueForecastCents!
               const pct = Math.min(100, (fixedTotal / ref) * 100)
               return (
-                <div className="mt-3 rounded-lg bg-[#0c0c0c] border border-line p-3 text-xs space-y-1.5">
+                <div className="mt-3 rounded-lg bg-panel border border-line p-3 text-xs space-y-1.5">
                   <div className="flex justify-between text-muted">
                     <span>Despesas fixas / {revenue !== null ? 'faturamento real' : 'previsão'}</span>
                     <span className={`font-mono font-semibold ${pct >= 80 ? 'text-red-400' : pct >= 50 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct.toFixed(1)}%</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#1e1e1e]">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-teal-light">
                     <div className={`h-full rounded-full transition-all ${pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}/>
                   </div>
                 </div>
@@ -394,12 +394,12 @@ export default function DashboardPage() {
               const ref = revenue ?? revenueForecastCents!
               const pct = Math.min(100, (variableCostsTotal / ref) * 100)
               return (
-                <div className="mt-3 rounded-lg bg-[#0c0c0c] border border-line p-3 text-xs space-y-1.5">
+                <div className="mt-3 rounded-lg bg-panel border border-line p-3 text-xs space-y-1.5">
                   <div className="flex justify-between text-muted">
                     <span>Custos variáveis / {revenue !== null ? 'faturamento real' : 'previsão'}</span>
                     <span className={`font-mono font-semibold ${pct >= 70 ? 'text-red-400' : pct >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct.toFixed(1)}%</span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-[#1e1e1e]">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-teal-light">
                     <div className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-red-500' : pct >= 40 ? 'bg-amber-400' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }}/>
                   </div>
                 </div>
@@ -490,7 +490,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      <div className="flex items-start gap-2 text-[10px] leading-5 text-[#6f6f6f]">
+      <div className="flex items-start gap-2 text-[10px] leading-5 text-muted">
         <ShieldAlert size={13} className="mt-0.5 shrink-0 text-gold"/>
         A margem de contribuição não representa lucro líquido. Indicadores só aparecem quando existem despesas e mix de vendas suficientes.
       </div>

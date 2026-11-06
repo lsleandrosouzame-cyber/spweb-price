@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, X, Percent } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
@@ -18,7 +18,7 @@ const today = () => new Date().toLocaleDateString('sv-SE')
 const currentMonth = () => today().slice(0, 7)
 const firstDay = (month: string) => `${month}-01`
 const blankExpense = { description: '', category: categories[0], amount: '', date: today(), notes: '' }
-const labelClass = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
+const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
@@ -273,7 +273,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Fee tags — dynamic list with + button */}
-      <div className="rounded-xl border border-line bg-[#0d0d0d] p-4 space-y-3">
+      <div className="rounded-xl border border-line bg-panel p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs font-semibold text-paper">Taxas e encargos sobre vendas</p>
@@ -295,7 +295,7 @@ export default function ExpensesPage() {
               const tagColors = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
               const color = tagColors[i % tagColors.length]
               return (
-                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-[#141414] px-3 py-2.5 hover:border-[#333] transition-colors">
+                <div key={tag.id} className="group flex items-center justify-between rounded-xl border border-line bg-panel px-3 py-2.5 hover:border-teal-border transition-colors">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="size-2 rounded-full shrink-0" style={{ background: color }}/>
                     <span className="text-xs font-medium text-paper truncate">{tag.label}</span>
@@ -316,7 +316,7 @@ export default function ExpensesPage() {
 
         {/* Add input */}
         {showFeeInput ? (
-          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-[#1a1a1a] px-4 py-3">
+          <div className="flex items-center gap-2 rounded-xl border border-gold/50 bg-panel px-4 py-3">
             <Percent size={13} className="text-gold shrink-0"/>
             <input autoFocus
               className="bg-transparent text-sm outline-none flex-1 placeholder:text-muted"
@@ -371,12 +371,12 @@ export default function ExpensesPage() {
         )}
 
         {feeTags.length === 0 && !showFeeInput && (
-          <p className="text-center text-[10px] text-[#555] pb-1">Nenhuma taxa cadastrada. Adicione cartão, impostos, comissões etc.</p>
+          <p className="text-center text-[10px] text-muted pb-1">Nenhuma taxa cadastrada. Adicione cartão, impostos, comissões etc.</p>
         )}
       </div>
 
       {/* Derived values — auto calculated */}
-      {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-[#0b0b0b] p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+      {(proLaborePerDay !== null || operating) && <div className="grid gap-3 rounded-lg border border-line bg-panel p-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
         {proLaborePerDay !== null && <div><p className="text-muted">Pró-labore por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerDay)}</p></div>}
         {proLaborePerHour !== null && <div><p className="text-muted">Pró-labore por hora</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(proLaborePerHour)}</p></div>}
         {operating && <div><p className="text-muted">Custo fixo por dia</p><p className="mt-1 font-mono text-sm text-paper">{formatBRLFromCents(operating.fixedDailyCents)}</p></div>}
@@ -384,7 +384,7 @@ export default function ExpensesPage() {
       </div>}
 
       {/* Break-even panel */}
-      {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-[#0b0b0b] p-4 space-y-3">
+      {breakEvenRevenueCents !== null && <div className="rounded-lg border border-line bg-panel p-4 space-y-3">
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div><p className="text-muted">Ponto de equilíbrio</p><p className="mt-1 font-mono text-sm text-gold">{formatBRLFromCents(breakEvenRevenueCents)}</p></div>
           <div>
@@ -394,7 +394,7 @@ export default function ExpensesPage() {
           {forecastCents !== null && <div><p className="text-muted">Previsão de faturamento</p><p className="mt-1 font-mono text-sm">{formatBRLFromCents(forecastCents)}</p></div>}
         </div>
         {forecastSurplusDeficitCents !== null && <>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[#262626]">
+          <div className="h-1.5 overflow-hidden rounded-full bg-teal-light">
             <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${forecastBreakEvenProgress ?? 0}%` }}/>
           </div>
           <div className="flex items-center justify-between text-xs">
@@ -415,7 +415,7 @@ export default function ExpensesPage() {
     </form>
 
     {/* Tabs — only Despesas fixas (Vendas e mix removed) */}
-    <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
+    <div className="inline-flex rounded-xl border border-line bg-panel p-1">
       <button className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium bg-gold text-ink"><ReceiptText size={15}/>Despesas fixas</button>
     </div>
 
@@ -463,7 +463,7 @@ export default function ExpensesPage() {
             ? <div className="divide-y divide-line">{filteredExpenseRows.map(row => {
                 const isEditing = editing?.id === row.id && showExpenseForm
                 if (isEditing) return (
-                  <div key={row.id} className="px-5 py-4 bg-[#0d0d0d]">
+                  <div key={row.id} className="px-5 py-4 bg-panel">
                     <form onSubmit={submitExpense} className="space-y-3">
                       <div className="flex items-center justify-between mb-2">
                         <p className="text-xs font-semibold text-gold">Editando despesa</p>
@@ -507,7 +507,7 @@ export default function ExpensesPage() {
               const item = payload[0]
               const color = PIE_COLORS_EXP[chartData.findIndex(d => d.name === item.name) % PIE_COLORS_EXP.length]
               const total = chartData.reduce((s, d) => s + d.value, 0)
-              return <div className="rounded-xl border border-line bg-[#111] px-4 py-3 shadow-xl text-xs"><p className="font-semibold" style={{ color }}>{item.name}</p><p className="mt-1 font-mono" style={{ color }}>{formatBRLFromCents(Number(item.value))}</p><p className="mt-0.5 text-muted">{total > 0 ? `${((Number(item.value) / total) * 100).toFixed(1)}% do total` : ''}</p></div>
+              return <div className="rounded-xl border border-line bg-graphite px-4 py-3 shadow-xl text-xs"><p className="font-semibold" style={{ color }}>{item.name}</p><p className="mt-1 font-mono" style={{ color }}>{formatBRLFromCents(Number(item.value))}</p><p className="mt-0.5 text-muted">{total > 0 ? `${((Number(item.value) / total) * 100).toFixed(1)}% do total` : ''}</p></div>
             }}/></PieChart></ResponsiveContainer></div><div className="space-y-2">{chartData.map((row, i) => <div key={row.name} className="flex justify-between text-[11px]"><span className="flex items-center gap-2 text-muted"><span className="size-2.5 rounded-full shrink-0" style={{ background: PIE_COLORS_EXP[i % PIE_COLORS_EXP.length] }}/>{row.name}</span><span className="font-mono" style={{ color: PIE_COLORS_EXP[i % PIE_COLORS_EXP.length] }}>{formatBRLFromCents(row.value)}</span></div>)}</div></>
             : <p className="mt-6 text-sm text-muted">Sem despesas registradas no período.</p>}
         </div>

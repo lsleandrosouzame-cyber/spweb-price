@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+﻿import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Building2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -39,7 +39,7 @@ export default function OnboardingPage() {
       <p className="eyebrow text-gold">CONFIGURAÇÃO INICIAL · 1 DE 1</p><h1 className="mt-3 text-3xl font-semibold tracking-tight">Vamos organizar os números da sua empresa.</h1><p className="mt-3 max-w-lg text-sm leading-6 text-muted">Começamos pelo essencial. Você poderá cadastrar produtos, serviços e despesas quando estiver pronto.</p>
       <form className="surface mt-8 space-y-5 p-5 sm:p-7" onSubmit={submit}>
         {error && <InlineNotice>{error}</InlineNotice>}
-        <label className="block"><span className="mb-2 block text-xs font-medium text-[#c7c7c7]">Como sua empresa é chamada?</span><input className="field" autoFocus required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Ateliê Aurora" /></label>
+        <label className="block"><span className="mb-2 block text-xs font-medium text-paper">Como sua empresa é chamada?</span><input className="field" autoFocus required minLength={2} maxLength={120} value={name} onChange={e => setName(e.target.value)} placeholder="Ex.: Ateliê Aurora" /></label>
         <p className="text-xs leading-5 text-muted">A empresa será vinculada à sua conta. O acesso aos registros será controlado por políticas do banco e pela sua associação.</p>
         <button className="btn-primary w-full" disabled={busy || !supabase}>{busy ? 'Salvando…' : 'Continuar'}<ArrowRight size={16}/></button>
         {!supabase && <p className="text-xs text-attention">A conexão Supabase precisa ser configurada antes de salvar.</p>}

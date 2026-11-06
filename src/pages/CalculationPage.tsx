@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+﻿import { useMemo, useState, type FormEvent } from 'react'
 import { Calculator, LoaderCircle, Package, Percent, Plus, DollarSign, Wrench, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { InlineNotice } from '../components/Feedback'
@@ -11,7 +11,7 @@ import { supabase } from '../lib/supabase'
 export const TAG_COLORS = ['#D4AF37', '#22c55e', '#3b82f6', '#f97316', '#a855f7', '#ef4444', '#06b6d4', '#ec4899']
 export const COST_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f97316', '#D4AF37', '#06b6d4', '#ec4899', '#ef4444']
 const initial = { name: '', cost: '', price: '', desired: '', hours: '1', hourly: '', materials: '', includeFixed: false, fixedHourly: '' }
-const labelClass = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
+const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export type FeeTag = { id: string; label: string; percent: string }
 export type CostTag = { id: string; label: string; value: string }
@@ -31,7 +31,7 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
   }
 
   return (
-    <div className="rounded-xl border border-line bg-[#0d0d0d] p-4 space-y-3 h-full">
+    <div className="rounded-xl border border-line bg-panel p-4 space-y-3 h-full">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-paper">Taxas e encargos</p>
@@ -48,7 +48,7 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
       {feeTags.length > 0 && (
         <div className="space-y-1.5">
           {feeTags.map((tag, i) => (
-            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-[#141414] px-3 py-2 hover:border-[#333] transition-colors">
+            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2 hover:border-teal-border transition-colors">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="size-2 rounded-full shrink-0" style={{ background: TAG_COLORS[i % TAG_COLORS.length] }}/>
                 <span className="text-xs text-paper truncate">{tag.label}</span>
@@ -67,7 +67,7 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
       )}
 
       {showInput ? (
-        <div className="flex items-center gap-2 rounded-lg border border-gold/50 bg-[#1a1a1a] px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-gold/50 bg-panel px-3 py-2.5">
           <Percent size={12} className="text-gold shrink-0"/>
           <input autoFocus className="bg-transparent text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Cartão de crédito" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', percent: '' }))}/>
           <input className="bg-transparent text-xs outline-none w-12 font-mono text-center placeholder:text-muted" placeholder="%" type="number" min="0" max="100" step="any" value={input.percent} onChange={e => setInput(f => ({ ...f, percent: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', percent: '' }) } }}/>
@@ -80,7 +80,7 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
           <Plus size={11}/> Adicionar taxa
         </button>
       )}
-      {feeTags.length === 0 && !showInput && <p className="text-center text-[10px] text-[#444]">Nenhuma taxa cadastrada</p>}
+      {feeTags.length === 0 && !showInput && <p className="text-center text-[10px] text-muted">Nenhuma taxa cadastrada</p>}
     </div>
   )
 }
@@ -100,7 +100,7 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
   }
 
   return (
-    <div className="rounded-xl border border-line bg-[#0d0d0d] p-4 space-y-3 h-full">
+    <div className="rounded-xl border border-line bg-panel p-4 space-y-3 h-full">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-paper">{title}</p>
@@ -117,7 +117,7 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
       {costTags.length > 0 && (
         <div className="space-y-1.5">
           {costTags.map((tag, i) => (
-            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-[#141414] px-3 py-2 hover:border-[#333] transition-colors">
+            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2 hover:border-teal-border transition-colors">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="size-2 rounded-full shrink-0" style={{ background: COST_COLORS[i % COST_COLORS.length] }}/>
                 <span className="text-xs text-paper truncate">{tag.label}</span>
@@ -136,7 +136,7 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
       )}
 
       {showInput ? (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-[#1a1a1a] px-3 py-2.5">
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-panel px-3 py-2.5">
           <DollarSign size={12} className="text-emerald-400 shrink-0"/>
           <input autoFocus className="bg-transparent text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Embalagem" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', value: '' }))}/>
           <CurrencyInput className="bg-transparent text-xs outline-none w-20 font-mono text-right border-0 !ring-0 !p-0" value={input.value} onChange={v => setInput(f => ({ ...f, value: v }))} placeholder="R$" onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', value: '' }) } }}/>
@@ -148,7 +148,7 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
           <Plus size={11}/> Adicionar custo
         </button>
       )}
-      {costTags.length === 0 && !showInput && <p className="text-center text-[10px] text-[#444]">Nenhum custo adicional</p>}
+      {costTags.length === 0 && !showInput && <p className="text-center text-[10px] text-muted">Nenhum custo adicional</p>}
     </div>
   )
 }
@@ -228,7 +228,7 @@ export default function CalculationPage() {
   const current = calculated.result
   return <div className="space-y-6">
     <div><p className="eyebrow text-gold">SIMULADOR DE PREÇOS</p><h2 className="mt-2 text-2xl font-semibold tracking-tight">Descubra o que sobra por unidade.</h2><p className="mt-2 text-sm text-muted">Os resultados mudam com os dados informados. Nada é salvo até você confirmar.</p></div>
-    <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
+    <div className="inline-flex rounded-xl border border-line bg-panel p-1">
       <button className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition ${kind === 'product' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`} onClick={() => { setKind('product'); setError(null) }}><Package size={15}/>Produto</button>
       <button className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition ${kind === 'service' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`} onClick={() => { setKind('service'); setError(null) }}><Wrench size={15}/>Serviço</button>
     </div>
@@ -295,7 +295,7 @@ export default function CalculationPage() {
         {(costTags.length > 0 || feeTags.length > 0) && (
           <div className="mt-4 space-y-2">
             {costTags.length > 0 && (
-              <div className="rounded-xl border border-line bg-[#0b0b0b] p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-panel p-3 space-y-1.5">
                 <p className="text-[10px] text-muted font-semibold uppercase tracking-wide">Custos adicionais</p>
                 {costTags.map((t, i) => (
                   <div key={t.id} className="flex items-center justify-between text-xs">
@@ -310,7 +310,7 @@ export default function CalculationPage() {
               </div>
             )}
             {feeTags.length > 0 && (
-              <div className="rounded-xl border border-line bg-[#0b0b0b] p-3 space-y-1.5">
+              <div className="rounded-xl border border-line bg-panel p-3 space-y-1.5">
                 <p className="text-[10px] text-muted font-semibold uppercase tracking-wide">Encargos aplicados</p>
                 {feeTags.map((t, i) => (
                   <div key={t.id} className="flex items-center justify-between text-xs">
@@ -327,7 +327,7 @@ export default function CalculationPage() {
           </div>
         )}
 
-        <div className="mt-4 rounded-xl border border-line bg-[#0b0b0b] p-4">
+        <div className="mt-4 rounded-xl border border-line bg-panel p-4">
           <div className="flex items-center justify-between gap-2 text-xs"><span className="text-muted">Comparativo de preço</span><span className="text-[10px] text-gold">simulação</span></div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div><p className="text-[10px] text-muted">Atual</p><p className="mt-1 font-mono text-sm">{formatBRLFromCents(parseBrazilianCurrency(form.price))}</p></div>
@@ -342,5 +342,5 @@ export default function CalculationPage() {
 }
 
 function Result({ title, value, gold = false }: { title: string; value: string; gold?: boolean }) {
-  return <div className="rounded-xl border border-line bg-[#0d0d0d] p-3.5"><p className="text-[10px] text-muted">{title}</p><p className={`mt-2 font-mono text-base font-semibold tabular-nums ${gold ? 'text-gold' : 'text-paper'}`}>{value}</p></div>
+  return <div className="rounded-xl border border-line bg-panel p-3.5"><p className="text-[10px] text-muted">{title}</p><p className={`mt-2 font-mono text-base font-semibold tabular-nums ${gold ? 'text-gold' : 'text-paper'}`}>{value}</p></div>
 }

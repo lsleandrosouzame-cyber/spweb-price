@@ -1,10 +1,10 @@
-import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
+﻿import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
 import { Building2, Eye, EyeOff, KeyRound, Lock, MapPin, Phone, Save, ShieldCheck, User } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { InlineNotice, LoadingScreen } from '../components/Feedback'
 import { supabase } from '../lib/supabase'
 
-const labelClass = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
+const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 // WhatsApp mask: (11) 99999-9999
 function maskPhone(value: string): string {

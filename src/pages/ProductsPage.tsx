@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,7 +13,7 @@ import ServicesPanel from './ServicesPanel'
 import { FeeTagWidget, CostTagWidget, type FeeTag, type CostTag } from './CalculationPage'
 
 const blank = { name: '', acquisition: '', desired: '', price: '', notes: '' }
-const inputLabel = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
+const inputLabel = 'mb-2 block text-xs font-medium text-paper'
 
 type Panel = 'list' | 'form' | 'details' | 'history'
 
@@ -31,7 +31,7 @@ function PieTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null
   const item = payload[0]
   return (
-    <div className="rounded-xl border border-line bg-[#111] px-4 py-3 shadow-xl text-xs z-50">
+    <div className="rounded-xl border border-line bg-graphite px-4 py-3 shadow-xl text-xs z-50">
       <p className="font-semibold text-paper">{item.name}</p>
       <p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Math.abs(item.value))}</p>
       <p className="mt-0.5 text-muted">{item.payload.pct ? `${item.payload.pct}% do preço` : ''}</p>
@@ -202,7 +202,7 @@ export default function ProductsPage() {
         {tab === 'products' && panel === 'list' && <button className="btn-primary w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
       </div>
 
-      <div className="inline-flex rounded-xl border border-line bg-[#101010] p-1">
+      <div className="inline-flex rounded-xl border border-line bg-panel p-1">
         <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'products' ? 'bg-gold text-ink' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
         <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'services' ? 'bg-gold text-ink' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
       </div>
@@ -320,7 +320,7 @@ export default function ProductsPage() {
                   ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
                   ['Markup', formatMarkup(selectedPricing.markup), '#a855f7'],
                 ] as [string, string, string][]).map(([label, value, color]) => (
-                  <div key={label} className="rounded-xl border border-line bg-[#151515] p-4 transition hover:border-[#333]">
+                  <div key={label} className="rounded-xl border border-line bg-panel p-4 transition hover:border-teal-border">
                     <p className="text-[10px] text-muted">{label}</p>
                     <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
                   </div>

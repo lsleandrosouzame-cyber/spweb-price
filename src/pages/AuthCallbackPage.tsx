@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { LoadingScreen, InlineNotice } from '../components/Feedback'
@@ -121,7 +121,7 @@ export default function AuthCallbackPage() {
         {/* Resend form — for expired links */}
         {(errorCode === 'expired' || errorCode === 'no_session') && !resent && (
           <div className="surface p-5 space-y-3">
-            <p className="text-xs font-medium text-[#c7c7c7]">Reenviar link de confirmação</p>
+            <p className="text-xs font-medium text-paper">Reenviar link de confirmação</p>
             <input
               className="field"
               type="email"
@@ -159,7 +159,7 @@ export default function AuthCallbackPage() {
           </button>
         </div>
 
-        <p className="text-center text-[10px] text-[#555]">
+        <p className="text-center text-[10px] text-muted">
           Links de confirmação expiram em 1 hora por segurança.
         </p>
       </div>

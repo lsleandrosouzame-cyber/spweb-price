@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { AlertTriangle, CheckCircle2, Copy, Eye, History, LoaderCircle, Plus, Search, Trash2, Pencil, Wrench, ChevronLeft, TrendingUp } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
@@ -12,7 +12,7 @@ import type { ServiceRecord } from '../types/database'
 import { FeeTagWidget, CostTagWidget, TAG_COLORS, COST_COLORS, type FeeTag, type CostTag } from './CalculationPage'
 
 const empty = { name: '', hours: '1', hourly: '', materials: '', fixedHourly: '', includeFixed: false, desired: '', price: '' }
-const fieldLabel = 'mb-2 block text-xs font-medium text-[#c7c7c7]'
+const fieldLabel = 'mb-2 block text-xs font-medium text-paper'
 
 // Detail colors matching product page
 const DETAIL_COLORS = { cost: '#3b82f6', fees: '#f97316', contribution: '#22c55e', contributionNeg: '#ef4444' }
@@ -255,7 +255,7 @@ export default function ServicesPanel() {
                 ['Margem de contribuição', formatPercent(margin), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
                 ['Markup', formatMarkup(pricing?.markup ?? null), '#a855f7'],
               ] as [string, string, string][]).map(([label, value, color]) => (
-                <div key={label} className="rounded-xl border border-line bg-[#151515] p-4 hover:border-[#333] transition-colors">
+                <div key={label} className="rounded-xl border border-line bg-panel p-4 hover:border-teal-border transition-colors">
                   <p className="text-[10px] text-muted">{label}</p>
                   <p className="mt-2 font-mono text-sm font-semibold" style={{ color }}>{value}</p>
                 </div>
@@ -280,7 +280,7 @@ export default function ServicesPanel() {
                       <RechartsTooltip content={({ active, payload }) => {
                         if (!active || !payload?.length) return null
                         const item = payload[0]
-                        return <div className="rounded-xl border border-line bg-[#111] px-4 py-3 text-xs shadow-xl"><p className="font-semibold" style={{ color: item.payload.fill }}>{item.name}</p><p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Number(item.value))}</p></div>
+                        return <div className="rounded-xl border border-line bg-graphite px-4 py-3 text-xs shadow-xl"><p className="font-semibold" style={{ color: item.payload.fill }}>{item.name}</p><p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Number(item.value))}</p></div>
                       }}/>
                     </PieChart>
                   </ResponsiveContainer>

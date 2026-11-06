@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+﻿import { useEffect, useState, type FormEvent } from 'react'
 import { Building2, CheckCircle2, Edit2, LayoutDashboard, Lock, LogOut, Mail, Plus, RefreshCw, Search, Shield, ShieldAlert, ShieldOff, Trash2, UserPlus, Users, X, XCircle } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -21,11 +21,11 @@ type UserRow = {
 type StatusBadge = { label: string; color: string; bg: string }
 function getStatus(u: UserRow): StatusBadge {
   if (u.is_blocked) return { label: 'Bloqueado', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' }
-  if (!u.last_sign_in_at) return { label: 'Nunca acessou', color: 'text-muted', bg: 'bg-[#1a1a1a] border-line' }
+  if (!u.last_sign_in_at) return { label: 'Nunca acessou', color: 'text-muted', bg: 'bg-panel border-line' }
   const days = Math.floor((Date.now() - new Date(u.last_sign_in_at).getTime()) / 86400000)
   if (days <= 7) return { label: 'Ativo', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' }
   if (days <= 30) return { label: `${days}d atrás`, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30' }
-  return { label: `${days}d atrás`, color: 'text-muted', bg: 'bg-[#1a1a1a] border-line' }
+  return { label: `${days}d atrás`, color: 'text-muted', bg: 'bg-panel border-line' }
 }
 
 export default function AdminPage() {
@@ -228,7 +228,8 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-ink text-paper">
       {/* Admin header */}
-      <header className="sticky top-0 z-40 border-b border-line bg-[#080808]/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 border-b border-line bg-graphite/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between"
+        style={{ boxShadow: '0 1px 12px rgba(0,0,0,.06)' }}>
         <div className="flex items-center gap-3">
           <span className="grid size-9 place-items-center rounded-xl border border-gold/30 bg-gold/10 text-gold"><Shield size={17}/></span>
           <div>
@@ -307,7 +308,7 @@ export default function AdminPage() {
                       <td className="px-5 py-4">
                         <button type="button" className="text-left hover:text-gold transition-colors" onClick={() => viewUserPanel(u)}>
                           <div className="flex items-center gap-2">
-                            <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[#1a1a1a] border border-line text-xs font-semibold text-gold">
+                            <div className="grid size-8 shrink-0 place-items-center rounded-full bg-panel border border-line text-xs font-semibold text-gold">
                               {(u.full_name?.[0] ?? u.email[0]).toUpperCase()}
                             </div>
                             <div>
@@ -320,7 +321,7 @@ export default function AdminPage() {
                       <td className="px-3 py-4">
                         <span className="inline-flex items-center gap-1.5 text-xs text-muted">
                           <Building2 size={11}/>
-                          {u.company_name ?? <span className="italic text-[#444]">Sem empresa</span>}
+                          {u.company_name ?? <span className="italic text-muted">Sem empresa</span>}
                         </span>
                       </td>
                       <td className="px-3 py-4 text-xs text-muted">{u.phone ? `(${u.phone.slice(0,2)}) ${u.phone.slice(2,7)}-${u.phone.slice(7)}` : '—'}</td>
@@ -347,8 +348,8 @@ export default function AdminPage() {
 
       {/* User detail drawer */}
       {selected && (
-        <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/60 backdrop-blur-sm" onClick={() => setSelected(null)}>
-          <div className="relative h-full w-full max-w-md overflow-y-auto bg-[#0d0d0d] border-l border-line p-6 space-y-5" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/20 backdrop-blur-sm" onClick={() => setSelected(null)}>
+          <div className="relative h-full w-full max-w-md overflow-y-auto bg-panel border-l border-line p-6 space-y-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-start justify-between">
               <div>
                 <p className="eyebrow text-gold">PAINEL DO USUÁRIO</p>
@@ -359,7 +360,7 @@ export default function AdminPage() {
             </div>
 
             {/* Avatar */}
-            <div className="flex items-center gap-4 rounded-xl border border-line bg-[#141414] p-4">
+            <div className="flex items-center gap-4 rounded-xl border border-line bg-panel p-4">
               <div className="grid size-14 place-items-center rounded-full bg-gold/10 border border-gold/30 text-xl font-bold text-gold">
                 {(selected.full_name?.[0] ?? selected.email[0]).toUpperCase()}
               </div>
@@ -379,7 +380,7 @@ export default function AdminPage() {
                 ['Último acesso', selected.last_sign_in_at ? new Date(selected.last_sign_in_at).toLocaleString('pt-BR') : 'Nunca'],
                 ['Cadastro', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
               ].map(([label, value]) => (
-                <div key={label} className="flex flex-col gap-0.5 rounded-xl border border-line bg-[#141414] p-3">
+                <div key={label} className="flex flex-col gap-0.5 rounded-xl border border-line bg-panel p-3">
                   <p className="text-[10px] text-muted">{label}</p>
                   <p className="text-sm font-medium break-all">{value}</p>
                 </div>
@@ -415,7 +416,7 @@ export default function AdminPage() {
 
       {/* Create user modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4">
           <div className="surface max-w-md w-full p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div>
@@ -427,15 +428,15 @@ export default function AdminPage() {
 
             <form onSubmit={createUser} className="space-y-4">
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">Nome completo · opcional</span>
+                <span className="mb-2 block text-xs font-medium text-paper">Nome completo · opcional</span>
                 <input className="field" value={createForm.name} onChange={e => setCreateForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex.: João Silva"/>
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">E-mail <span className="text-gold">*</span></span>
+                <span className="mb-2 block text-xs font-medium text-paper">E-mail <span className="text-gold">*</span></span>
                 <input className="field" type="email" required value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@empresa.com"/>
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">Senha <span className="text-gold">*</span></span>
+                <span className="mb-2 block text-xs font-medium text-paper">Senha <span className="text-gold">*</span></span>
                 <input className="field" type="password" required minLength={8} value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} placeholder="Mínimo 8 caracteres" autoComplete="new-password"/>
               </label>
               {createNotice && <p className="text-xs text-red-400">{createNotice}</p>}
@@ -454,7 +455,7 @@ export default function AdminPage() {
 
       {/* Edit user modal */}
       {editUser && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/30 p-4">
           <div className="surface max-w-md w-full p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div>
@@ -466,11 +467,11 @@ export default function AdminPage() {
             </div>
             <form onSubmit={saveEditUser} className="space-y-4">
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">Nome completo</span>
+                <span className="mb-2 block text-xs font-medium text-paper">Nome completo</span>
                 <input className="field" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Ex.: João Silva"/>
               </label>
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-[#c7c7c7]">WhatsApp (com DDD)</span>
+                <span className="mb-2 block text-xs font-medium text-paper">WhatsApp (com DDD)</span>
                 <input className="field" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} placeholder="(11) 99999-9999" inputMode="tel"/>
               </label>
               {editNotice && <p className="text-xs text-red-400">{editNotice}</p>}
@@ -487,7 +488,7 @@ export default function AdminPage() {
 
       {/* Delete confirm modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/75 p-4">
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/30 p-4">
           <div className="surface max-w-md w-full p-6 space-y-4">
             <div className="flex items-center gap-3"><ShieldOff size={20} className="text-red-400 shrink-0"/><h3 className="text-base font-semibold">Confirmar exclusão</h3></div>
             <p className="text-sm text-muted">Esta ação é <strong className="text-paper">irreversível</strong>. O perfil e todos os dados associados serão removidos. Deseja continuar?</p>

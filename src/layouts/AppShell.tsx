@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Calculator, ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
@@ -38,7 +38,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-ink text-paper">
       {/* Mobile overlay */}
       {mobileOpen && (
-        <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
+        <button aria-label="Fechar menu" className="fixed inset-0 z-40 bg-black/15 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Sidebar */}
