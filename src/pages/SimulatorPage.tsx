@@ -56,7 +56,6 @@ export default function SimulatorPage() {
 
   const contributionMargin = pricing.contributionMarginPercent ?? 0
   const contributionCents = pricing.contributionCents ?? 0
-  const isProfit = contributionCents > 0
   const isLoss = contributionCents < 0
   const meetsTarget = contributionMargin >= (type === 'product' ? desiredMargin : serviceDesiredMargin)
 
