@@ -14,7 +14,6 @@ export default function SimulatorPage() {
   const [variableFees, setVariableFees] = useState(13) // 13%
   const [tax, setTax] = useState(8) // 8%
   const [desiredMargin, setDesiredMargin] = useState(25) // 25%
-  const [sellingPrice, setSellingPrice] = useState(35000) // R$ 350,00
 
   // Estados para Serviço
   const [hours, setHours] = useState(8)
@@ -24,14 +23,39 @@ export default function SimulatorPage() {
   const [serviceFees, setServiceFees] = useState(13)
   const [serviceTax, setServiceTax] = useState(8)
   const [serviceDesiredMargin, setServiceDesiredMargin] = useState(25)
-  const [servicePrice, setServicePrice] = useState(80000) // R$ 800,00
 
   // Calcular custos do serviço
   const serviceTotalCost = useMemo(() => {
     return (hours * hourlyLabor) + materials + serviceOtherCost
   }, [hours, hourlyLabor, materials, serviceOtherCost])
 
-  // Calcular pricing
+  // Calcular pricing - Primeiro passo: obter o preço recomendado
+  const initialPricing = useMemo(() => {
+    if (type === 'product') {
+      return calculateProductPricing({
+        acquisitionCostCents: acquisitionCost,
+        otherCostCents: otherCost,
+        variableFeesPercent: variableFees,
+        taxPercent: tax,
+        desiredMarginPercent: desiredMargin,
+        sellingPriceCents: undefined, // Sem preço de venda ainda
+      })
+    } else {
+      return calculateProductPricing({
+        acquisitionCostCents: serviceTotalCost,
+        otherCostCents: 0,
+        variableFeesPercent: serviceFees,
+        taxPercent: serviceTax,
+        desiredMarginPercent: serviceDesiredMargin,
+        sellingPriceCents: undefined,
+      })
+    }
+  }, [type, acquisitionCost, otherCost, variableFees, tax, desiredMargin, serviceTotalCost, serviceFees, serviceTax, serviceDesiredMargin])
+
+  // O preço de venda é o recomendado pelo sistema
+  const sellingPrice = initialPricing.recommendedPriceCents ?? initialPricing.minimumPriceCents
+
+  // Calcular pricing final com o preço recomendado
   const pricing = useMemo(() => {
     if (type === 'product') {
       return calculateProductPricing({
@@ -49,10 +73,10 @@ export default function SimulatorPage() {
         variableFeesPercent: serviceFees,
         taxPercent: serviceTax,
         desiredMarginPercent: serviceDesiredMargin,
-        sellingPriceCents: servicePrice,
+        sellingPriceCents: sellingPrice,
       })
     }
-  }, [type, acquisitionCost, otherCost, variableFees, tax, desiredMargin, sellingPrice, serviceTotalCost, serviceFees, serviceTax, serviceDesiredMargin, servicePrice])
+  }, [type, acquisitionCost, otherCost, variableFees, tax, desiredMargin, sellingPrice, serviceTotalCost, serviceFees, serviceTax, serviceDesiredMargin])
 
   const contributionMargin = pricing.contributionMarginPercent ?? 0
   const contributionCents = pricing.contributionCents ?? 0
@@ -161,10 +185,10 @@ export default function SimulatorPage() {
             <p className="text-xs font-semibold text-muted">PREÇO DE VENDA</p>
           </div>
           <p className="mt-3 font-mono text-3xl font-bold text-gold">
-            {formatBRLFromCents(type === 'product' ? sellingPrice : servicePrice)}
+            {formatBRLFromCents(sellingPrice)}
           </p>
           <p className="mt-2 text-xs text-muted">
-            Preço praticado/simulado
+            Recomendado pelo sistema
           </p>
         </div>
 
@@ -336,27 +360,6 @@ export default function SimulatorPage() {
               <span>100%</span>
             </div>
           </div>
-
-          {/* Preço de Venda */}
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Preço de Venda (Teste)</label>
-              <span className="font-mono text-lg font-bold text-gold">{formatBRLFromCents(sellingPrice)}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="200000"
-              step="100"
-              value={sellingPrice}
-              onChange={(e) => setSellingPrice(Number(e.target.value))}
-              className="slider w-full"
-            />
-            <div className="mt-1 flex justify-between text-xs text-muted">
-              <span>R$ 0</span>
-              <span>R$ 2.000</span>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="surface p-6 space-y-6">
@@ -514,27 +517,6 @@ export default function SimulatorPage() {
             <div className="mt-1 flex justify-between text-xs text-muted">
               <span>0%</span>
               <span>100%</span>
-            </div>
-          </div>
-
-          {/* Preço de Venda */}
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Preço do Serviço (Teste)</label>
-              <span className="font-mono text-lg font-bold text-gold">{formatBRLFromCents(servicePrice)}</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="300000"
-              step="100"
-              value={servicePrice}
-              onChange={(e) => setServicePrice(Number(e.target.value))}
-              className="slider w-full"
-            />
-            <div className="mt-1 flex justify-between text-xs text-muted">
-              <span>R$ 0</span>
-              <span>R$ 3.000</span>
             </div>
           </div>
         </div>
