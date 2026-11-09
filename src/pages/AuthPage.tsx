@@ -62,17 +62,14 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   return <main className="grid min-h-screen bg-ink lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
     <section className="relative hidden min-h-screen overflow-hidden border-r border-line bg-panel p-12 lg:flex lg:flex-col lg:justify-between xl:p-16">
       <div className="absolute -left-40 top-1/4 size-[540px] rounded-full border border-gold/[.06]" /><div className="absolute -left-16 top-[30%] size-[380px] rounded-full border border-gold/[.08]" />
-      <Link to="/login" className="relative z-10 flex w-fit items-center gap-3"><img src="/spweb-lucro-mark.svg" alt="" className="size-10 rounded-xl" /><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
-      <div className="relative z-10 max-w-xl"><span className="eyebrow text-gold">INTELIGÊNCIA PARA DECIDIR</span><h1 className="mt-6 text-4xl font-semibold leading-[1.16] tracking-[-.04em] xl:text-5xl">Pare de adivinhar seus preços.</h1><p className="mt-5 max-w-md text-lg leading-8 text-muted">Descubra quanto você realmente ganha.</p><div className="mt-12 flex items-center gap-3"><span className="h-px w-10 bg-gold"/><span className="text-xs tracking-wide text-muted">Clareza financeira para quem empreende.</span></div></div>
+      <Link to="/login" className="relative z-10 flex w-fit items-center gap-3"><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
+      <div className="relative z-10 max-w-xl"><span className="eyebrow text-gold">INTELIGÊNCIA PARA DECIDIR</span><h1 className="mt-6 text-4xl font-semibold leading-[1.16] tracking-[-.04em] xl:text-5xl">Pare de adivinhar seus preços.</h1><p className="mt-5 max-w-md text-lg leading-8 text-muted">Descubra quanto você realmente ganha.</p></div>
       <p className="relative z-10 text-[10px] text-muted">SPWEB LUCRO · PRECISÃO QUE VIRA DECISÃO</p>
     </section>
 
     <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10">
       <div className="w-full max-w-[420px]">
-        <Link to="/login" className="mb-12 flex items-center gap-3 lg:hidden"><img src="/spweb-lucro-mark.svg" alt="" className="size-9 rounded-xl" /><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
-        <p className="eyebrow text-gold">SUA EMPRESA, COM MAIS CLAREZA</p>
-        <h2 className="mt-3 text-2xl font-semibold tracking-tight">{pageCopy.title}</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">{pageCopy.subtitle}</p>
+        <Link to="/login" className="mb-12 flex items-center gap-3 lg:hidden"><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
 
         <div className="mt-8 space-y-4">
           {configMissing && <InlineNotice tone="info">A autenticação real aguarda a configuração segura do projeto Supabase. Os dados não são simulados.</InlineNotice>}
@@ -84,9 +81,6 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {!hasSupabaseConfig && <button type="button" className="btn-primary w-full opacity-60" disabled>{pageCopy.button}<ArrowRight size={15}/></button>}
           {hasSupabaseConfig && <button className="btn-primary w-full" disabled={busy}>{busy ? 'Aguarde…' : pageCopy.button}<ArrowRight size={15}/></button>}
         </form>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 text-xs text-muted">
-          {mode === 'login' ? <><Link className="hover:text-gold" to="/recovery">Esqueci minha senha</Link><Link className="hover:text-gold" to="/signup">Criar conta <span className="text-gold">→</span></Link></> : mode === 'signup' ? <><span>Já tem uma conta?</span><Link className="hover:text-gold" to="/login">Entrar <span className="text-gold">→</span></Link></> : <Link className="hover:text-gold" to="/login">Voltar para entrar <span className="text-gold">→</span></Link>}
-        </div>
         <p className="mt-10 border-t border-line pt-5 text-center text-[10px] leading-5 text-muted">Ao continuar, você concorda em usar os dados da sua empresa para calcular indicadores e simulações. A margem de contribuição não representa lucro líquido.</p>
       </div>
     </section>

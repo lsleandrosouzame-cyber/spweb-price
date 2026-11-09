@@ -50,14 +50,14 @@ export default function AppShell() {
         {/* Logo */}
         <div className={`flex h-[72px] items-center border-b border-line ${collapsed ? 'justify-center px-3' : 'justify-between px-5'}`}>
           <button className="flex items-center gap-3" onClick={() => navigate('/dashboard')} aria-label="Dashboard">
-            <div className="grid size-9 place-items-center rounded-xl shrink-0" style={{ background: '#1A3C34' }}>
-              <img src="/spweb-lucro-mark.svg" alt="" className="size-5" />
-            </div>
             {!collapsed && (
               <div className="text-left leading-tight">
                 <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>SPWeb <span style={{ color: '#1A3C34' }}>Lucro</span></span>
                 <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Inteligência financeira</span>
               </div>
+            )}
+            {collapsed && (
+              <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>SPWeb</span>
             )}
           </button>
           <button className="hidden rounded-lg p-1.5 transition-colors hover:bg-teal-light lg:block" style={{ color: '#3D5048' }} onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? 'Expandir' : 'Recolher'}>
