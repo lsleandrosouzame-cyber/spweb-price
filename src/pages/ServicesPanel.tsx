@@ -570,7 +570,7 @@ export default function ServicesPanel() {
                 ['Preço recomendado', formatBRLFromCents(recommended), '#22c55e'],
                 ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                 ['Margem de contribuição', formatPercent(margin), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
-                ['Markup', formatMarkup(pricing?.markup ?? null), '#a855f7'],
+                ['Markup', formatMarkup(recommendedPricing?.markup ?? null), '#a855f7'],
               ] as [string, string, string][]).map(([label, value, color]) => (
                 <div key={label} className="rounded-xl border border-line bg-panel p-4 hover:border-teal-border transition-colors">
                   <p className="text-xs font-semibold text-muted">{label}</p>

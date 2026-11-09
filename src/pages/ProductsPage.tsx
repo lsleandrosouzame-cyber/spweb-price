@@ -668,7 +668,7 @@ export default function ProductsPage() {
                   ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem de contribuição', formatPercent(selectedPricing.contributionMarginPercent), (selectedPricing.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
-                  ['Markup', formatMarkup(selectedPricing.markup), '#a855f7'],
+                  ['Markup', formatMarkup(recommendedPricing?.markup ?? null), '#a855f7'],
                 ] as [string, string, string][]).map(([label, value, color]) => (
                   <div key={label} className="rounded-xl border border-line bg-panel p-4 transition hover:border-teal-border">
                     <p className="text-xs font-semibold text-muted">{label}</p>
