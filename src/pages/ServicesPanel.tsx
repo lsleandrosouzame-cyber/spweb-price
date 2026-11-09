@@ -8,8 +8,11 @@ import { calculateProductPricing, calculateServiceCost } from '../finance/pricin
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
 import { supabase } from '../lib/supabase'
 import { listServices, removeService, saveService } from '../services/companyData'
-import type { ServiceRecord } from '../types/database'
+import { listServiceCosts, listServiceFees, saveServiceCost, saveServiceFee, removeServiceCost, removeServiceFee } from '../services/itemizedData'
+import type { ServiceRecord, ServiceCostRecord, ServiceFeeRecord } from '../types/database'
 import { FeeTagWidget, CostTagWidget, TAG_COLORS, COST_COLORS, type FeeTag, type CostTag } from './CalculationPage'
+import { ServiceCostsList, ServiceFeesList } from '../components/ItemizedLists'
+import { ServiceCostModal, ServiceFeeModal } from '../components/ItemizedModals'
 
 const empty = { name: '', hours: '1', hourly: '', materials: '', fixedHourly: '', includeFixed: false, desired: '', price: '' }
 const fieldLabel = 'mb-2 block text-xs font-medium text-paper'
@@ -38,6 +41,14 @@ export default function ServicesPanel() {
   const [historyTarget, setHistoryTarget] = useState<ServiceRecord | null>(null)
   const [editingCell, setEditingCell] = useState<{ id: string; field: 'other_cost' | 'fees' } | null>(null)
   const [cellValue, setCellValue] = useState('')
+  
+  // Itemized costs and fees
+  const [serviceCosts, setServiceCosts] = useState<ServiceCostRecord[]>([])
+  const [serviceFees, setServiceFees] = useState<ServiceFeeRecord[]>([])
+  const [costModalOpen, setCostModalOpen] = useState(false)
+  const [feeModalOpen, setFeeModalOpen] = useState(false)
+  const [editingCost, setEditingCost] = useState<ServiceCostRecord | null>(null)
+  const [editingFee, setEditingFee] = useState<ServiceFeeRecord | null>(null)
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -52,7 +63,7 @@ export default function ServicesPanel() {
 
   function openDetails(row: ServiceRecord) { setSelectedDetails(row); setActiveSlice(null); setPanel('details') }
 
-  function openForm(row?: ServiceRecord) {
+  async function openForm(row?: ServiceRecord) {
     setEditing(row ?? null); setMessage(null); setError(null)
     const money = (cents: number) => (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
     setForm(row ? {
@@ -62,36 +73,121 @@ export default function ServicesPanel() {
       desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent),
       price: row.current_price_cents === null ? '' : money(row.current_price_cents),
     } : empty)
-    // Reconstruct fee tags from stored data
-    const tags: FeeTag[] = []
-    if (row && Number(row.variable_fees_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Taxas variáveis', percent: String(row.variable_fees_percent) })
-    if (row && Number(row.tax_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Impostos', percent: String(row.tax_percent) })
-    setFeeTags(tags)
-    // Reconstruct ALL cost tags (materials + other_cost)
-    const costs: CostTag[] = []
-    if (row && Number(row.materials_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Materiais e insumos', value: money(row.materials_cents) })
-    // other_cost_cents agora contém custos específicos nomeados individualmente nas tags
-    setCostTags(costs)
+    
+    // Load itemized costs and fees from database
+    if (row) {
+      try {
+        const [costs, fees] = await Promise.all([
+          listServiceCosts(row.id),
+          listServiceFees(row.id)
+        ])
+        setServiceCosts(costs)
+        setServiceFees(fees)
+      } catch (err) {
+        console.error('Failed to load itemized data:', err)
+        setServiceCosts([])
+        setServiceFees([])
+      }
+    } else {
+      setServiceCosts([])
+      setServiceFees([])
+    }
+    
+    // Clear tags (we use tables now)
+    setFeeTags([])
+    setCostTags([])
+    
     setPanel('form')
+  }
+
+  // Cost modal handlers
+  function handleAddCost() {
+    setEditingCost(null)
+    setCostModalOpen(true)
+  }
+
+  function handleEditCost(cost: ServiceCostRecord) {
+    setEditingCost(cost)
+    setCostModalOpen(true)
+  }
+
+  async function handleSaveCost(data: { label: string; amount_cents: number; cost_type: 'material' | 'additional' }) {
+    if (!currentCompany || !editing) throw new Error('Serviço não selecionado')
+    await saveServiceCost(currentCompany.id, editing.id, data, editingCost?.id)
+    const updated = await listServiceCosts(editing.id)
+    setServiceCosts(updated)
+    setCostModalOpen(false)
+    setEditingCost(null)
+  }
+
+  async function handleDeleteCost(id: string) {
+    if (!window.confirm('Excluir este custo?')) return
+    await removeServiceCost(id)
+    setServiceCosts(serviceCosts.filter(c => c.id !== id))
+  }
+
+  // Fee modal handlers
+  function handleAddFee() {
+    setEditingFee(null)
+    setFeeModalOpen(true)
+  }
+
+  function handleEditFee(fee: ServiceFeeRecord) {
+    setEditingFee(fee)
+    setFeeModalOpen(true)
+  }
+
+  async function handleSaveFee(data: { label: string; percent: number; fee_type: 'variable' | 'tax' }) {
+    if (!currentCompany || !editing) throw new Error('Serviço não selecionado')
+    await saveServiceFee(currentCompany.id, editing.id, data, editingFee?.id)
+    const updated = await listServiceFees(editing.id)
+    setServiceFees(updated)
+    setFeeModalOpen(false)
+    setEditingFee(null)
+  }
+
+  async function handleDeleteFee(id: string) {
+    if (!window.confirm('Excluir esta taxa?')) return
+    await removeServiceFee(id)
+    setServiceFees(serviceFees.filter(f => f.id !== id))
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault(); if (!currentCompany) return
-    const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
-    // Separar materials dos custos específicos nomeados individualmente
-    const materialsCents = costTags.find(t => t.label === 'Materiais e insumos') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Materiais e insumos')!.value) ?? 0 : 0
-    const otherCostsCents = costTags.filter(t => t.label !== 'Materiais e insumos').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
+    
+    // Calculate totals from itemized costs and fees
+    const materialsCents = serviceCosts.filter(c => c.cost_type === 'material').reduce((sum, c) => sum + Number(c.amount_cents), 0)
+    const otherCostsCents = serviceCosts.filter(c => c.cost_type === 'additional').reduce((sum, c) => sum + Number(c.amount_cents), 0)
+    const variableFeesPercent = serviceFees.filter(f => f.fee_type === 'variable').reduce((sum, f) => sum + Number(f.percent), 0)
+    const taxPercent = serviceFees.filter(f => f.fee_type === 'tax').reduce((sum, f) => sum + Number(f.percent), 0)
+    
     const money = (value: string) => value.trim() ? parseBrazilianCurrency(value) : 0
     const desired = form.desired.trim() ? Number(form.desired.replace(',', '.')) : null
     const price = form.price.trim() ? money(form.price) : null
     const hours = Number(form.hours)
     const hourly = money(form.hourly)
+    
     if (!form.name.trim() || !Number.isFinite(hours) || hours <= 0 || hourly === null || (form.price.trim() && price === null) || (desired !== null && !Number.isFinite(desired))) {
       setError('Revise nome, tempo e custos.'); return
     }
+    
     try {
-      const cost = calculateServiceCost({ hours, hourlyLaborCostCents: hourly ?? 0, materialsCents, otherCostCents: otherCostsCents, fixedCostPerHourCents: money(form.fixedHourly) ?? 0, includeFixedCostPerHour: form.includeFixed })
-      calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined })
+      const cost = calculateServiceCost({ 
+        hours, 
+        hourlyLaborCostCents: hourly ?? 0, 
+        materialsCents, 
+        otherCostCents: otherCostsCents, 
+        fixedCostPerHourCents: money(form.fixedHourly) ?? 0, 
+        includeFixedCostPerHour: form.includeFixed 
+      })
+      calculateProductPricing({ 
+        acquisitionCostCents: cost, 
+        variableFeesPercent: variableFeesPercent + taxPercent, 
+        taxPercent: 0, 
+        desiredMarginPercent: desired ?? undefined, 
+        sellingPriceCents: price ?? undefined 
+      })
+      
       setBusy(true); setError(null)
       await saveService(currentCompany.id, {
         name: form.name.trim(), hours,
@@ -100,7 +196,7 @@ export default function ServicesPanel() {
         other_cost_cents: otherCostsCents,
         fixed_cost_per_hour_cents: money(form.fixedHourly) ?? 0,
         include_fixed_cost_per_hour: form.includeFixed,
-        variable_fees_percent: totalFeesPercent, tax_percent: 0,
+        variable_fees_percent: variableFeesPercent, tax_percent: taxPercent,
         desired_margin_percent: desired, current_price_cents: price,
       }, editing?.id)
       setPanel('list'); setMessage(editing ? 'Serviço atualizado.' : 'Serviço salvo.'); await refresh()
@@ -234,14 +330,32 @@ export default function ServicesPanel() {
         </div>
 
         {/* Custos + Taxas lado a lado */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos adicionais"/>
+        {/* Custos + Taxas lado a lado como TABELAS */}
+        {editing && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ServiceCostsList
+              costs={serviceCosts}
+              onEdit={handleEditCost}
+              onDelete={handleDeleteCost}
+              onAdd={handleAddCost}
+            />
+            <ServiceFeesList
+              fees={serviceFees}
+              onEdit={handleEditFee}
+              onDelete={handleDeleteFee}
+              onAdd={handleAddFee}
+            />
           </div>
-          <div>
-            <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+        )}
+
+        {/* For new services, show message */}
+        {!editing && (
+          <div className="surface p-5 border border-amber-500/20 bg-amber-500/5">
+            <p className="text-sm text-amber-600">
+              💡 Primeiro salve o serviço, depois você poderá adicionar custos e taxas detalhados.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Preço e margem */}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -495,5 +609,19 @@ export default function ServicesPanel() {
         ? <div className="divide-y divide-line">{history.map(item => <div key={item.id} className="py-3"><p className="text-xs text-muted">{new Date(item.created_at).toLocaleString('pt-BR')}</p><p className="mt-1 text-sm">Preço: <span className="font-mono text-gold">{formatBRLFromCents(item.snapshot.current_price_cents)}</span></p><p className="mt-1 text-xs text-muted">Custo-hora: {formatBRLFromCents(item.snapshot.hourly_labor_cost_cents)} · materiais: {formatBRLFromCents(item.snapshot.materials_cents)} · margem desejada: {formatPercent(item.snapshot.desired_margin_percent)}</p></div>)}</div>
         : <p className="text-sm text-muted">Ainda não há alterações de preço registradas.</p>}
     </section>}
+
+    {/* Modals */}
+    <ServiceCostModal
+      isOpen={costModalOpen}
+      onClose={() => { setCostModalOpen(false); setEditingCost(null) }}
+      onSave={handleSaveCost}
+      editing={editingCost}
+    />
+    <ServiceFeeModal
+      isOpen={feeModalOpen}
+      onClose={() => { setFeeModalOpen(false); setEditingFee(null) }}
+      onSave={handleSaveFee}
+      editing={editingFee}
+    />
   </div>
 }

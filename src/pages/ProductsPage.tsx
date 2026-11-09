@@ -6,11 +6,14 @@ import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
 import { listProducts, removeProduct, saveProduct } from '../services/companyData'
-import type { ProductDraft, ProductRecord } from '../types/database'
+import { listProductCosts, listProductFees, saveProductCost, saveProductFee, removeProductCost, removeProductFee } from '../services/itemizedData'
+import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
 import ServicesPanel from './ServicesPanel'
 import { FeeTagWidget, CostTagWidget, type FeeTag, type CostTag } from './CalculationPage'
+import { ProductCostsList, ProductFeesList } from '../components/ItemizedLists'
+import { ProductCostModal, ProductFeeModal } from '../components/ItemizedModals'
 
 const blank = { name: '', acquisition: '', desired: '', price: '', notes: '' }
 const inputLabel = 'mb-2 block text-xs font-medium text-paper'
@@ -58,6 +61,14 @@ export default function ProductsPage() {
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
   const [feeTags, setFeeTags] = useState<FeeTag[]>([])
   const [costTags, setCostTags] = useState<CostTag[]>([])
+  
+  // Itemized costs and fees
+  const [productCosts, setProductCosts] = useState<ProductCostRecord[]>([])
+  const [productFees, setProductFees] = useState<ProductFeeRecord[]>([])
+  const [costModalOpen, setCostModalOpen] = useState(false)
+  const [feeModalOpen, setFeeModalOpen] = useState(false)
+  const [editingCost, setEditingCost] = useState<ProductCostRecord | null>(null)
+  const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -125,25 +136,88 @@ export default function ProductsPage() {
     return { text: `✓ Excelente! Sua margem atual de ${formatPercent(margin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
   }
 
-  function startCreate() { setEditing(null); setForm(blank); setFeeTags([]); setCostTags([]); setError(null); setNotice(null); setPanel('form') }
-  function startEdit(row: ProductRecord) {
+  function startCreate() { 
+    setEditing(null); setForm(blank); setFeeTags([]); setCostTags([]); 
+    setProductCosts([]); setProductFees([]); 
+    setError(null); setNotice(null); setPanel('form') 
+  }
+  
+  async function startEdit(row: ProductRecord) {
     setEditing(row); setError(null); setNotice(null)
     const money = (cents: number | null) => cents === null ? '' : (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
     setForm({ name: row.name, acquisition: '', desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
     
-    // Reconstruct fee tags from stored percentages
-    const tags: FeeTag[] = []
-    if (Number(row.variable_fees_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Taxas variáveis', percent: String(row.variable_fees_percent) })
-    if (Number(row.tax_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Impostos', percent: String(row.tax_percent) })
-    setFeeTags(tags)
+    // Load itemized costs and fees from database
+    try {
+      const [costs, fees] = await Promise.all([
+        listProductCosts(row.id),
+        listProductFees(row.id)
+      ])
+      setProductCosts(costs)
+      setProductFees(fees)
+    } catch (err) {
+      console.error('Failed to load itemized data:', err)
+      setProductCosts([])
+      setProductFees([])
+    }
     
-    // Reconstruct cost tags from ALL costs (acquisition + other)
-    const costs: CostTag[] = []
-    if (Number(row.acquisition_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Custo de aquisição', value: money(row.acquisition_cost_cents) })
-    // other_cost_cents agora contém custos específicos nomeados individualmente nas tags
-    setCostTags(costs)
+    // Clear tags (we use tables now)
+    setFeeTags([])
+    setCostTags([])
     
     setPanel('form')
+  }
+
+  // Cost modal handlers
+  function handleAddCost() {
+    setEditingCost(null)
+    setCostModalOpen(true)
+  }
+
+  function handleEditCost(cost: ProductCostRecord) {
+    setEditingCost(cost)
+    setCostModalOpen(true)
+  }
+
+  async function handleSaveCost(data: { label: string; amount_cents: number; cost_type: 'acquisition' | 'additional' }) {
+    if (!currentCompany || !editing) throw new Error('Produto não selecionado')
+    await saveProductCost(currentCompany.id, editing.id, data, editingCost?.id)
+    const updated = await listProductCosts(editing.id)
+    setProductCosts(updated)
+    setCostModalOpen(false)
+    setEditingCost(null)
+  }
+
+  async function handleDeleteCost(id: string) {
+    if (!window.confirm('Excluir este custo?')) return
+    await removeProductCost(id)
+    setProductCosts(productCosts.filter(c => c.id !== id))
+  }
+
+  // Fee modal handlers
+  function handleAddFee() {
+    setEditingFee(null)
+    setFeeModalOpen(true)
+  }
+
+  function handleEditFee(fee: ProductFeeRecord) {
+    setEditingFee(fee)
+    setFeeModalOpen(true)
+  }
+
+  async function handleSaveFee(data: { label: string; percent: number; fee_type: 'variable' | 'tax' }) {
+    if (!currentCompany || !editing) throw new Error('Produto não selecionado')
+    await saveProductFee(currentCompany.id, editing.id, data, editingFee?.id)
+    const updated = await listProductFees(editing.id)
+    setProductFees(updated)
+    setFeeModalOpen(false)
+    setEditingFee(null)
+  }
+
+  async function handleDeleteFee(id: string) {
+    if (!window.confirm('Excluir esta taxa?')) return
+    await removeProductFee(id)
+    setProductFees(productFees.filter(f => f.id !== id))
   }
 
   function openDetails(row: ProductRecord) { setSelectedDetails(row); setActiveSlice(null); setPanel('details') }
@@ -159,25 +233,58 @@ export default function ProductsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!currentCompany) return
-    // Separar acquisition_cost dos custos específicos nomeados individualmente
-    const acquisitionCents = costTags.find(t => t.label === 'Custo de aquisição') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Custo de aquisição')!.value) ?? 0 : 0
-    const otherCostsCents = costTags.filter(t => t.label !== 'Custo de aquisição').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
+    
+    // Calculate totals from itemized costs and fees
+    const acquisitionCents = productCosts.filter(c => c.cost_type === 'acquisition').reduce((sum, c) => sum + Number(c.amount_cents), 0)
+    const otherCostsCents = productCosts.filter(c => c.cost_type === 'additional').reduce((sum, c) => sum + Number(c.amount_cents), 0)
+    const variableFeesPercent = productFees.filter(f => f.fee_type === 'variable').reduce((sum, f) => sum + Number(f.percent), 0)
+    const taxPercent = productFees.filter(f => f.fee_type === 'tax').reduce((sum, f) => sum + Number(f.percent), 0)
+    
     const price = form.price.trim() ? parseBrazilianCurrency(form.price) : null
-    const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
     const desired = form.desired.trim() ? Number(form.desired.replace(',', '.')) : null
     const totalCostsCents = acquisitionCents + otherCostsCents
-    if (!form.name.trim() || totalCostsCents === 0 || (form.price.trim() && price === null)) {
-      setError('Confira nome, custos e preço informados.'); return
+    
+    if (!form.name.trim() || (editing && totalCostsCents === 0)) {
+      setError('Confira nome e custos informados.'); return
     }
-    try { calculateProductPricing({ acquisitionCostCents: totalCostsCents, otherCostCents: 0, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined }) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Percentuais incompatíveis.'); return }
+    
+    if (form.price.trim() && price === null) {
+      setError('Preço inválido.'); return
+    }
+    
+    try { 
+      calculateProductPricing({ 
+        acquisitionCostCents: totalCostsCents, 
+        otherCostCents: 0, 
+        variableFeesPercent: variableFeesPercent + taxPercent, 
+        taxPercent: 0, 
+        desiredMarginPercent: desired ?? undefined, 
+        sellingPriceCents: price ?? undefined 
+      }) 
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Percentuais incompatíveis.'); return 
+    }
+    
     setSaving(true); setError(null)
-    const draft: ProductDraft = { name: form.name.trim(), acquisition_cost_cents: acquisitionCents, other_cost_cents: otherCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: form.notes.trim() || null }
+    const draft: ProductDraft = { 
+      name: form.name.trim(), 
+      acquisition_cost_cents: acquisitionCents, 
+      other_cost_cents: otherCostsCents, 
+      variable_fees_percent: variableFeesPercent, 
+      tax_percent: taxPercent, 
+      desired_margin_percent: desired, 
+      current_price_cents: price, 
+      notes: form.notes.trim() || null 
+    }
+    
     try {
       await saveProduct(currentCompany.id, draft, editing?.id)
       setPanel('list'); setNotice(editing ? 'Produto atualizado.' : 'Produto salvo.'); await refresh()
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível salvar.') }
-    finally { setSaving(false) }
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar.') 
+    } finally { 
+      setSaving(false) 
+    }
   }
 
   async function duplicate(row: ProductRecord) {
@@ -340,21 +447,38 @@ export default function ProductsPage() {
                 <input 
                   className="field bg-gold/5 font-mono font-bold text-gold cursor-not-allowed" 
                   disabled 
-                  value={formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0)).replace('R$', '').trim()} 
+                  value={formatBRLFromCents(productCosts.reduce((sum, c) => sum + Number(c.amount_cents), 0)).replace('R$', '').trim()} 
                   placeholder="0,00"
                 />
               </label>
             </div>
 
-            {/* Custos + Taxas lado a lado */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos"/>
+            {/* Custos + Taxas lado a lado como TABELAS */}
+            {editing && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ProductCostsList
+                  costs={productCosts}
+                  onEdit={handleEditCost}
+                  onDelete={handleDeleteCost}
+                  onAdd={handleAddCost}
+                />
+                <ProductFeesList
+                  fees={productFees}
+                  onEdit={handleEditFee}
+                  onDelete={handleDeleteFee}
+                  onAdd={handleAddFee}
+                />
               </div>
-              <div>
-                <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+            )}
+
+            {/* For new products, show message */}
+            {!editing && (
+              <div className="surface p-5 border border-amber-500/20 bg-amber-500/5">
+                <p className="text-sm text-amber-600">
+                  💡 Primeiro salve o produto, depois você poderá adicionar custos e taxas detalhados.
+                </p>
               </div>
-            </div>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label><span className={inputLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
@@ -628,6 +752,20 @@ export default function ProductsPage() {
           </section>
         )}
       </>}
+
+      {/* Modals */}
+      <ProductCostModal
+        isOpen={costModalOpen}
+        onClose={() => { setCostModalOpen(false); setEditingCost(null) }}
+        onSave={handleSaveCost}
+        editing={editingCost}
+      />
+      <ProductFeeModal
+        isOpen={feeModalOpen}
+        onClose={() => { setFeeModalOpen(false); setEditingFee(null) }}
+        onSave={handleSaveFee}
+        editing={editingFee}
+      />
     </div>
   )
 }
