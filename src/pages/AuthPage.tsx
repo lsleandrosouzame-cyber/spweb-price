@@ -1,5 +1,5 @@
 ﻿import { useState, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { InlineNotice } from '../components/Feedback'
@@ -62,13 +62,13 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   return <main className="grid min-h-screen bg-ink lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
     <section className="relative hidden min-h-screen overflow-hidden border-r border-line bg-panel p-12 lg:flex lg:flex-col lg:justify-between xl:p-16">
       <div className="absolute -left-40 top-1/4 size-[540px] rounded-full border border-gold/[.06]" /><div className="absolute -left-16 top-[30%] size-[380px] rounded-full border border-gold/[.08]" />
-      <Link to="/login" className="relative z-10 flex w-fit items-center gap-3"><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
+      <div className="relative z-10"></div>
       <div className="relative z-10 max-w-xl">
         <h1 className="text-5xl font-bold leading-tight tracking-tight xl:text-6xl">
-          SPWeb <span className="text-gold">Lucro</span>
+          SPWeb
         </h1>
         <p className="mt-4 text-sm font-medium uppercase tracking-wider text-muted">
-          Inteligência Financeira que Gera Lucro
+          Sistemas inteligentes que geram lucro
         </p>
       </div>
       <p className="relative z-10 text-[10px] text-muted">SPWEB LUCRO · PRECISÃO QUE VIRA DECISÃO</p>
@@ -76,7 +76,6 @@ export default function AuthPage({ mode }: { mode: Mode }) {
 
     <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10">
       <div className="w-full max-w-[420px]">
-        <Link to="/login" className="mb-12 flex items-center gap-3 lg:hidden"><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
 
         <div className="mt-8 space-y-4">
           {configMissing && <InlineNotice tone="info">A autenticação real aguarda a configuração segura do projeto Supabase. Os dados não são simulados.</InlineNotice>}
