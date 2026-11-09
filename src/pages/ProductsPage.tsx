@@ -472,24 +472,32 @@ export default function ProductsPage() {
                   </div>
                   {Number(selectedDetails.variable_fees_percent) > 0 && (
                     <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-orange-500" />
-                        <span className="text-sm font-medium text-paper">Taxas variáveis</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="size-2 rounded-full bg-orange-500 shrink-0" />
+                        <span className="text-sm font-medium text-paper truncate">Taxas variáveis</span>
                       </div>
-                      <span className="font-mono text-base font-bold text-orange-500">
-                        {formatPercent(selectedDetails.variable_fees_percent)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-sm text-orange-500">{formatPercent(selectedDetails.variable_fees_percent)}</span>
+                        <span className="text-muted text-xs">·</span>
+                        <span className="font-mono text-base font-bold text-orange-500">
+                          {formatBRLFromCents(selectedPricing.feesCents)}
+                        </span>
+                      </div>
                     </div>
                   )}
                   {Number(selectedDetails.tax_percent) > 0 && (
                     <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-red-500" />
-                        <span className="text-sm font-medium text-paper">Impostos</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="size-2 rounded-full bg-red-500 shrink-0" />
+                        <span className="text-sm font-medium text-paper truncate">Impostos</span>
                       </div>
-                      <span className="font-mono text-base font-bold text-red-500">
-                        {formatPercent(selectedDetails.tax_percent)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-mono text-sm text-red-500">{formatPercent(selectedDetails.tax_percent)}</span>
+                        <span className="text-muted text-xs">·</span>
+                        <span className="font-mono text-base font-bold text-red-500">
+                          {formatBRLFromCents(selectedPricing.taxesCents)}
+                        </span>
+                      </div>
                     </div>
                   )}
                   {Number(selectedDetails.variable_fees_percent) === 0 && Number(selectedDetails.tax_percent) === 0 && (
