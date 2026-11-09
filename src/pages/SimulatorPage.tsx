@@ -131,8 +131,10 @@ export default function SimulatorPage() {
 
   const contributionMargin = pricing.contributionMarginPercent ?? 0
   const contributionCents = pricing.contributionCents ?? 0
-  const isLoss = contributionCents < 0
-  const meetsTarget = contributionMargin >= (type === 'product' ? desiredMargin : serviceDesiredMargin)
+  // Só considera prejuízo se tiver um preço de venda válido e o resultado for negativo
+  const hasValidPrice = sellingPrice > 0 && pricing.contributionCents !== null
+  const isLoss = hasValidPrice && contributionCents < 0
+  const meetsTarget = hasValidPrice && contributionMargin >= (type === 'product' ? desiredMargin : serviceDesiredMargin)
 
   // Calcular Margem de Lucro (assumindo 0 despesas fixas no simulador)
   const profitMargin = contributionMargin
@@ -146,6 +148,7 @@ export default function SimulatorPage() {
 
   // Determinar status
   const getStatus = () => {
+    if (!hasValidPrice) return { label: 'AGUARDANDO DADOS', color: 'text-muted', bg: 'bg-muted/10', border: 'border-line', icon: Calculator }
     if (isLoss) return { label: 'PREJUÍZO', color: 'text-red-400', bg: 'bg-red-400/10', border: 'border-red-400', icon: AlertTriangle }
     if (!meetsTarget) return { label: 'ABAIXO DA META', color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400', icon: TrendingUp }
     return { label: 'LUCRATIVO', color: 'text-emerald-400', bg: 'bg-emerald-400/10', border: 'border-emerald-400', icon: CheckCircle2 }
@@ -156,6 +159,9 @@ export default function SimulatorPage() {
 
   // Mensagem dinâmica
   const getMessage = () => {
+    if (!hasValidPrice) {
+      return 'Configure os custos e margens desejadas usando os controles deslizantes abaixo. O sistema calculará automaticamente o preço de venda ideal para você.'
+    }
     if (isLoss) {
       return `Atenção! Com este preço você está tendo prejuízo de ${formatBRLFromCents(Math.abs(contributionCents))} por unidade. Aumente o preço para pelo menos ${formatBRLFromCents(pricing.minimumPriceCents)} para cobrir os custos.`
     }
