@@ -48,13 +48,13 @@ export function FeeTagWidget({ feeTags, setFeeTags }: { feeTags: FeeTag[]; setFe
       {feeTags.length > 0 && (
         <div className="space-y-1.5">
           {feeTags.map((tag, i) => (
-            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2 hover:border-teal-border transition-colors">
+            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5 hover:border-teal-border transition-colors">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="size-2 rounded-full shrink-0" style={{ background: TAG_COLORS[i % TAG_COLORS.length] }}/>
-                <span className="text-xs text-paper truncate">{tag.label}</span>
+                <span className="text-sm font-medium text-paper truncate">{tag.label}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="font-mono text-xs font-bold" style={{ color: TAG_COLORS[i % TAG_COLORS.length] }}>{tag.percent}%</span>
+                <span className="font-mono text-base font-bold" style={{ color: TAG_COLORS[i % TAG_COLORS.length] }}>{tag.percent}%</span>
                 <button type="button"
                   className="size-4 rounded-full flex items-center justify-center text-muted hover:bg-red-500/15 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                   onClick={() => setFeeTags(prev => prev.filter(t => t.id !== tag.id))}>
@@ -117,13 +117,13 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
       {costTags.length > 0 && (
         <div className="space-y-1.5">
           {costTags.map((tag, i) => (
-            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2 hover:border-teal-border transition-colors">
+            <div key={tag.id} className="group flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5 hover:border-teal-border transition-colors">
               <div className="flex items-center gap-2 min-w-0">
                 <span className="size-2 rounded-full shrink-0" style={{ background: COST_COLORS[i % COST_COLORS.length] }}/>
-                <span className="text-xs text-paper truncate">{tag.label}</span>
+                <span className="text-sm font-medium text-paper truncate">{tag.label}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className="font-mono text-xs font-bold" style={{ color: COST_COLORS[i % COST_COLORS.length] }}>{formatBRLFromCents(parseBrazilianCurrency(tag.value))}</span>
+                <span className="font-mono text-base font-bold" style={{ color: COST_COLORS[i % COST_COLORS.length] }}>{formatBRLFromCents(parseBrazilianCurrency(tag.value))}</span>
                 <button type="button"
                   className="size-4 rounded-full flex items-center justify-center text-muted hover:bg-red-500/15 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                   onClick={() => setCostTags(prev => prev.filter(t => t.id !== tag.id))}>

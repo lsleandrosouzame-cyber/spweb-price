@@ -57,7 +57,7 @@ export default function ServicesPanel() {
     const money = (cents: number) => (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
     setForm(row ? {
       name: row.name, hours: String(row.hours), hourly: money(row.hourly_labor_cost_cents),
-      materials: money(row.materials_cents), fixedHourly: money(row.fixed_cost_per_hour_cents),
+      materials: '', fixedHourly: money(row.fixed_cost_per_hour_cents),
       includeFixed: row.include_fixed_cost_per_hour,
       desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent),
       price: row.current_price_cents === null ? '' : money(row.current_price_cents),
@@ -67,8 +67,9 @@ export default function ServicesPanel() {
     if (row && Number(row.variable_fees_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Taxas variáveis', percent: String(row.variable_fees_percent) })
     if (row && Number(row.tax_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Impostos', percent: String(row.tax_percent) })
     setFeeTags(tags)
-    // Reconstruct cost tags from other_cost_cents
+    // Reconstruct ALL cost tags (materials + other_cost)
     const costs: CostTag[] = []
+    if (row && Number(row.materials_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Materiais e insumos', value: money(row.materials_cents) })
     if (row && Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(row.other_cost_cents) })
     setCostTags(costs)
     setPanel('form')
@@ -77,7 +78,9 @@ export default function ServicesPanel() {
   async function submit(event: FormEvent) {
     event.preventDefault(); if (!currentCompany) return
     const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
-    const totalExtraCostsCents = costTags.reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
+    // Separar materials dos outros custos baseado no label
+    const materialsCents = costTags.find(t => t.label === 'Materiais e insumos') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Materiais e insumos')!.value) ?? 0 : 0
+    const otherCostsCents = costTags.filter(t => t.label !== 'Materiais e insumos').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
     const money = (value: string) => value.trim() ? parseBrazilianCurrency(value) : 0
     const desired = form.desired.trim() ? Number(form.desired.replace(',', '.')) : null
     const price = form.price.trim() ? money(form.price) : null
@@ -87,14 +90,14 @@ export default function ServicesPanel() {
       setError('Revise nome, tempo e custos.'); return
     }
     try {
-      const cost = calculateServiceCost({ hours, hourlyLaborCostCents: hourly ?? 0, materialsCents: money(form.materials) ?? 0, otherCostCents: totalExtraCostsCents, fixedCostPerHourCents: money(form.fixedHourly) ?? 0, includeFixedCostPerHour: form.includeFixed })
+      const cost = calculateServiceCost({ hours, hourlyLaborCostCents: hourly ?? 0, materialsCents, otherCostCents, fixedCostPerHourCents: money(form.fixedHourly) ?? 0, includeFixedCostPerHour: form.includeFixed })
       calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined })
       setBusy(true); setError(null)
       await saveService(currentCompany.id, {
         name: form.name.trim(), hours,
         hourly_labor_cost_cents: hourly ?? 0,
-        materials_cents: money(form.materials) ?? 0,
-        other_cost_cents: totalExtraCostsCents,
+        materials_cents: materialsCents,
+        other_cost_cents: otherCostsCents,
         fixed_cost_per_hour_cents: money(form.fixedHourly) ?? 0,
         include_fixed_cost_per_hour: form.includeFixed,
         variable_fees_percent: totalFeesPercent, tax_percent: 0,
@@ -214,15 +217,36 @@ export default function ServicesPanel() {
         <div className="grid gap-4 sm:grid-cols-2">
           <label><span className={fieldLabel}>Tempo de execução (horas) <span className="text-gold font-bold">*</span></span><input className="field" type="number" min="0.01" step="any" required value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })}/></label>
           <label><span className={fieldLabel}>Custo-hora de mão de obra (R$) <span className="text-gold font-bold">*</span></span><CurrencyInput className="field" required value={form.hourly} onChange={value => setForm({ ...form, hourly: value })} placeholder="0,00"/></label>
-          <label><span className={fieldLabel}>Materiais e insumos (R$)</span><CurrencyInput className="field" value={form.materials} onChange={value => setForm({ ...form, materials: value })} placeholder="0,00"/></label>
           <label className="flex items-center gap-2 text-xs text-muted mt-1"><input type="checkbox" checked={form.includeFixed} onChange={e => setForm({ ...form, includeFixed: e.target.checked })} className="accent-[#D4AF37]"/>Incluir custo fixo por hora</label>
           {form.includeFixed && <label className="sm:col-span-2"><span className={fieldLabel}>Custo fixo por hora (R$)</span><CurrencyInput className="field" value={form.fixedHourly} onChange={value => setForm({ ...form, fixedHourly: value })} placeholder="0,00"/></label>}
         </div>
 
-        {/* Custos adicionais + Taxas lado a lado */}
+        {/* Custos + Taxas lado a lado */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Outros custos"/>
-          <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+          <div>
+            <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Outros custos"/>
+            {/* Totalização de custos */}
+            {costTags.length > 0 && (
+              <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
+                <p className="text-xs font-semibold text-muted">Total de custos adicionais</p>
+                <p className="mt-1 font-mono text-lg font-bold text-emerald-400">
+                  {formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0))}
+                </p>
+              </div>
+            )}
+          </div>
+          <div>
+            <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+            {/* Totalização de taxas */}
+            {feeTags.length > 0 && (
+              <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
+                <p className="text-xs font-semibold text-muted">Total de taxas</p>
+                <p className="mt-1 font-mono text-lg font-bold text-amber-400">
+                  {formatPercent(feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0))}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Preço e margem */}

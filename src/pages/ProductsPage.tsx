@@ -129,14 +129,20 @@ export default function ProductsPage() {
   function startEdit(row: ProductRecord) {
     setEditing(row); setError(null); setNotice(null)
     const money = (cents: number | null) => cents === null ? '' : (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-    setForm({ name: row.name, acquisition: money(Number(row.acquisition_cost_cents)), desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
+    setForm({ name: row.name, acquisition: '', desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
+    
+    // Reconstruct fee tags from stored percentages
     const tags: FeeTag[] = []
     if (Number(row.variable_fees_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Taxas variáveis', percent: String(row.variable_fees_percent) })
     if (Number(row.tax_percent) > 0) tags.push({ id: crypto.randomUUID(), label: 'Impostos', percent: String(row.tax_percent) })
     setFeeTags(tags)
+    
+    // Reconstruct cost tags from ALL costs (acquisition + other)
     const costs: CostTag[] = []
-    if (Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(Number(row.other_cost_cents)) })
+    if (Number(row.acquisition_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Custo de aquisição', value: money(row.acquisition_cost_cents) })
+    if (Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(row.other_cost_cents) })
     setCostTags(costs)
+    
     setPanel('form')
   }
 
@@ -153,18 +159,20 @@ export default function ProductsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!currentCompany) return
-    const acquisition = parseBrazilianCurrency(form.acquisition)
-    const totalExtraCostsCents = costTags.reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
+    // Separar acquisition_cost dos outros custos baseado no label
+    const acquisitionCents = costTags.find(t => t.label === 'Custo de aquisição') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Custo de aquisição')!.value) ?? 0 : 0
+    const otherCostsCents = costTags.filter(t => t.label !== 'Custo de aquisição').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
     const price = form.price.trim() ? parseBrazilianCurrency(form.price) : null
     const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
     const desired = form.desired.trim() ? Number(form.desired.replace(',', '.')) : null
-    if (!form.name.trim() || acquisition === null || (form.price.trim() && price === null)) {
-      setError('Confira nome, custo e preço informados.'); return
+    const totalCostsCents = acquisitionCents + otherCostsCents
+    if (!form.name.trim() || totalCostsCents === 0 || (form.price.trim() && price === null)) {
+      setError('Confira nome, custos e preço informados.'); return
     }
-    try { calculateProductPricing({ acquisitionCostCents: acquisition, otherCostCents: totalExtraCostsCents, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined }) }
+    try { calculateProductPricing({ acquisitionCostCents: totalCostsCents, otherCostCents: 0, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined }) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Percentuais incompatíveis.'); return }
     setSaving(true); setError(null)
-    const draft: ProductDraft = { name: form.name.trim(), acquisition_cost_cents: acquisition, other_cost_cents: totalExtraCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: form.notes.trim() || null }
+    const draft: ProductDraft = { name: form.name.trim(), acquisition_cost_cents: acquisitionCents, other_cost_cents: otherCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: form.notes.trim() || null }
     try {
       await saveProduct(currentCompany.id, draft, editing?.id)
       setPanel('list'); setNotice(editing ? 'Produto atualizado.' : 'Produto salvo.'); await refresh()
@@ -329,13 +337,34 @@ export default function ProductsPage() {
           <form onSubmit={submit} className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className={inputLabel}>Nome do produto</span><input className="field" maxLength={160} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Kit de café especial"/></label>
-              <label><span className={inputLabel}>Custo de aquisição/produção (R$) <span className="text-gold font-bold">*</span></span><CurrencyInput className="field" required value={form.acquisition} onChange={value => setForm({ ...form, acquisition: value })} placeholder="0,00"/></label>
             </div>
 
-            {/* Custos adicionais + Taxas lado a lado */}
+            {/* Custos + Taxas lado a lado */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos adicionais"/>
-              <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+              <div>
+                <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos"/>
+                {/* Totalização de custos */}
+                {costTags.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 px-4 py-2.5">
+                    <p className="text-xs font-semibold text-muted">Total de custos</p>
+                    <p className="mt-1 font-mono text-lg font-bold text-gold">
+                      {formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0))}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
+                {/* Totalização de taxas */}
+                {feeTags.length > 0 && (
+                  <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
+                    <p className="text-xs font-semibold text-muted">Total de taxas</p>
+                    <p className="mt-1 font-mono text-lg font-bold text-amber-400">
+                      {formatPercent(feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0))}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
