@@ -62,12 +62,12 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   return <main className="grid min-h-screen bg-ink lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
     <section className="relative hidden min-h-screen overflow-hidden border-r border-line p-12 lg:flex lg:flex-col lg:justify-center xl:p-16"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1600&q=80)',
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }}>
-      {/* Overlay escuro para contraste */}
-      <div className="absolute inset-0 bg-black/50" style={{ zIndex: 1 }}></div>
+      {/* Overlay escuro 70% para ênfase na marca (30% da imagem visível) */}
+      <div className="absolute inset-0 bg-black/70" style={{ zIndex: 1 }}></div>
       
       <div className="relative max-w-xl" style={{ zIndex: 10 }}>
         <h1 className="text-5xl font-bold leading-tight tracking-tight text-white xl:text-6xl">
