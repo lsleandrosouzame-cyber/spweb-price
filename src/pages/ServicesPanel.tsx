@@ -336,8 +336,7 @@ export default function ServicesPanel() {
               {([
                 ['Horas de execução', `${selectedDetails.hours}h`, '#6b7280'],
                 ['Custo-hora de mão de obra', formatBRLFromCents(selectedDetails.hourly_labor_cost_cents), DETAIL_COLORS.cost],
-                ['Materiais e insumos', formatBRLFromCents(selectedDetails.materials_cents), COST_COLORS[0]],
-                ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents), COST_COLORS[1]],
+                ['Materiais e insumos', formatBRLFromCents(Number(selectedDetails.materials_cents) + Number(selectedDetails.other_cost_cents)), COST_COLORS[0]],
                 ['Custo total do serviço', formatBRLFromCents(cost), '#6b7280'],
                 ['Taxas e encargos', `${formatPercent(Number(selectedDetails.variable_fees_percent) + Number(selectedDetails.tax_percent))} · ${formatBRLFromCents((pricing?.feesCents ?? 0) + (pricing?.taxesCents ?? 0))}`, TAG_COLORS[2]],
                 ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],

@@ -426,8 +426,7 @@ export default function ProductsPage() {
               {/* Left: metrics grid */}
               <div className="grid gap-3 sm:grid-cols-2">
                 {([
-                  ['Custo de aquisição', formatBRLFromCents(selectedDetails.acquisition_cost_cents), DETAIL_COLORS.acquisition],
-                  ['Outros custos', formatBRLFromCents(selectedDetails.other_cost_cents), DETAIL_COLORS.other],
+                  ['Custo de aquisição/produção', formatBRLFromCents(Number(selectedDetails.acquisition_cost_cents) + Number(selectedDetails.other_cost_cents)), DETAIL_COLORS.acquisition],
                   ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents), '#6b7280'],
                   ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`, DETAIL_COLORS.fees],
                   ['Impostos', `${formatPercent(selectedDetails.tax_percent)} · ${formatBRLFromCents(selectedPricing.taxesCents)}`, DETAIL_COLORS.taxes],
