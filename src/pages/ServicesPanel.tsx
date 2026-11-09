@@ -334,7 +334,7 @@ export default function ServicesPanel() {
             <input 
               className="field bg-emerald-400/5 font-mono font-bold text-emerald-400 cursor-not-allowed" 
               disabled 
-              value={formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0)).replace('R$', '').trim()} 
+              value={formatBRLFromCents(serviceCosts.reduce((sum, c) => sum + Number(c.amount_cents), 0)).replace('R$', '').trim()} 
               placeholder="0,00"
             />
           </label>
