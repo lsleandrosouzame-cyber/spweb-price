@@ -63,7 +63,14 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     <section className="relative hidden min-h-screen overflow-hidden border-r border-line bg-panel p-12 lg:flex lg:flex-col lg:justify-between xl:p-16">
       <div className="absolute -left-40 top-1/4 size-[540px] rounded-full border border-gold/[.06]" /><div className="absolute -left-16 top-[30%] size-[380px] rounded-full border border-gold/[.08]" />
       <Link to="/login" className="relative z-10 flex w-fit items-center gap-3"><span className="text-sm font-semibold">SPWeb <span className="text-gold">Lucro</span></span></Link>
-      <div className="relative z-10 max-w-xl"><span className="eyebrow text-gold">INTELIGÊNCIA PARA DECIDIR</span><h1 className="mt-6 text-4xl font-semibold leading-[1.16] tracking-[-.04em] xl:text-5xl">Pare de adivinhar seus preços.</h1><p className="mt-5 max-w-md text-lg leading-8 text-muted">Descubra quanto você realmente ganha.</p></div>
+      <div className="relative z-10 max-w-xl">
+        <h1 className="text-5xl font-bold leading-tight tracking-tight xl:text-6xl">
+          SPWeb <span className="text-gold">Lucro</span>
+        </h1>
+        <p className="mt-4 text-sm font-medium uppercase tracking-wider text-muted">
+          Inteligência Financeira que Gera Lucro
+        </p>
+      </div>
       <p className="relative z-10 text-[10px] text-muted">SPWEB LUCRO · PRECISÃO QUE VIRA DECISÃO</p>
     </section>
 
@@ -81,7 +88,6 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {!hasSupabaseConfig && <button type="button" className="btn-primary w-full opacity-60" disabled>{pageCopy.button}<ArrowRight size={15}/></button>}
           {hasSupabaseConfig && <button className="btn-primary w-full" disabled={busy}>{busy ? 'Aguarde…' : pageCopy.button}<ArrowRight size={15}/></button>}
         </form>
-        <p className="mt-10 border-t border-line pt-5 text-center text-[10px] leading-5 text-muted">Ao continuar, você concorda em usar os dados da sua empresa para calcular indicadores e simulações. A margem de contribuição não representa lucro líquido.</p>
       </div>
     </section>
   </main>
