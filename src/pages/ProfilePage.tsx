@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState, type FormEvent } from 'react'
-import { UserRound, Save, Calendar, Clock, Zap } from 'lucide-react'
+import { UserRound, Save, Clock, Zap } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { InlineNotice, LoadingScreen } from '../components/Feedback'
 import { supabase } from '../lib/supabase'
@@ -10,10 +10,11 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null)
-  const [subscriptionStart] = useState(new Date('2024-11-05')) // Data de início da assinatura
+  const [subscriptionStart, setSubscriptionStart] = useState<Date | null>(null)
   const [daysRemaining, setDaysRemaining] = useState(0)
   
   useEffect(() => {
+    if (!subscriptionStart) return
     const calculateDays = () => {
       const now = new Date()
       const endDate = new Date(subscriptionStart)
@@ -31,15 +32,25 @@ export default function ProfilePage() {
     let active = true
     async function load() {
       if (!supabase || !user) { setLoading(false); return }
-      const { data, error } = await supabase.from('profiles').select('full_name').eq('id', user.id).maybeSingle()
+      const { data, error } = await supabase.from('profiles').select('full_name, created_at').eq('id', user.id).maybeSingle()
       if (!active) return
       if (error) setNotice({ text: error.message, error: true })
       setName(data?.full_name ?? '')
+      // Use created_at from profile as subscription start date
+      if (data?.created_at) {
+        setSubscriptionStart(new Date(data.created_at))
+      } else if (user.created_at) {
+        // Fallback to user metadata created_at
+        setSubscriptionStart(new Date(user.created_at))
+      } else {
+        // Ultimate fallback to current date
+        setSubscriptionStart(new Date())
+      }
       setLoading(false)
     }
     void load()
     return () => { active = false }
-  }, [user?.id])
+  }, [user?.id, user?.created_at])
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!supabase || !user) return
@@ -48,100 +59,42 @@ export default function ProfilePage() {
     setNotice(error ? { text: error.message, error: true } : { text: 'Perfil atualizado.' })
     setSaving(false)
   }
-  if (loading) return <LoadingScreen label="Carregando perfil" />
+  if (loading || !subscriptionStart) return <LoadingScreen label="Carregando perfil" />
   
   const subscriptionEnd = new Date(subscriptionStart)
   subscriptionEnd.setFullYear(subscriptionEnd.getFullYear() + 1)
-  const totalDays = 365
-  const daysElapsed = totalDays - daysRemaining
-  const progressPercent = (daysElapsed / totalDays) * 100
   
   return <div className="mx-auto max-w-2xl space-y-6"><div><p className="eyebrow text-gold">SUA CONTA</p><h2 className="mt-2 text-2xl font-semibold">Perfil</h2><p className="mt-2 text-sm text-muted">Gerencie as informações básicas vinculadas ao seu acesso.</p></div>
 
-    {/* Card de Assinatura */}
-    <div className="surface relative overflow-hidden p-6 sm:p-8">
-      {/* Background gradient decorativo */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-emerald-500/5" />
-      <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
-      <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-emerald-500/10 blur-2xl" />
-      
-      <div className="relative space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-xl bg-gradient-to-br from-gold to-yellow-600 shadow-lg shadow-gold/25">
-              <Zap size={24} className="text-ink" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">Assinatura Ativa</h3>
-              <p className="text-xs text-muted">Plano Anual SPWeb Lucro</p>
-            </div>
+    {/* Card de Assinatura - Discreet Professional Design */}
+    <div className="surface p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="grid size-9 place-items-center rounded-lg bg-gold/10 text-gold">
+            <Zap size={18} />
           </div>
-          <div className="rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-medium text-emerald-400 ring-1 ring-emerald-500/20">
-            ● Vigente
+          <div>
+            <h3 className="text-sm font-semibold">Plano Anual SPWeb Lucro</h3>
+            <p className="text-xs text-muted">Assinatura vigente</p>
           </div>
         </div>
-
-        {/* Contador Regressivo - Destaque Principal */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-gold/20 via-yellow-500/20 to-emerald-500/20 blur-xl" />
-          <div className="relative rounded-2xl border border-gold/20 bg-ink/40 p-6 backdrop-blur-sm">
-            <div className="text-center">
-              <p className="text-xs font-medium uppercase tracking-wider text-gold">Tempo restante</p>
-              <div className="mt-3 flex items-baseline justify-center gap-2">
-                <Clock size={32} className="text-gold animate-pulse" />
-                <span className="text-6xl font-bold tracking-tight text-paper">{daysRemaining}</span>
-                <span className="text-2xl font-medium text-muted">dias</span>
-              </div>
-              <div className="mt-4 h-2 overflow-hidden rounded-full bg-ink/60">
-                <div 
-                  className="h-full rounded-full bg-gradient-to-r from-gold via-yellow-500 to-emerald-500 shadow-lg shadow-gold/50 transition-all duration-1000"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <p className="mt-3 text-xs text-muted">{daysElapsed} de {totalDays} dias decorridos</p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <Clock size={14} />
+          <span>{daysRemaining} dias restantes</span>
         </div>
+      </div>
 
-        {/* Datas de Vigência */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-border bg-ink/20 p-4">
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                <Calendar size={18} />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted">Início da vigência</p>
-                <p className="mt-1 font-semibold text-paper">
-                  {subscriptionStart.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="rounded-xl border border-border bg-ink/20 p-4">
-            <div className="flex items-center gap-3">
-              <div className="grid size-10 place-items-center rounded-lg bg-gold/10 text-gold">
-                <Calendar size={18} />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-muted">Término da vigência</p>
-                <p className="mt-1 font-semibold text-paper">
-                  {subscriptionEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="mt-5 grid gap-3 border-t border-border pt-5 sm:grid-cols-2">
+        <div>
+          <p className="text-xs text-muted">Data de contratação</p>
+          <p className="mt-1 text-sm font-medium text-paper">
+            {subscriptionStart.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+          </p>
         </div>
-
-        {/* Informação adicional */}
-        <div className="rounded-lg bg-gold/5 p-4 text-center">
-          <p className="text-xs text-muted">
-            Sua assinatura será renovada automaticamente em {' '}
-            <span className="font-semibold text-gold">
-              {subscriptionEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </span>
+        <div>
+          <p className="text-xs text-muted">Data de expiração</p>
+          <p className="mt-1 text-sm font-medium text-paper">
+            {subscriptionEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
           </p>
         </div>
       </div>
