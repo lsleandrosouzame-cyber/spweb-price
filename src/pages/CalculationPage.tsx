@@ -259,7 +259,7 @@ export default function CalculationPage() {
 
         {/* Dois widgets lado a lado: custos adicionais + taxas */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <CostTagWidget costTags={costTags} setCostTags={setCostTags} title={kind === 'product' ? 'Custos adicionais' : 'Outros custos'}/>
+          <CostTagWidget costTags={costTags} setCostTags={setCostTags} title='Custos adicionais'/>
           <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
         </div>
 

@@ -100,7 +100,7 @@ export default function ProductsPage() {
     const pct = (v: number) => price > 0 ? `${((Math.abs(v) / price) * 100).toFixed(1)}` : '0'
     const data = [
       { name: 'Custo de aquisição', value: acq, fill: DETAIL_COLORS.acquisition, pct: pct(acq) },
-      { name: 'Outros custos', value: other, fill: DETAIL_COLORS.other, pct: pct(other) },
+      { name: 'Custos adicionais', value: other, fill: DETAIL_COLORS.other, pct: pct(other) },
       { name: 'Taxas variáveis', value: fees, fill: DETAIL_COLORS.fees, pct: pct(fees) },
       { name: 'Impostos', value: taxes, fill: DETAIL_COLORS.taxes, pct: pct(taxes) },
       { name: 'Margem de contribuição', value: Math.max(0, contribution), fill: contribution >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg, pct: pct(contribution) },
@@ -140,7 +140,7 @@ export default function ProductsPage() {
     // Reconstruct cost tags from ALL costs (acquisition + other)
     const costs: CostTag[] = []
     if (Number(row.acquisition_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Custo de aquisição', value: money(row.acquisition_cost_cents) })
-    if (Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(row.other_cost_cents) })
+    // other_cost_cents agora contém custos específicos nomeados individualmente nas tags
     setCostTags(costs)
     
     setPanel('form')
@@ -159,7 +159,7 @@ export default function ProductsPage() {
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (!currentCompany) return
-    // Separar acquisition_cost dos outros custos baseado no label
+    // Separar acquisition_cost dos custos específicos nomeados individualmente
     const acquisitionCents = costTags.find(t => t.label === 'Custo de aquisição') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Custo de aquisição')!.value) ?? 0 : 0
     const otherCostsCents = costTags.filter(t => t.label !== 'Custo de aquisição').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
     const price = form.price.trim() ? parseBrazilianCurrency(form.price) : null
@@ -227,7 +227,7 @@ export default function ProductsPage() {
             </select>
           </div>
           {rows.length === 0
-            ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com seu custo de aquisição, outros custos e Preço praticado hoje." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
+            ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com custos detalhados e Preço praticado hoje." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
             : <div className="space-y-4">
                 <div className="surface px-5 py-4">
                   <div className="flex items-center justify-between">
@@ -285,10 +285,6 @@ export default function ProductsPage() {
                             <div>
                               <p className="text-[9px] uppercase tracking-wider text-muted">Custo aquis.</p>
                               <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(row.acquisition_cost_cents)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Outros custos</p>
-                              <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(row.other_cost_cents)}</p>
                             </div>
                             <div>
                               <p className="text-[9px] uppercase tracking-wider text-muted">Taxas</p>
@@ -446,18 +442,7 @@ export default function ProductsPage() {
                       </span>
                     </div>
                   )}
-                  {Number(selectedDetails.other_cost_cents) > 0 && (
-                    <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="size-2 rounded-full bg-purple-500" />
-                        <span className="text-sm font-medium text-paper">Outros custos</span>
-                      </div>
-                      <span className="font-mono text-base font-bold text-purple-500">
-                        {formatBRLFromCents(selectedDetails.other_cost_cents)}
-                      </span>
-                    </div>
-                  )}
-                  {Number(selectedDetails.acquisition_cost_cents) === 0 && Number(selectedDetails.other_cost_cents) === 0 && (
+                  {Number(selectedDetails.acquisition_cost_cents) === 0 && (
                     <p className="text-center text-sm text-muted py-2">Nenhum custo cadastrado</p>
                   )}
                 </div>

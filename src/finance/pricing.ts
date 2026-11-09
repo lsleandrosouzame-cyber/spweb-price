@@ -37,7 +37,7 @@ const assertPercent = (value: number, field: string) => {
 export function calculateProductPricing(input: ProductPricingInput): ProductPricingResult {
   const other = input.otherCostCents ?? 0
   assertMoney(input.acquisitionCostCents, 'Custo de aquisição')
-  assertMoney(other, 'Outros custos')
+  assertMoney(other, 'Custos adicionais')
   assertPercent(input.variableFeesPercent, 'Taxas variáveis')
   assertPercent(input.taxPercent, 'Impostos')
   if (input.sellingPriceCents !== undefined) assertMoney(input.sellingPriceCents, 'Preço atual')

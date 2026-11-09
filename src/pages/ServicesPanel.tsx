@@ -70,7 +70,7 @@ export default function ServicesPanel() {
     // Reconstruct ALL cost tags (materials + other_cost)
     const costs: CostTag[] = []
     if (row && Number(row.materials_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Materiais e insumos', value: money(row.materials_cents) })
-    if (row && Number(row.other_cost_cents) > 0) costs.push({ id: crypto.randomUUID(), label: 'Outros custos', value: money(row.other_cost_cents) })
+    // other_cost_cents agora contém custos específicos nomeados individualmente nas tags
     setCostTags(costs)
     setPanel('form')
   }
@@ -78,7 +78,7 @@ export default function ServicesPanel() {
   async function submit(event: FormEvent) {
     event.preventDefault(); if (!currentCompany) return
     const totalFeesPercent = feeTags.reduce((s, t) => s + Number(t.percent || 0), 0)
-    // Separar materials dos outros custos baseado no label
+    // Separar materials dos custos específicos nomeados individualmente
     const materialsCents = costTags.find(t => t.label === 'Materiais e insumos') ? parseBrazilianCurrency(costTags.find(t => t.label === 'Materiais e insumos')!.value) ?? 0 : 0
     const otherCostsCents = costTags.filter(t => t.label !== 'Materiais e insumos').reduce((s, t) => s + (parseBrazilianCurrency(t.value) ?? 0), 0)
     const money = (value: string) => value.trim() ? parseBrazilianCurrency(value) : 0
@@ -168,7 +168,7 @@ export default function ServicesPanel() {
             <div className="flex items-center gap-2 border-b border-line px-5 py-4"><Wrench size={16} className="text-gold"/><div><p className="eyebrow">SERVIÇOS CADASTRADOS</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} serviço(s)</p></div></div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px] text-left">
-                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Outros custos</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço praticado hoje</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
+                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço praticado hoje</th><th className="px-3 py-3">Margem</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
                 <tbody className="divide-y divide-line">{filtered.map(row => {
                   const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
                   const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
@@ -236,7 +236,7 @@ export default function ServicesPanel() {
         {/* Custos + Taxas lado a lado */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Outros custos"/>
+            <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos adicionais"/>
           </div>
           <div>
             <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
@@ -354,18 +354,7 @@ export default function ServicesPanel() {
                     </span>
                   </div>
                 )}
-                {Number(selectedDetails.other_cost_cents) > 0 && (
-                  <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span className="size-2 rounded-full bg-teal-500" />
-                      <span className="text-sm font-medium text-paper">Outros custos</span>
-                    </div>
-                    <span className="font-mono text-base font-bold text-teal-500">
-                      {formatBRLFromCents(selectedDetails.other_cost_cents)}
-                    </span>
-                  </div>
-                )}
-                {Number(selectedDetails.materials_cents) === 0 && Number(selectedDetails.other_cost_cents) === 0 && (
+                {Number(selectedDetails.materials_cents) === 0 && (
                   <p className="text-center text-sm text-muted py-2">Nenhum custo adicional cadastrado</p>
                 )}
               </div>
