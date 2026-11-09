@@ -73,7 +73,8 @@ export default function ServicesPanel() {
       setServiceCosts(costs)
       setServiceFees(fees)
     } catch (err) {
-      console.error('Failed to load itemized data for details:', err)
+      // Tabelas podem não existir ainda - usar fallback vazio
+      console.warn('Itemized data not available:', err)
       setServiceCosts([])
       setServiceFees([])
     }
@@ -102,7 +103,8 @@ export default function ServicesPanel() {
         setServiceCosts(costs)
         setServiceFees(fees)
       } catch (err) {
-        console.error('Failed to load itemized data:', err)
+        // Tabelas podem não existir ainda - usar fallback vazio
+        console.warn('Itemized data not available:', err)
         setServiceCosts([])
         setServiceFees([])
       }

@@ -156,7 +156,8 @@ export default function ProductsPage() {
       setProductCosts(costs)
       setProductFees(fees)
     } catch (err) {
-      console.error('Failed to load itemized data:', err)
+      // Tabelas podem não existir ainda - usar fallback vazio
+      console.warn('Itemized data not available:', err)
       setProductCosts([])
       setProductFees([])
     }
@@ -232,7 +233,8 @@ export default function ProductsPage() {
       setProductCosts(costs)
       setProductFees(fees)
     } catch (err) {
-      console.error('Failed to load itemized data for details:', err)
+      // Tabelas podem não existir ainda - usar fallback vazio
+      console.warn('Itemized data not available:', err)
       setProductCosts([])
       setProductFees([])
     }
