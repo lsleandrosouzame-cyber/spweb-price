@@ -60,18 +60,23 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   }
 
   return <main className="grid min-h-screen bg-ink lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
-    <section className="relative hidden min-h-screen overflow-hidden border-r border-line bg-panel p-12 lg:flex lg:flex-col lg:justify-between xl:p-16">
-      <div className="absolute -left-40 top-1/4 size-[540px] rounded-full border border-gold/[.06]" /><div className="absolute -left-16 top-[30%] size-[380px] rounded-full border border-gold/[.08]" />
-      <div className="relative z-10"></div>
-      <div className="relative z-10 max-w-xl">
-        <h1 className="text-5xl font-bold leading-tight tracking-tight xl:text-6xl">
+    <section className="relative hidden min-h-screen overflow-hidden border-r border-line p-12 lg:flex lg:flex-col lg:justify-center xl:p-16"
+      style={{
+        backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&q=80)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}>
+      {/* Overlay escuro para contraste */}
+      <div className="absolute inset-0 bg-black/50" style={{ zIndex: 1 }}></div>
+      
+      <div className="relative max-w-xl" style={{ zIndex: 10 }}>
+        <h1 className="text-5xl font-bold leading-tight tracking-tight text-white xl:text-6xl">
           SPWeb
         </h1>
-        <p className="mt-4 text-sm font-medium uppercase tracking-wider text-muted">
+        <p className="mt-4 text-sm font-medium uppercase tracking-wider text-white/80">
           Sistemas inteligentes que geram lucro
         </p>
       </div>
-      <p className="relative z-10 text-[10px] text-muted">SPWEB LUCRO · PRECISÃO QUE VIRA DECISÃO</p>
     </section>
 
     <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-10">
