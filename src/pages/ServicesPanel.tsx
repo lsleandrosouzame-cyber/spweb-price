@@ -402,7 +402,7 @@ export default function ServicesPanel() {
         variableFeesPercent: Number(selectedDetails.variable_fees_percent),
         taxPercent: Number(selectedDetails.tax_percent),
         desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
-        sellingPriceCents: recommended
+        sellingPriceCents: recommended ?? undefined
       }) : null
 
       // Pie data

@@ -103,7 +103,7 @@ export default function ProductsPage() {
     variableFeesPercent: Number(selectedDetails.variable_fees_percent),
     taxPercent: Number(selectedDetails.tax_percent),
     desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
-    sellingPriceCents: selectedPricing.recommendedPriceCents,
+    sellingPriceCents: selectedPricing.recommendedPriceCents ?? undefined,
   }) : null
 
   // Build pie chart data for details panel
