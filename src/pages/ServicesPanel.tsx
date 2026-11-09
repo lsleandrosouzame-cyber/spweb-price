@@ -217,7 +217,19 @@ export default function ServicesPanel() {
         <div className="grid gap-4 sm:grid-cols-2">
           <label><span className={fieldLabel}>Tempo de execução (horas) <span className="text-gold font-bold">*</span></span><input className="field" type="number" min="0.01" step="any" required value={form.hours} onChange={e => setForm({ ...form, hours: e.target.value })}/></label>
           <label><span className={fieldLabel}>Custo-hora de mão de obra (R$) <span className="text-gold font-bold">*</span></span><CurrencyInput className="field" required value={form.hourly} onChange={value => setForm({ ...form, hourly: value })} placeholder="0,00"/></label>
-          <label className="flex items-center gap-2 text-xs text-muted mt-1"><input type="checkbox" checked={form.includeFixed} onChange={e => setForm({ ...form, includeFixed: e.target.checked })} className="accent-[#D4AF37]"/>Incluir custo fixo por hora</label>
+          
+          {/* Campo de totalização - Materiais e insumos */}
+          <label className="sm:col-span-2">
+            <span className={fieldLabel}>Materiais e insumos (R$) <span className="text-xs text-muted font-normal">· Soma dos custos abaixo</span></span>
+            <input 
+              className="field bg-emerald-400/5 font-mono font-bold text-emerald-400 cursor-not-allowed" 
+              disabled 
+              value={formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0)).replace('R$', '').trim()} 
+              placeholder="0,00"
+            />
+          </label>
+          
+          <label className="flex items-center gap-2 text-xs text-muted sm:col-span-2"><input type="checkbox" checked={form.includeFixed} onChange={e => setForm({ ...form, includeFixed: e.target.checked })} className="accent-[#D4AF37]"/>Incluir custo fixo por hora</label>
           {form.includeFixed && <label className="sm:col-span-2"><span className={fieldLabel}>Custo fixo por hora (R$)</span><CurrencyInput className="field" value={form.fixedHourly} onChange={value => setForm({ ...form, fixedHourly: value })} placeholder="0,00"/></label>}
         </div>
 
@@ -225,27 +237,9 @@ export default function ServicesPanel() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Outros custos"/>
-            {/* Totalização de custos */}
-            {costTags.length > 0 && (
-              <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-4 py-2.5">
-                <p className="text-xs font-semibold text-muted">Total de custos adicionais</p>
-                <p className="mt-1 font-mono text-lg font-bold text-emerald-400">
-                  {formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0))}
-                </p>
-              </div>
-            )}
           </div>
           <div>
             <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
-            {/* Totalização de taxas */}
-            {feeTags.length > 0 && (
-              <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
-                <p className="text-xs font-semibold text-muted">Total de taxas</p>
-                <p className="mt-1 font-mono text-lg font-bold text-amber-400">
-                  {formatPercent(feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0))}
-                </p>
-              </div>
-            )}
           </div>
         </div>
 

@@ -211,8 +211,8 @@ export default function ProductsPage() {
       </div>
 
       <div className="inline-flex rounded-xl border border-line bg-panel p-1">
-        <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'products' ? 'bg-gold text-ink' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
-        <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium ${tab === 'services' ? 'bg-gold text-ink' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
+        <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'products' ? 'bg-gold text-black' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
+        <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'services' ? 'bg-gold text-black' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
       </div>
 
       {tab === 'services' ? <ServicesPanel/> : <>
@@ -337,33 +337,26 @@ export default function ProductsPage() {
           <form onSubmit={submit} className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="sm:col-span-2"><span className={inputLabel}>Nome do produto</span><input className="field" maxLength={160} required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Ex.: Kit de café especial"/></label>
+              
+              {/* Campo de totalização - apenas leitura */}
+              <label className="sm:col-span-2">
+                <span className={inputLabel}>Custo de aquisição/produção (R$) <span className="text-xs text-muted font-normal">· Soma dos custos abaixo</span></span>
+                <input 
+                  className="field bg-gold/5 font-mono font-bold text-gold cursor-not-allowed" 
+                  disabled 
+                  value={formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0)).replace('R$', '').trim()} 
+                  placeholder="0,00"
+                />
+              </label>
             </div>
 
             {/* Custos + Taxas lado a lado */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <CostTagWidget costTags={costTags} setCostTags={setCostTags} title="Custos"/>
-                {/* Totalização de custos */}
-                {costTags.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-gold/20 bg-gold/5 px-4 py-2.5">
-                    <p className="text-xs font-semibold text-muted">Total de custos</p>
-                    <p className="mt-1 font-mono text-lg font-bold text-gold">
-                      {formatBRLFromCents(costTags.reduce((sum, t) => sum + (parseBrazilianCurrency(t.value) ?? 0), 0))}
-                    </p>
-                  </div>
-                )}
               </div>
               <div>
                 <FeeTagWidget feeTags={feeTags} setFeeTags={setFeeTags}/>
-                {/* Totalização de taxas */}
-                {feeTags.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-2.5">
-                    <p className="text-xs font-semibold text-muted">Total de taxas</p>
-                    <p className="mt-1 font-mono text-lg font-bold text-amber-400">
-                      {formatPercent(feeTags.reduce((sum, t) => sum + Number(t.percent || 0), 0))}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
 
