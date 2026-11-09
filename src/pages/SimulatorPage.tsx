@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Sparkles, Package, Wrench, DollarSign, Target, Zap, Save, Search, Trash2, Edit2 } from 'lucide-react'
+import { Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Sparkles, Package, Wrench, DollarSign, Target, Zap, Save, Search, Trash2, Edit2, Percent, Receipt } from 'lucide-react'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatPercent } from '../lib/money'
 
@@ -137,6 +137,12 @@ export default function SimulatorPage() {
   // Calcular Margem de Lucro (assumindo 0 despesas fixas no simulador)
   const profitMargin = contributionMargin
   const profitCents = contributionCents
+
+  // Calcular totais de taxas
+  const currentVariableFees = type === 'product' ? variableFees : serviceFees
+  const currentTax = type === 'product' ? tax : serviceTax
+  const totalTaxesPercent = currentVariableFees + currentTax // Soma de taxas variáveis + impostos
+  const totalBurdensPercent = totalTaxesPercent // Total geral de encargos sobre venda
 
   // Determinar status
   const getStatus = () => {
@@ -422,7 +428,7 @@ export default function SimulatorPage() {
       </div>
 
       {/* Cards de Resultado no Topo */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {/* Custo Total */}
         <div className="surface p-5">
           <div className="flex items-center gap-2">
@@ -447,11 +453,11 @@ export default function SimulatorPage() {
             </div>
             <p className="text-xs font-semibold text-muted">PREÇO DE VENDA</p>
           </div>
-          <p className="mt-3 font-mono text-3xl font-bold text-gold">
+          <p className="mt-3 font-mono text-2xl font-bold text-gold">
             {formatBRLFromCents(sellingPrice)}
           </p>
           <p className="mt-2 text-xs text-muted">
-            Recomendado pelo sistema
+            Mínimo: <span className="font-mono font-semibold text-amber-400">{formatBRLFromCents(pricing.minimumPriceCents)}</span>
           </p>
         </div>
 
@@ -484,6 +490,38 @@ export default function SimulatorPage() {
           </p>
           <p className="mt-2 text-xs text-muted">
             Meta: {formatPercent(type === 'product' ? desiredMargin : serviceDesiredMargin)}
+          </p>
+        </div>
+
+        {/* Total de Taxas (Variáveis + Impostos) */}
+        <div className="surface p-5">
+          <div className="flex items-center gap-2">
+            <div className="grid size-9 place-items-center rounded-lg bg-orange-500/10 text-orange-400">
+              <Percent size={18} />
+            </div>
+            <p className="text-xs font-semibold text-muted">TAXAS + IMPOSTOS</p>
+          </div>
+          <p className="mt-3 font-mono text-3xl font-bold text-orange-400">
+            {formatPercent(totalTaxesPercent)}
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Var: {formatPercent(currentVariableFees)} + Imp: {formatPercent(currentTax)}
+          </p>
+        </div>
+
+        {/* Total Geral sobre Venda */}
+        <div className="surface p-5">
+          <div className="flex items-center gap-2">
+            <div className="grid size-9 place-items-center rounded-lg bg-purple-500/10 text-purple-400">
+              <Receipt size={18} />
+            </div>
+            <p className="text-xs font-semibold text-muted">ENCARGOS TOTAIS</p>
+          </div>
+          <p className="mt-3 font-mono text-3xl font-bold text-purple-400">
+            {formatPercent(totalBurdensPercent)}
+          </p>
+          <p className="mt-2 text-xs text-muted">
+            Total sobre a venda
           </p>
         </div>
       </div>
