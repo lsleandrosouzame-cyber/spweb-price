@@ -229,3 +229,61 @@ button { color: inherit; cursor: pointer; }
     transition-duration: .01ms !important;
   }
 }
+
+/* Slider styles for SimulatorPage */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, #D4AF37 0%, #D4AF37 50%, #2a2e35 50%, #2a2e35 100%);
+  outline: none;
+  transition: background 0.3s ease;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  transition: all 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
+}
+
+.slider::-webkit-slider-thumb:active {
+  transform: scale(1.05);
+}
+
+.slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+  transition: all 0.2s ease;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.6);
+}
+
+.slider::-moz-range-thumb:active {
+  transform: scale(1.05);
+}
+
+.slider::-moz-range-track {
+  background: #2a2e35;
+  border-radius: 4px;
+  height: 8px;
+}

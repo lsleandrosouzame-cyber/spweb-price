@@ -1,10 +1,11 @@
 ﻿import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package, Calculator } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const primaryNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/simulador', label: 'Simulador', icon: Calculator },
   { to: '/produtos', label: 'Produtos', icon: Package },
   { to: '/videos', label: 'Vídeos', icon: Video },
   { to: '/lancamentos', label: 'Lançamentos', icon: ReceiptText },
@@ -14,7 +15,7 @@ const footerNav = [
   { to: '/configuracoes', label: 'Configurações', icon: Settings2 },
 ]
 const titles: Record<string, string> = {
-  '/dashboard': 'Dashboard', '/produtos': 'Produtos', '/videos': 'Central de conhecimento',
+  '/dashboard': 'Dashboard', '/simulador': 'Simulador', '/produtos': 'Produtos', '/videos': 'Central de conhecimento',
   '/lancamentos': 'Lançamentos', '/perfil': 'Perfil', '/configuracoes': 'Configurações', '/admin': 'Painel Administrativo',
 }
 
