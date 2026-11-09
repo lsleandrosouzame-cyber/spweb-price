@@ -422,6 +422,83 @@ export default function ProductsPage() {
               </div>
             )}
 
+            {/* NOVO: Detalhamento Analítico de Custos e Taxas */}
+            <div className="space-y-4">
+              <p className="eyebrow text-gold">DETALHAMENTO ANALÍTICO</p>
+              
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Custos Individuais */}
+                <div className="surface p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <p className="text-sm font-semibold text-paper">Custos</p>
+                    <p className="font-mono text-sm font-bold text-gold">
+                      {formatBRLFromCents(Number(selectedDetails.acquisition_cost_cents) + Number(selectedDetails.other_cost_cents))}
+                    </p>
+                  </div>
+                  {Number(selectedDetails.acquisition_cost_cents) > 0 && (
+                    <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-blue-500" />
+                        <span className="text-sm font-medium text-paper">Custo de aquisição</span>
+                      </div>
+                      <span className="font-mono text-base font-bold text-blue-500">
+                        {formatBRLFromCents(selectedDetails.acquisition_cost_cents)}
+                      </span>
+                    </div>
+                  )}
+                  {Number(selectedDetails.other_cost_cents) > 0 && (
+                    <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-purple-500" />
+                        <span className="text-sm font-medium text-paper">Outros custos</span>
+                      </div>
+                      <span className="font-mono text-base font-bold text-purple-500">
+                        {formatBRLFromCents(selectedDetails.other_cost_cents)}
+                      </span>
+                    </div>
+                  )}
+                  {Number(selectedDetails.acquisition_cost_cents) === 0 && Number(selectedDetails.other_cost_cents) === 0 && (
+                    <p className="text-center text-sm text-muted py-2">Nenhum custo cadastrado</p>
+                  )}
+                </div>
+
+                {/* Taxas e Encargos Individuais */}
+                <div className="surface p-5 space-y-3">
+                  <div className="flex items-center justify-between border-b border-line pb-3">
+                    <p className="text-sm font-semibold text-paper">Taxas e encargos</p>
+                    <p className="font-mono text-sm font-bold text-amber-400">
+                      {formatPercent(Number(selectedDetails.variable_fees_percent) + Number(selectedDetails.tax_percent))}
+                    </p>
+                  </div>
+                  {Number(selectedDetails.variable_fees_percent) > 0 && (
+                    <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-orange-500" />
+                        <span className="text-sm font-medium text-paper">Taxas variáveis</span>
+                      </div>
+                      <span className="font-mono text-base font-bold text-orange-500">
+                        {formatPercent(selectedDetails.variable_fees_percent)}
+                      </span>
+                    </div>
+                  )}
+                  {Number(selectedDetails.tax_percent) > 0 && (
+                    <div className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-red-500" />
+                        <span className="text-sm font-medium text-paper">Impostos</span>
+                      </div>
+                      <span className="font-mono text-base font-bold text-red-500">
+                        {formatPercent(selectedDetails.tax_percent)}
+                      </span>
+                    </div>
+                  )}
+                  {Number(selectedDetails.variable_fees_percent) === 0 && Number(selectedDetails.tax_percent) === 0 && (
+                    <p className="text-center text-sm text-muted py-2">Nenhuma taxa cadastrada</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
               {/* Left: metrics grid */}
               <div className="grid gap-3 sm:grid-cols-2">
