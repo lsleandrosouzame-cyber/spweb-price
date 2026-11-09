@@ -5,9 +5,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
-import { listProducts, removeProduct, saveProduct, listExpenses } from '../services/companyData'
+import { listProducts, removeProduct, saveProduct } from '../services/companyData'
 import { listProductCosts, listProductFees, saveProductCost, saveProductFee, removeProductCost, removeProductFee } from '../services/itemizedData'
-import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord, FixedExpenseRecord } from '../types/database'
+import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
 import ServicesPanel from './ServicesPanel'
@@ -58,7 +58,6 @@ export default function ProductsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<'products' | 'services'>('products')
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
-  const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseRecord[]>([])
   
   // Itemized costs and fees
   const [productCosts, setProductCosts] = useState<ProductCostRecord[]>([])
@@ -69,32 +68,17 @@ export default function ProductsPage() {
   const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!currentCompany || !configReady) { setRows([]); setFixedExpenses([]); setLoading(false); return }
+    if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
     setLoading(true); setError(null)
     try { 
-      const [products, expenses] = await Promise.all([
-        listProducts(currentCompany.id),
-        listExpenses(currentCompany.id)
-      ])
+      const products = await listProducts(currentCompany.id)
       setRows(products)
-      setFixedExpenses(expenses)
     }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao carregar produtos.') }
     finally { setLoading(false) }
   }, [currentCompany?.id, configReady])
 
   useEffect(() => { void refresh() }, [refresh])
-
-  // Calcular total de despesas fixas mensais
-  const totalFixedExpensesCents = useMemo(() => {
-    return fixedExpenses.reduce((sum, exp) => sum + Number(exp.amount_cents), 0)
-  }, [fixedExpenses])
-
-  // Calcular despesas fixas rateadas por produto (divisão igual por todos os produtos)
-  const fixedExpensePerProductCents = useMemo(() => {
-    if (rows.length === 0 || totalFixedExpensesCents === 0) return 0
-    return totalFixedExpensesCents / rows.length
-  }, [totalFixedExpensesCents, rows.length])
 
   const filtered = useMemo(() => rows.filter(row => {
     if (!row.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -433,26 +417,6 @@ export default function ProductsPage() {
                                 </div>
                               )}
                             </div>
-                            
-                            {/* Margem de Lucro (com despesas fixas) */}
-                            {margin !== null && result && (
-                              <div className="mt-2 flex items-center justify-end">
-                                <div className="text-right">
-                                  <p className="text-[9px] uppercase tracking-wider text-muted">Margem Lucro</p>
-                                  <p className={`mt-0.5 font-mono text-sm font-bold ${(() => {
-                                    const profitCents = (result.contributionCents ?? 0) - fixedExpensePerProductCents
-                                    const profitMargin = row.current_price_cents && Number(row.current_price_cents) > 0 ? (profitCents / Number(row.current_price_cents)) * 100 : 0
-                                    return profitMargin < 0 ? 'text-red-400' : profitMargin >= 10 ? 'text-emerald-400' : 'text-amber-400'
-                                  })()}`}>
-                                    {(() => {
-                                      const profitCents = (result.contributionCents ?? 0) - fixedExpensePerProductCents
-                                      const profitMargin = row.current_price_cents && Number(row.current_price_cents) > 0 ? (profitCents / Number(row.current_price_cents)) * 100 : 0
-                                      return formatPercent(profitMargin)
-                                    })()}
-                                  </p>
-                                </div>
-                              </div>
-                            )}
                           </div>
 
                           {/* Grid de custos e taxas */}
