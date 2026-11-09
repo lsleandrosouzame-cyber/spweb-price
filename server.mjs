@@ -80,12 +80,12 @@ async function serveStatic(request, response, pathname) {
   }
 
   const extension = path.extname(filePath).toLowerCase()
-  const isHashedAsset = decodedPath.startsWith('/assets/')
-  const cacheControl = isHashedAsset
-    ? 'public, max-age=31536000, immutable'
-    : 'no-cache'
+  // NEVER CACHE - Save everything to Supabase only
+  const cacheControl = 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0'
   response.writeHead(200, {
     'Cache-Control': cacheControl,
+    'Pragma': 'no-cache',
+    'Expires': '0',
     'Content-Length': fileInfo.size,
     'Content-Type': mimeTypes[extension] ?? 'application/octet-stream',
     'X-Content-Type-Options': 'nosniff',
