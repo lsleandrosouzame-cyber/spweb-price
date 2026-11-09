@@ -72,3 +72,52 @@ export type ProductDraft = Omit<ProductRecord, 'id' | 'company_id' | 'created_at
 export type FixedExpenseDraft = Omit<FixedExpenseRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>
 export type VariableCostDraft = Omit<VariableCostRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>
 export type SalesRecordDraft = Omit<SalesRecord, 'id' | 'company_id' | 'item_name_snapshot'>
+
+export type ProductCostRecord = {
+  id: string
+  product_id: string
+  company_id: string
+  label: string
+  amount_cents: number
+  cost_type: 'acquisition' | 'additional'
+  created_at: string
+  updated_at: string
+}
+
+export type ProductFeeRecord = {
+  id: string
+  product_id: string
+  company_id: string
+  label: string
+  percent: number
+  fee_type: 'variable' | 'tax'
+  created_at: string
+  updated_at: string
+}
+
+export type ServiceCostRecord = {
+  id: string
+  service_id: string
+  company_id: string
+  label: string
+  amount_cents: number
+  cost_type: 'material' | 'additional'
+  created_at: string
+  updated_at: string
+}
+
+export type ServiceFeeRecord = {
+  id: string
+  service_id: string
+  company_id: string
+  label: string
+  percent: number
+  fee_type: 'variable' | 'tax'
+  created_at: string
+  updated_at: string
+}
+
+export type ProductCostDraft = Omit<ProductCostRecord, 'id' | 'product_id' | 'company_id' | 'created_at' | 'updated_at'>
+export type ProductFeeDraft = Omit<ProductFeeRecord, 'id' | 'product_id' | 'company_id' | 'created_at' | 'updated_at'>
+export type ServiceCostDraft = Omit<ServiceCostRecord, 'id' | 'service_id' | 'company_id' | 'created_at' | 'updated_at'>
+export type ServiceFeeDraft = Omit<ServiceFeeRecord, 'id' | 'service_id' | 'company_id' | 'created_at' | 'updated_at'>
