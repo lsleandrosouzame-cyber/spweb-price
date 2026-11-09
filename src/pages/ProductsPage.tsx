@@ -96,6 +96,16 @@ export default function ProductsPage() {
     sellingPriceCents: selectedDetails.current_price_cents === null ? undefined : Number(selectedDetails.current_price_cents),
   }) : null
 
+  // Calcular pricing baseado no preço RECOMENDADO (não no praticado)
+  const recommendedPricing = selectedDetails && selectedPricing ? calculateProductPricing({
+    acquisitionCostCents: Number(selectedDetails.acquisition_cost_cents),
+    otherCostCents: Number(selectedDetails.other_cost_cents),
+    variableFeesPercent: Number(selectedDetails.variable_fees_percent),
+    taxPercent: Number(selectedDetails.tax_percent),
+    desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
+    sellingPriceCents: selectedPricing.recommendedPriceCents,
+  }) : null
+
   // Build pie chart data for details panel
   const detailsPieData = useMemo(() => {
     if (!selectedDetails || !selectedPricing || !selectedDetails.current_price_cents) return []
@@ -655,7 +665,7 @@ export default function ProductsPage() {
                   ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                   ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
-                  ['Resultado est. / unidade', formatBRLFromCents(selectedPricing.contributionCents), (selectedPricing.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
+                  ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem de contribuição', formatPercent(selectedPricing.contributionMarginPercent), (selectedPricing.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
                   ['Markup', formatMarkup(selectedPricing.markup), '#a855f7'],

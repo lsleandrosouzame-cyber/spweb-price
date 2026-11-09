@@ -396,6 +396,15 @@ export default function ServicesPanel() {
       const recommended = pricing?.recommendedPriceCents ?? null
       const contribution = pricing?.contributionCents ?? null
 
+      // Calcular pricing baseado no preço RECOMENDADO (não no praticado)
+      const recommendedPricing = pricing && recommended ? calculateProductPricing({
+        acquisitionCostCents: cost,
+        variableFeesPercent: Number(selectedDetails.variable_fees_percent),
+        taxPercent: Number(selectedDetails.tax_percent),
+        desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
+        sellingPriceCents: recommended
+      }) : null
+
       // Pie data
       const pieData = [
         { name: 'Custo total', value: cost, fill: DETAIL_COLORS.cost },
@@ -559,7 +568,7 @@ export default function ServicesPanel() {
                 ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                 ['Preço mínimo', formatBRLFromCents(minimum), '#6b7280'],
                 ['Preço recomendado', formatBRLFromCents(recommended), '#22c55e'],
-                ['Resultado est. / unidade', formatBRLFromCents(contribution), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
+                ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                 ['Margem de contribuição', formatPercent(margin), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
                 ['Markup', formatMarkup(pricing?.markup ?? null), '#a855f7'],
               ] as [string, string, string][]).map(([label, value, color]) => (
