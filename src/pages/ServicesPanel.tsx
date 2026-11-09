@@ -90,7 +90,7 @@ export default function ServicesPanel() {
       setError('Revise nome, tempo e custos.'); return
     }
     try {
-      const cost = calculateServiceCost({ hours, hourlyLaborCostCents: hourly ?? 0, materialsCents, otherCostCents, fixedCostPerHourCents: money(form.fixedHourly) ?? 0, includeFixedCostPerHour: form.includeFixed })
+      const cost = calculateServiceCost({ hours, hourlyLaborCostCents: hourly ?? 0, materialsCents, otherCostCents: otherCostsCents, fixedCostPerHourCents: money(form.fixedHourly) ?? 0, includeFixedCostPerHour: form.includeFixed })
       calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: totalFeesPercent, taxPercent: 0, desiredMarginPercent: desired ?? undefined, sellingPriceCents: price ?? undefined })
       setBusy(true); setError(null)
       await saveService(currentCompany.id, {
