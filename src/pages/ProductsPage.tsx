@@ -145,28 +145,25 @@ export default function ProductsPage() {
     return data
   }, [selectedDetails, selectedPricing])
 
-  // Smart footnote for product details - considera margem de LUCRO (não só contribuição)
+  // Smart footnote for product details - considera margem de CONTRIBUIÇÃO (lucro direto por venda)
   function getFootnote(): { text: string; tone: 'ok' | 'warn' | 'bad' } | null {
     if (!selectedDetails || !selectedPricing) return null
-    const contributionMargin = selectedPricing.contributionMarginPercent
+    const contributionMargin = selectedPricing.contributionMarginPercent ?? 0
+    const contributionCents = selectedPricing.contributionCents ?? 0
     const current = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : null
     const recommended = selectedPricing.recommendedPriceCents
     const minimum = selectedPricing.minimumPriceCents
 
-    // Calcular margem de LUCRO (descontando despesas fixas rateadas)
-    const profitCents = current !== null ? (selectedPricing.contributionCents ?? 0) - fixedExpensePerProductCents : null
-    const profitMargin = current !== null && current > 0 && profitCents !== null ? (profitCents / current) * 100 : null
-
-    if (contributionMargin === null || profitMargin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
+    if (current === null || contributionMargin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
     
-    // Mensagens baseadas em margem de LUCRO (não contribuição)
-    if (profitMargin < 0) return { text: `⚠️ Atenção: você está vendendo este produto com margem de lucro negativa (${formatPercent(profitMargin)}). Cada unidade vendida gera prejuízo após considerar despesas fixas. Revise custos ou ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-    if (current !== null && minimum !== null && current < minimum) return { text: `Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    // Mensagens baseadas em margem de CONTRIBUIÇÃO (lucro direto, sem despesas fixas)
+    if (contributionCents < 0) return { text: `⚠️ Atenção: você está vendendo este produto com prejuízo de ${formatBRLFromCents(Math.abs(contributionCents))} por unidade. O preço atual não cobre nem os custos variáveis. Ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    if (current < minimum) return { text: `Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
     
     const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
-    if (desired !== null && profitMargin < desired) return { text: `Você está vendendo abaixo da sua meta de margem de lucro (${formatPercent(desired)}). Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
-    if (recommended && current !== null && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
-    return { text: `✓ Excelente! Sua margem de lucro de ${formatPercent(profitMargin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
+    if (desired !== null && contributionMargin < desired) return { text: `Você está com margem de ${formatPercent(contributionMargin)}, abaixo da sua meta de ${formatPercent(desired)}. Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
+    if (recommended && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
+    return { text: `✓ Excelente! Sua margem de contribuição de ${formatPercent(contributionMargin)} está saudável e dentro do esperado. Cada venda contribui com ${formatBRLFromCents(contributionCents)} para cobrir despesas fixas e gerar lucro.`, tone: 'ok' }
   }
 
   function startCreate() { 
@@ -709,7 +706,6 @@ export default function ProductsPage() {
                   ['Custo de aquisição/produção', formatBRLFromCents(Number(selectedDetails.acquisition_cost_cents) + Number(selectedDetails.other_cost_cents)), DETAIL_COLORS.acquisition],
                   ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents), '#6b7280'],
                   ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`, DETAIL_COLORS.fees],
-                  ['Impostos', `${formatPercent(selectedDetails.tax_percent)} · ${formatBRLFromCents(selectedPricing.taxesCents)}`, DETAIL_COLORS.taxes],
                   ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                   ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
