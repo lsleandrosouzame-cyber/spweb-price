@@ -11,7 +11,6 @@ import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord }
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
 import ServicesPanel from './ServicesPanel'
-import { FeeTagWidget, CostTagWidget, type FeeTag, type CostTag } from './CalculationPage'
 import { ProductCostsList, ProductFeesList } from '../components/ItemizedLists'
 import { ProductCostModal, ProductFeeModal } from '../components/ItemizedModals'
 
@@ -59,8 +58,6 @@ export default function ProductsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<'products' | 'services'>('products')
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
-  const [feeTags, setFeeTags] = useState<FeeTag[]>([])
-  const [costTags, setCostTags] = useState<CostTag[]>([])
   
   // Itemized costs and fees
   const [productCosts, setProductCosts] = useState<ProductCostRecord[]>([])
@@ -137,7 +134,7 @@ export default function ProductsPage() {
   }
 
   function startCreate() { 
-    setEditing(null); setForm(blank); setFeeTags([]); setCostTags([]); 
+    setEditing(null); setForm(blank); 
     setProductCosts([]); setProductFees([]); 
     setError(null); setNotice(null); setPanel('form') 
   }
@@ -161,10 +158,6 @@ export default function ProductsPage() {
       setProductCosts([])
       setProductFees([])
     }
-    
-    // Clear tags (we use tables now)
-    setFeeTags([])
-    setCostTags([])
     
     setPanel('form')
   }

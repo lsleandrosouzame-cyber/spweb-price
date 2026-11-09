@@ -10,7 +10,7 @@ import { supabase } from '../lib/supabase'
 import { listServices, removeService, saveService } from '../services/companyData'
 import { listServiceCosts, listServiceFees, saveServiceCost, saveServiceFee, removeServiceCost, removeServiceFee } from '../services/itemizedData'
 import type { ServiceRecord, ServiceCostRecord, ServiceFeeRecord } from '../types/database'
-import { FeeTagWidget, CostTagWidget, TAG_COLORS, COST_COLORS, type FeeTag, type CostTag } from './CalculationPage'
+import { TAG_COLORS, COST_COLORS } from './CalculationPage'
 import { ServiceCostsList, ServiceFeesList } from '../components/ItemizedLists'
 import { ServiceCostModal, ServiceFeeModal } from '../components/ItemizedModals'
 
@@ -34,8 +34,6 @@ export default function ServicesPanel() {
   const [selectedDetails, setSelectedDetails] = useState<ServiceRecord | null>(null)
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
   const [form, setForm] = useState(empty)
-  const [feeTags, setFeeTags] = useState<FeeTag[]>([])
-  const [costTags, setCostTags] = useState<CostTag[]>([])
   const [busy, setBusy] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyTarget, setHistoryTarget] = useState<ServiceRecord | null>(null)
@@ -112,10 +110,6 @@ export default function ServicesPanel() {
       setServiceCosts([])
       setServiceFees([])
     }
-    
-    // Clear tags (we use tables now)
-    setFeeTags([])
-    setCostTags([])
     
     setPanel('form')
   }
