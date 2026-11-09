@@ -5,9 +5,9 @@ import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
-import { listProducts, removeProduct, saveProduct } from '../services/companyData'
+import { listProducts, removeProduct, saveProduct, listExpenses } from '../services/companyData'
 import { listProductCosts, listProductFees, saveProductCost, saveProductFee, removeProductCost, removeProductFee } from '../services/itemizedData'
-import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord } from '../types/database'
+import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord, FixedExpenseRecord } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
 import ServicesPanel from './ServicesPanel'
@@ -58,6 +58,7 @@ export default function ProductsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [tab, setTab] = useState<'products' | 'services'>('products')
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
+  const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseRecord[]>([])
   
   // Itemized costs and fees
   const [productCosts, setProductCosts] = useState<ProductCostRecord[]>([])
@@ -68,14 +69,32 @@ export default function ProductsPage() {
   const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
+    if (!currentCompany || !configReady) { setRows([]); setFixedExpenses([]); setLoading(false); return }
     setLoading(true); setError(null)
-    try { setRows(await listProducts(currentCompany.id)) }
+    try { 
+      const [products, expenses] = await Promise.all([
+        listProducts(currentCompany.id),
+        listExpenses(currentCompany.id)
+      ])
+      setRows(products)
+      setFixedExpenses(expenses)
+    }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao carregar produtos.') }
     finally { setLoading(false) }
   }, [currentCompany?.id, configReady])
 
   useEffect(() => { void refresh() }, [refresh])
+
+  // Calcular total de despesas fixas mensais
+  const totalFixedExpensesCents = useMemo(() => {
+    return fixedExpenses.reduce((sum, exp) => sum + Number(exp.amount_cents), 0)
+  }, [fixedExpenses])
+
+  // Calcular despesas fixas rateadas por produto (divisão igual por todos os produtos)
+  const fixedExpensePerProductCents = useMemo(() => {
+    if (rows.length === 0 || totalFixedExpensesCents === 0) return 0
+    return totalFixedExpensesCents / rows.length
+  }, [totalFixedExpensesCents, rows.length])
 
   const filtered = useMemo(() => rows.filter(row => {
     if (!row.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -126,21 +145,28 @@ export default function ProductsPage() {
     return data
   }, [selectedDetails, selectedPricing])
 
-  // Smart footnote for product details
+  // Smart footnote for product details - considera margem de LUCRO (não só contribuição)
   function getFootnote(): { text: string; tone: 'ok' | 'warn' | 'bad' } | null {
     if (!selectedDetails || !selectedPricing) return null
-    const margin = selectedPricing.contributionMarginPercent
-    const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
+    const contributionMargin = selectedPricing.contributionMarginPercent
     const current = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : null
     const recommended = selectedPricing.recommendedPriceCents
     const minimum = selectedPricing.minimumPriceCents
 
-    if (margin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
-    if (margin < 0) return { text: `⚠️ Atenção: você está vendendo este produto com margem negativa (${formatPercent(margin)}). Cada unidade vendida gera prejuízo. Revise custos ou ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+    // Calcular margem de LUCRO (descontando despesas fixas rateadas)
+    const profitCents = current !== null ? (selectedPricing.contributionCents ?? 0) - fixedExpensePerProductCents : null
+    const profitMargin = current !== null && current > 0 && profitCents !== null ? (profitCents / current) * 100 : null
+
+    if (contributionMargin === null || profitMargin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
+    
+    // Mensagens baseadas em margem de LUCRO (não contribuição)
+    if (profitMargin < 0) return { text: `⚠️ Atenção: você está vendendo este produto com margem de lucro negativa (${formatPercent(profitMargin)}). Cada unidade vendida gera prejuízo após considerar despesas fixas. Revise custos ou ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
     if (current !== null && minimum !== null && current < minimum) return { text: `Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-    if (desired !== null && margin < desired) return { text: `Você está vendendo abaixo da sua meta de margem (${formatPercent(desired)}). Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
+    
+    const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
+    if (desired !== null && profitMargin < desired) return { text: `Você está vendendo abaixo da sua meta de margem de lucro (${formatPercent(desired)}). Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
     if (recommended && current !== null && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
-    return { text: `✓ Excelente! Sua margem atual de ${formatPercent(margin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
+    return { text: `✓ Excelente! Sua margem de lucro de ${formatPercent(profitMargin)} está saudável e dentro do esperado. Mantenha o controle dos custos para preservar esse resultado.`, tone: 'ok' }
   }
 
   function startCreate() { 
@@ -394,18 +420,40 @@ export default function ProductsPage() {
 
                         {/* Corpo do card com métricas principais */}
                         <div className="p-4 space-y-3">
-                          {/* Preço praticado */}
-                          <div className="flex items-end justify-between border-b border-line/50 pb-2">
-                            <div>
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Preço praticado</p>
-                              <p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(row.current_price_cents)}</p>
+                          {/* Preço praticado e Margens */}
+                          <div className="border-b border-line/50 pb-2">
+                            <div className="flex items-end justify-between">
+                              <div>
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Preço praticado</p>
+                                <p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(row.current_price_cents)}</p>
+                              </div>
+                              {margin !== null && (
+                                <div className="text-right">
+                                  <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
+                                  <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
+                                    {formatPercent(margin)}
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                            {margin !== null && (
-                              <div className="text-right">
-                                <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
-                                <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
-                                  {formatPercent(margin)}
-                                </p>
+                            
+                            {/* Margem de Lucro (com despesas fixas) */}
+                            {margin !== null && result && (
+                              <div className="mt-2 flex items-center justify-end">
+                                <div className="text-right">
+                                  <p className="text-[9px] uppercase tracking-wider text-muted">Margem Lucro</p>
+                                  <p className={`mt-0.5 font-mono text-sm font-bold ${(() => {
+                                    const profitCents = (result.contributionCents ?? 0) - fixedExpensePerProductCents
+                                    const profitMargin = row.current_price_cents && Number(row.current_price_cents) > 0 ? (profitCents / Number(row.current_price_cents)) * 100 : 0
+                                    return profitMargin < 0 ? 'text-red-400' : profitMargin >= 10 ? 'text-emerald-400' : 'text-amber-400'
+                                  })()}`}>
+                                    {(() => {
+                                      const profitCents = (result.contributionCents ?? 0) - fixedExpensePerProductCents
+                                      const profitMargin = row.current_price_cents && Number(row.current_price_cents) > 0 ? (profitCents / Number(row.current_price_cents)) * 100 : 0
+                                      return formatPercent(profitMargin)
+                                    })()}
+                                  </p>
+                                </div>
                               </div>
                             )}
                           </div>
