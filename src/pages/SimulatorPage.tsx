@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Sparkles, Package, Wrench, DollarSign, Target, Zap, Save, Search, Trash2, Edit2 } from 'lucide-react'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatPercent } from '../lib/money'
+
+const STORAGE_KEY = 'spweb-saved-simulations'
 
 type SimulatorType = 'product' | 'service'
 type ViewMode = 'simulator' | 'saved'
@@ -37,7 +39,16 @@ export default function SimulatorPage() {
   const [savedTab, setSavedTab] = useState<SavedTab>('products')
   const [searchTerm, setSearchTerm] = useState('')
   const [simulationName, setSimulationName] = useState('')
-  const [savedSimulations, setSavedSimulations] = useState<SavedSimulation[]>([])
+  const [savedSimulations, setSavedSimulations] = useState<SavedSimulation[]>(() => {
+    // Carregar simulações do localStorage na inicialização
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch (error) {
+      console.error('Erro ao carregar simulações:', error)
+      return []
+    }
+  })
   
   // Estados para Produto - ZERADOS
   const [acquisitionCost, setAcquisitionCost] = useState(0)
@@ -54,6 +65,15 @@ export default function SimulatorPage() {
   const [serviceFees, setServiceFees] = useState(0)
   const [serviceTax, setServiceTax] = useState(0)
   const [serviceDesiredMargin, setServiceDesiredMargin] = useState(0)
+
+  // Sincronizar savedSimulations com localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedSimulations))
+    } catch (error) {
+      console.error('Erro ao salvar simulações:', error)
+    }
+  }, [savedSimulations])
 
   // Calcular custos do serviço
   const serviceTotalCost = useMemo(() => {
