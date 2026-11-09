@@ -402,7 +402,7 @@ export default function ProductsPage() {
                             </div>
                             {margin !== null && (
                               <div className="text-right">
-                                <p className="text-[9px] uppercase tracking-wider text-muted">Margem</p>
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
                                 <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
                                   {formatPercent(margin)}
                                 </p>
