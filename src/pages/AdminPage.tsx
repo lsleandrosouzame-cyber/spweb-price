@@ -127,14 +127,20 @@ export default function AdminPage() {
     if (!supabase) return
     setBusy(true); setNotice(null)
     try {
-      const { error } = await supabase.from('profiles').delete().eq('id', userId)
-      if (error) throw error
+      // Delete user from Supabase Auth using admin API
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+      if (authError) throw authError
+      
+      // Also delete from profiles table (cascade should handle this, but being explicit)
+      const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId)
+      if (profileError) console.warn('Profile deletion warning:', profileError)
+      
       setUsers(prev => prev.filter(u => u.id !== userId))
       setDeleteConfirm(null)
       setSelected(null)
-      setNotice({ text: 'Usuário removido do sistema.', tone: 'success' })
+      setNotice({ text: 'Usuário removido do sistema com sucesso.', tone: 'success' })
     } catch (cause) {
-      setNotice({ text: cause instanceof Error ? cause.message : 'Não foi possível excluir.', tone: 'error' })
+      setNotice({ text: cause instanceof Error ? cause.message : 'Não foi possível excluir o usuário.', tone: 'error' })
     } finally { setBusy(false) }
   }
 
