@@ -6,7 +6,8 @@ import { useAuth } from '../contexts/AuthContext'
 const primaryNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/simulador', label: 'Simulador', icon: Calculator },
-  { to: '/produtos', label: 'Produtos', icon: Package },
+  { to: '/cadastro', label: 'Cadastro', icon: Package },
+  { to: '/produtos', label: 'Precificação', icon: Calculator },
   { to: '/videos', label: 'Vídeos', icon: Video },
   { to: '/lancamentos', label: 'Lançamentos', icon: ReceiptText },
 ]
@@ -15,7 +16,7 @@ const footerNav = [
   { to: '/configuracoes', label: 'Configurações', icon: Settings2 },
 ]
 const titles: Record<string, string> = {
-  '/dashboard': 'Dashboard', '/simulador': 'Simulador', '/produtos': 'Produtos', '/videos': 'Central de conhecimento',
+  '/dashboard': 'Dashboard', '/simulador': 'Simulador', '/cadastro': 'Cadastro', '/produtos': 'Precificação', '/videos': 'Central de conhecimento',
   '/lancamentos': 'Lançamentos', '/perfil': 'Perfil', '/configuracoes': 'Configurações', '/admin': 'Painel Administrativo',
 }
 

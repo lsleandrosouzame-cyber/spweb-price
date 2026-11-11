@@ -9,6 +9,7 @@ const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
+const CadastroPage = lazy(() => import('./pages/CadastroPage'))
 const ProductsPage = lazy(() => import('./pages/ProductsPage'))
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage'))
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage'))
@@ -50,6 +51,7 @@ export default function App() {
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/simulador" element={<SimulatorPage />} />
+        <Route path="/cadastro" element={<CadastroPage />} />
         <Route path="/produtos" element={<ProductsPage />} />
         <Route path="/videos" element={<KnowledgePage />} />
         <Route path="/lancamentos" element={<ExpensesPage />} />

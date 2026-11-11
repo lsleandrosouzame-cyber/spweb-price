@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp } from 'lucide-react'
+import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -66,6 +66,7 @@ export default function ProductsPage() {
   const [feeModalOpen, setFeeModalOpen] = useState(false)
   const [editingCost, setEditingCost] = useState<ProductCostRecord | null>(null)
   const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards')
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -357,11 +358,30 @@ export default function ProductsPage() {
         {panel === 'list' && <>
           {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
           {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/><input className="field pl-10" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar produto"/></label>
             <select aria-label="Filtrar situação da margem" className="field sm:w-56" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
               <option value="todos">Todas as margens</option><option value="saudavel">Margem saudável</option><option value="atencao">Abaixo da desejada</option><option value="negativa">Margem negativa</option>
             </select>
+            {/* Toggle visualização Cards/Lista */}
+            <div className="inline-flex rounded-xl border border-line bg-panel p-1">
+              <button 
+                onClick={() => setViewMode('cards')} 
+                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'cards' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                title="Visualizar em cards"
+                aria-label="Visualizar em cards"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'list' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                title="Visualizar em lista"
+                aria-label="Visualizar em lista"
+              >
+                <List size={16} />
+              </button>
+            </div>
           </div>
           {rows.length === 0
             ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com custos detalhados e Preço praticado hoje." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
@@ -373,91 +393,155 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Grid de cards de produtos */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filtered.map(row => {
-                    const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
-                    const margin = result?.contributionMarginPercent ?? null
-                    const isNeg = margin !== null && margin < 0
-                    const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
-                    const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
-                    const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
-                    const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
-                    const statusIcon = margin === null ? null : isNeg ? <AlertTriangle size={13}/> : isBelowDesired ? <TrendingUp size={13}/> : <CheckCircle2 size={13}/>
+                {/* Grid de cards OU tabela de lista */}
+                {viewMode === 'cards' ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filtered.map(row => {
+                      const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
+                      const margin = result?.contributionMarginPercent ?? null
+                      const isNeg = margin !== null && margin < 0
+                      const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                      const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
+                      const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
+                      const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
+                      const statusIcon = margin === null ? null : isNeg ? <AlertTriangle size={13}/> : isBelowDesired ? <TrendingUp size={13}/> : <CheckCircle2 size={13}/>
 
-                    return (
-                      <div key={row.id} className="surface overflow-hidden hover:border-teal-border transition-all group">
-                        {/* Header do card com nome e status */}
-                        <div className="border-b border-line px-4 py-3">
-                          <button type="button" className="text-left w-full group-hover:text-gold transition-colors" onClick={() => openDetails(row)}>
-                            <h4 className="text-sm font-semibold line-clamp-1">{row.name}</h4>
-                            {row.notes && <p className="mt-1 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
-                          </button>
-                          <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
-                            {statusIcon}
-                            {statusLabel}
+                      return (
+                        <div key={row.id} className="surface overflow-hidden hover:border-teal-border transition-all group">
+                          {/* Header do card com nome e status */}
+                          <div className="border-b border-line px-4 py-3">
+                            <button type="button" className="text-left w-full group-hover:text-gold transition-colors" onClick={() => openDetails(row)}>
+                              <h4 className="text-sm font-semibold line-clamp-1">{row.name}</h4>
+                              {row.notes && <p className="mt-1 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
+                            </button>
+                            <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
+                              {statusIcon}
+                              {statusLabel}
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Corpo do card com métricas principais */}
-                        <div className="p-4 space-y-3">
-                          {/* Preço praticado e Margens */}
-                          <div className="border-b border-line/50 pb-2">
-                            <div className="flex items-end justify-between">
-                              <div>
-                                <p className="text-[9px] uppercase tracking-wider text-muted">Preço praticado</p>
-                                <p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(row.current_price_cents)}</p>
-                              </div>
-                              {margin !== null && (
-                                <div className="text-right">
-                                  <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
-                                  <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
-                                    {formatPercent(margin)}
-                                  </p>
+                          {/* Corpo do card com métricas principais */}
+                          <div className="p-4 space-y-3">
+                            {/* Preço praticado e Margens */}
+                            <div className="border-b border-line/50 pb-2">
+                              <div className="flex items-end justify-between">
+                                <div>
+                                  <p className="text-[9px] uppercase tracking-wider text-muted">Preço praticado</p>
+                                  <p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(row.current_price_cents)}</p>
                                 </div>
-                              )}
+                                {margin !== null && (
+                                  <div className="text-right">
+                                    <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
+                                    <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
+                                      {formatPercent(margin)}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+
+                            {/* Grid de custos e taxas */}
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Custo aquis.</p>
+                                <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(row.acquisition_cost_cents)}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Taxas</p>
+                                <p className="mt-0.5 font-mono text-amber-400">{formatPercent(row.variable_fees_percent)}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Impostos</p>
+                                <p className="mt-0.5 font-mono text-red-400">{formatPercent(row.tax_percent)}</p>
+                              </div>
+                            </div>
+
+                            {/* Resultado unitário */}
+                            {result && (
+                              <div className="pt-2 border-t border-line/50">
+                                <p className="text-[9px] uppercase tracking-wider text-muted">Resultado / unidade</p>
+                                <p className={`mt-1 font-mono text-lg font-bold ${isNeg ? 'text-red-400' : (result.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>
+                                  {formatBRLFromCents(result.contributionCents)}
+                                </p>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Grid de custos e taxas */}
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Custo aquis.</p>
-                              <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(row.acquisition_cost_cents)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Taxas</p>
-                              <p className="mt-0.5 font-mono text-amber-400">{formatPercent(row.variable_fees_percent)}</p>
-                            </div>
-                            <div>
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Impostos</p>
-                              <p className="mt-0.5 font-mono text-red-400">{formatPercent(row.tax_percent)}</p>
-                            </div>
+                          {/* Footer com ações */}
+                          <div className="border-t border-line px-3 py-2 bg-white/[.01] flex items-center justify-end gap-1">
+                            <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={13}/></button>
+                            <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={13}/></button>
+                            <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={13}/></button>
+                            <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={13}/></button>
+                            <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={13}/></button>
                           </div>
-
-                          {/* Resultado unitário */}
-                          {result && (
-                            <div className="pt-2 border-t border-line/50">
-                              <p className="text-[9px] uppercase tracking-wider text-muted">Resultado / unidade</p>
-                              <p className={`mt-1 font-mono text-lg font-bold ${isNeg ? 'text-red-400' : (result.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>
-                                {formatBRLFromCents(result.contributionCents)}
-                              </p>
-                            </div>
-                          )}
                         </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  /* Visualização em lista (tabela) */
+                  <div className="surface overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1100px] text-left">
+                        <thead>
+                          <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
+                            <th className="px-5 py-3">Produto</th>
+                            <th className="px-3 py-3">Preço praticado</th>
+                            <th className="px-3 py-3">Custo aquis.</th>
+                            <th className="px-3 py-3">Taxas</th>
+                            <th className="px-3 py-3">Impostos</th>
+                            <th className="px-3 py-3">Margem Contrib.</th>
+                            <th className="px-3 py-3">Resultado / un.</th>
+                            <th className="px-4 py-3"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-line">
+                          {filtered.map(row => {
+                            const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
+                            const margin = result?.contributionMarginPercent ?? null
+                            const isNeg = margin !== null && margin < 0
+                            const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                            const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
+                            const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
+                            const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
+                            const statusIcon = margin === null ? null : isNeg ? <AlertTriangle size={13}/> : isBelowDesired ? <TrendingUp size={13}/> : <CheckCircle2 size={13}/>
 
-                        {/* Footer com ações */}
-                        <div className="border-t border-line px-3 py-2 bg-white/[.01] flex items-center justify-end gap-1">
-                          <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={13}/></button>
-                          <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={13}/></button>
-                          <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={13}/></button>
-                          <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={13}/></button>
-                          <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={13}/></button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
+                            return (
+                              <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
+                                <td className="px-5 py-4">
+                                  <button type="button" className="text-left hover:text-gold transition-colors" onClick={() => openDetails(row)}>
+                                    <p className="text-sm font-medium">{row.name}</p>
+                                    {row.notes && <p className="mt-1 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
+                                  </button>
+                                  <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
+                                    {statusIcon}
+                                    {statusLabel}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
+                                <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
+                                <td className="px-3 py-4 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
+                                <td className="px-3 py-4 font-mono text-xs text-red-400">{formatPercent(row.tax_percent)}</td>
+                                <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
+                                <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
+                                <td className="px-3 py-4">
+                                  <div className="flex justify-end gap-1">
+                                    <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
+                                    <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
+                                    <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={14}/></button>
+                                    <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
+                                    <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={14}/></button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 {filtered.length === 0 && <div className="surface p-8 text-center"><p className="text-sm text-muted">Nenhum produto corresponde à pesquisa/filtro.</p></div>}
               </div>}
