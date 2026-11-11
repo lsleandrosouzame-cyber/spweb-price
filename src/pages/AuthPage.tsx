@@ -103,7 +103,6 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         {/* Título do formulário */}
         <div className="mb-6 text-center">
           <h2 className="text-xl font-bold text-white sm:text-2xl">{pageCopy.title}</h2>
-          <p className="mt-2 text-xs text-white/60 sm:text-sm">{pageCopy.subtitle}</p>
         </div>
 
         {/* Notices */}
@@ -120,35 +119,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {hasSupabaseConfig && <button className="btn-primary w-full" disabled={busy}>{busy ? 'Aguarde…' : pageCopy.button}<ArrowRight size={15}/></button>}
         </form>
 
-        {/* Links de navegação */}
-        <div className="mt-6 space-y-2 text-center text-xs">
-          {mode === 'login' && (
-            <>
-              <a href="/auth/recovery" className="block text-white/70 hover:text-white transition-colors">
-                Esqueceu sua senha?
-              </a>
-              <p className="text-white/50">
-                Não tem conta?{' '}
-                <a href="/auth/signup" className="font-semibold text-gold hover:text-gold/80 transition-colors">
-                  Criar conta
-                </a>
-              </p>
-            </>
-          )}
-          {mode === 'signup' && (
-            <p className="text-white/50">
-              Já tem conta?{' '}
-              <a href="/auth/login" className="font-semibold text-gold hover:text-gold/80 transition-colors">
-                Fazer login
-              </a>
-            </p>
-          )}
-          {mode === 'recovery' && !updatingPassword && (
-            <a href="/auth/login" className="block text-white/70 hover:text-white transition-colors">
-              Voltar para o login
-            </a>
-          )}
-        </div>
+
       </div>
     </section>
   </main>
