@@ -127,21 +127,28 @@ export default function AdminPage() {
     if (!supabase) return
     setBusy(true); setNotice(null)
     try {
-      // Delete user from Supabase Auth using admin API
+      // Com CASCADE configurado no banco, deletar de auth.users automaticamente
+      // remove todos os registros relacionados (companies, products, services, expenses, profiles)
       const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      if (authError) throw authError
       
-      // Also delete from profiles table (cascade should handle this, but being explicit)
-      const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId)
-      if (profileError) console.warn('Profile deletion warning:', profileError)
-      
+      if (authError) {
+        throw new Error(`Erro ao deletar usuário: ${authError.message}`)
+      }
+
+      // Remove do estado local
       setUsers(prev => prev.filter(u => u.id !== userId))
       setDeleteConfirm(null)
       setSelected(null)
-      setNotice({ text: 'Usuário removido do sistema com sucesso.', tone: 'success' })
+      setNotice({ text: 'Usuário e todos os dados relacionados foram removidos com sucesso.', tone: 'success' })
     } catch (cause) {
-      setNotice({ text: cause instanceof Error ? cause.message : 'Não foi possível excluir o usuário.', tone: 'error' })
-    } finally { setBusy(false) }
+      console.error('Erro ao deletar usuário:', cause)
+      setNotice({ 
+        text: cause instanceof Error ? cause.message : 'Não foi possível excluir o usuário. Verifique as permissões.', 
+        tone: 'error' 
+      })
+    } finally { 
+      setBusy(false) 
+    }
   }
 
   async function createUser(event: FormEvent) {
