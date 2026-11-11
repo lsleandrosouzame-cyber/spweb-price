@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Copy, Eye, LoaderCircle, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Copy, LoaderCircle, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
