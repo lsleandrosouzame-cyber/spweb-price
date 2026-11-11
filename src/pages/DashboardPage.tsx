@@ -43,18 +43,18 @@ function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: {
   }
   const s = schemes[variant]
   const inner = (
-    <div className={`surface group relative overflow-hidden p-5 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-teal-light/30' : 'cursor-default'}`}>
+    <div className={`surface group relative overflow-hidden p-3 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-teal-light/30' : 'cursor-default'}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-semibold text-muted">{title}</p>
-          <p className={`mt-3 font-mono text-3xl font-bold tracking-tight tabular-nums ${s.value}`}>{value}</p>
+          <p className="text-[10px] font-semibold text-muted uppercase tracking-wider">{title}</p>
+          <p className={`mt-2 font-mono text-xl font-bold tracking-tight tabular-nums ${s.value}`}>{value}</p>
         </div>
-        <span className={`grid size-11 place-items-center rounded-xl border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
-          <Icon size={20}/>
+        <span className={`grid size-9 place-items-center rounded-lg border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
+          <Icon size={16}/>
         </span>
       </div>
-      <p className="mt-3 text-[12px] leading-5 font-medium text-muted">{detail}</p>
-      {to && <span className="absolute bottom-3 right-4 text-[10px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
+      <p className="mt-2 text-[11px] leading-snug font-medium text-muted">{detail}</p>
+      {to && <span className="absolute bottom-2 right-3 text-[9px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
     </div>
   )
   return (

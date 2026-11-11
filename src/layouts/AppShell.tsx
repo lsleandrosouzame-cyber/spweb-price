@@ -1,8 +1,7 @@
 ﻿import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package, Calculator, Moon, Sun } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package, Calculator } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
 
 const primaryNav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -25,7 +24,6 @@ export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const { user, currentCompany, signOut } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const isAdmin = user?.email === 'admin@spweb.digital'
   const location = useLocation()
   const navigate = useNavigate()
@@ -146,22 +144,10 @@ export default function AppShell() {
               <h1 className="mt-0.5 text-base font-extrabold tracking-tight sm:text-lg" style={{ color: '#0D1F1A' }}>{title}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleTheme}
-              className="rounded-xl border border-line bg-graphite px-3 py-2 text-muted transition-all hover:bg-teal-light hover:text-teal"
-              aria-label={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
-              title={theme === 'light' ? 'Modo escuro' : 'Modo claro'}
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </button>
-            
-            <div className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px]" style={{ background: '#F2F4F3', color: '#3D5048' }}>
-              <Command size={13} style={{ color: '#1A3C34' }} />
-              <span className="hidden sm:inline font-semibold">Dados em tempo real</span>
-              <span className="size-2 rounded-full" style={{ background: '#00B87A' }} />
-            </div>
+          <div className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px]" style={{ background: '#F2F4F3', color: '#3D5048' }}>
+            <Command size={13} style={{ color: '#1A3C34' }} />
+            <span className="hidden sm:inline font-semibold">Dados em tempo real</span>
+            <span className="size-2 rounded-full" style={{ background: '#00B87A' }} />
           </div>
         </header>
 

@@ -111,7 +111,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
               <span className="relative block">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 text-base text-paper placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10" 
+                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 text-base placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10"
+                  style={{ color: '#0D1F1A' }}
                   type="email" 
                   autoComplete="email" 
                   required 
@@ -128,7 +129,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
               <span className="relative block">
                 <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 pr-12 text-base text-paper placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10" 
+                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 pr-12 text-base placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10"
+                  style={{ color: '#0D1F1A' }}
                   type={showPassword ? 'text' : 'password'} 
                   autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
                   minLength={8} 
