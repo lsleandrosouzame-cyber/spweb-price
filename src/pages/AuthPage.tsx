@@ -62,15 +62,16 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   return <main className="relative grid min-h-screen lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
     {/* Background com imagem para TODAS as telas (mobile, tablet, desktop) */}
     <div 
-      className="fixed inset-0 z-0"
+      className="fixed inset-0 z-0 h-full w-full"
       style={{
         backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1600&q=80)',
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
       }}
     >
       {/* Overlay 70% para todas as telas */}
-      <div className="absolute inset-0 bg-black/70"></div>
+      <div className="absolute inset-0 h-full w-full bg-black/70"></div>
     </div>
 
     {/* Desktop: Painel lateral com branding */}
@@ -113,8 +114,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
 
         {/* Formulário */}
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          {!updatingPassword && <label className="block"><span className="mb-2 block text-xs font-medium text-white">E-mail</span><span className="relative block"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" size={16}/><input className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 pl-10 text-sm text-white placeholder:text-white/30 backdrop-blur-sm transition-all focus:border-gold/50 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-gold/20" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com.br" /></span></label>}
-          {(mode !== 'recovery' || updatingPassword) && <label className="block"><span className="mb-2 block text-xs font-medium text-white">{updatingPassword ? 'Nova senha' : 'Senha'}</span><span className="relative block"><LockKeyhole className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" size={16}/><input className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 pl-10 pr-11 text-sm text-white placeholder:text-white/30 backdrop-blur-sm transition-all focus:border-gold/50 focus:bg-white/15 focus:outline-none focus:ring-2 focus:ring-gold/20" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} minLength={8} required value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 8 caracteres"/><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>}
+          {!updatingPassword && <label className="block"><span className="mb-2 block text-xs font-medium text-white">E-mail</span><span className="relative block"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pl-10 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com.br" /></span></label>}
+          {(mode !== 'recovery' || updatingPassword) && <label className="block"><span className="mb-2 block text-xs font-medium text-white">{updatingPassword ? 'Nova senha' : 'Senha'}</span><span className="relative block"><LockKeyhole className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pl-10 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} minLength={8} required value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 8 caracteres"/><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>}
           {!hasSupabaseConfig && <button type="button" className="btn-primary w-full opacity-60" disabled>{pageCopy.button}<ArrowRight size={15}/></button>}
           {hasSupabaseConfig && <button className="btn-primary w-full" disabled={busy}>{busy ? 'Aguarde…' : pageCopy.button}<ArrowRight size={15}/></button>}
         </form>
