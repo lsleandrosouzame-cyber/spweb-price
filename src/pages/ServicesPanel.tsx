@@ -274,43 +274,106 @@ export default function ServicesPanel() {
       </div>
       {rows.length === 0
         ? <EmptyState title="Cadastre seu primeiro serviço" description="Informe horas, mão de obra, materiais, taxas e impostos." action={<button className="btn-primary" onClick={() => openForm()}><Plus size={15}/>Cadastrar serviço</button>}/>
-        : <div className="surface overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-line px-5 py-4"><Wrench size={16} className="text-gold"/><div><p className="eyebrow">SERVIÇOS CADASTRADOS</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} serviço(s)</p></div></div>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1100px] text-left">
-                <thead><tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted"><th className="px-5 py-3">Serviço</th><th className="px-3 py-3">Horas</th><th className="px-3 py-3">Custo M.O.</th><th className="px-3 py-3">Materiais</th><th className="px-3 py-3">Taxas %</th><th className="px-3 py-3">Preço praticado hoje</th><th className="px-3 py-3">Margem Contrib.</th><th className="px-3 py-3">Resultado / un.</th><th className="px-4 py-3"/></tr></thead>
-                <tbody className="divide-y divide-line">{filtered.map(row => {
-                  const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
-                  const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
-                  return <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
-                    <td className="px-5 py-4"><p className="text-sm font-medium">{row.name}</p><p className="mt-1 text-[10px] text-muted">{row.include_fixed_cost_per_hour ? 'Inclui custo fixo/hora' : 'Sem rateio fixo'}</p></td>
-                    <td className="px-3 py-4 font-mono text-xs">{row.hours}</td>
-                    <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(Number(row.hours) * Number(row.hourly_labor_cost_cents) + (row.include_fixed_cost_per_hour ? Number(row.hours) * Number(row.fixed_cost_per_hour_cents) : 0))}</td>
-                    <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(row.materials_cents)}</td>
-                    <td className="px-3 py-4 font-mono text-xs">
-                      {editingCell?.id === row.id && editingCell.field === 'other_cost'
-                        ? <input autoFocus className="field !py-1 !px-2 w-24 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
-                        : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'other_cost')}>{formatBRLFromCents(row.other_cost_cents)}</button>}
-                    </td>
-                    <td className="px-3 py-4 font-mono text-xs">
-                      {editingCell?.id === row.id && editingCell.field === 'fees'
-                        ? <input autoFocus className="field !py-1 !px-2 w-20 text-xs" value={cellValue} onChange={e => setCellValue(e.target.value)} onBlur={saveCellEdit} onKeyDown={e => { if (e.key === 'Enter') saveCellEdit(); if (e.key === 'Escape') setEditingCell(null) }} />
-                        : <button className="hover:bg-teal-light px-2 py-1 rounded text-left w-full" onClick={() => startEditCell(row, 'fees')}>{formatPercent(row.variable_fees_percent)}</button>}
-                    </td>
-                    <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
-                    <td className={`px-3 py-4 font-mono text-xs font-semibold ${(result?.contributionMarginPercent ?? 0) < 0 ? 'text-red-400' : (result?.contributionMarginPercent ?? 0) >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(result?.contributionMarginPercent)}</td>
-                    <td className={`px-3 py-4 font-mono text-xs font-semibold ${(result?.contributionCents ?? 0) < 0 ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
-                    <td className="px-3 py-4"><div className="flex justify-end gap-1">
-                      <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
-                      <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
-                      <button aria-label={`Editar ${row.name}`} className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => openForm(row)}><Pencil size={14}/></button>
-                      <button aria-label={`Duplicar ${row.name}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
-                      <button aria-label={`Excluir ${row.name}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void remove(row)}><Trash2 size={14}/></button>
-                    </div></td>
-                  </tr>
-                })}</tbody>
-              </table>
+        : <div className="space-y-4">
+            <div className="surface px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div><p className="eyebrow">SERVIÇOS CADASTRADOS</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} serviço(s)</p></div>
+                <Wrench className="text-gold" size={18}/>
+              </div>
             </div>
+
+            {/* Grid de cards de serviços */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map(row => {
+                const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
+                const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
+                const margin = result?.contributionMarginPercent ?? null
+                const isNeg = margin !== null && margin < 0
+                const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
+                const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
+                const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
+                const statusIcon = margin === null ? null : isNeg ? <AlertTriangle size={13}/> : isBelowDesired ? <TrendingUp size={13}/> : <CheckCircle2 size={13}/>
+
+                return (
+                  <div key={row.id} className="surface overflow-hidden hover:border-teal-border transition-all group">
+                    {/* Header do card com nome e status */}
+                    <div className="border-b border-line px-4 py-3">
+                      <button type="button" className="text-left w-full group-hover:text-gold transition-colors" onClick={() => openDetails(row)}>
+                        <h4 className="text-sm font-semibold line-clamp-1">{row.name}</h4>
+                        <p className="mt-1 text-[10px] text-muted line-clamp-1">{row.include_fixed_cost_per_hour ? 'Inclui custo fixo/hora' : 'Sem rateio fixo'}</p>
+                      </button>
+                      <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
+                        {statusIcon}
+                        {statusLabel}
+                      </div>
+                    </div>
+
+                    {/* Corpo do card com métricas principais */}
+                    <div className="p-4 space-y-3">
+                      {/* Preço praticado e Margens */}
+                      <div className="border-b border-line/50 pb-2">
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className="text-[9px] uppercase tracking-wider text-muted">Preço praticado</p>
+                            <p className="mt-1 font-mono text-xl font-bold">{formatBRLFromCents(row.current_price_cents)}</p>
+                          </div>
+                          {margin !== null && (
+                            <div className="text-right">
+                              <p className="text-[9px] uppercase tracking-wider text-muted">Margem Contrib.</p>
+                              <p className={`mt-1 font-mono text-base font-bold ${isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>
+                                {formatPercent(margin)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Grid de custos e taxas */}
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider text-muted">Horas</p>
+                          <p className="mt-0.5 font-mono text-paper">{row.hours}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider text-muted">Custo M.O.</p>
+                          <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(Number(row.hours) * Number(row.hourly_labor_cost_cents) + (row.include_fixed_cost_per_hour ? Number(row.hours) * Number(row.fixed_cost_per_hour_cents) : 0))}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider text-muted">Materiais</p>
+                          <p className="mt-0.5 font-mono text-paper">{formatBRLFromCents(row.materials_cents)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-wider text-muted">Taxas</p>
+                          <p className="mt-0.5 font-mono text-amber-400">{formatPercent(row.variable_fees_percent)}</p>
+                        </div>
+                      </div>
+
+                      {/* Resultado unitário */}
+                      {result && (
+                        <div className="pt-2 border-t border-line/50">
+                          <p className="text-[9px] uppercase tracking-wider text-muted">Resultado / serviço</p>
+                          <p className={`mt-1 font-mono text-lg font-bold ${isNeg ? 'text-red-400' : (result.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>
+                            {formatBRLFromCents(result.contributionCents)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer com ações */}
+                    <div className="border-t border-line px-3 py-2 bg-white/[.01] flex items-center justify-end gap-1">
+                      <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={13}/></button>
+                      <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={13}/></button>
+                      <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => openForm(row)}><Pencil size={13}/></button>
+                      <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={13}/></button>
+                      <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void remove(row)}><Trash2 size={13}/></button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {filtered.length === 0 && <div className="surface p-8 text-center"><p className="text-sm text-muted">Nenhum serviço corresponde à pesquisa.</p></div>}
           </div>}
     </>}
 

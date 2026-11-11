@@ -140,7 +140,7 @@ export function CostTagWidget({ costTags, setCostTags, title = 'Custos adicionai
           <DollarSign size={12} className="text-emerald-400 shrink-0"/>
           <input autoFocus className="bg-white text-xs outline-none flex-1 placeholder:text-muted" placeholder="Ex.: Embalagem" value={input.label} onChange={e => setInput(f => ({ ...f, label: e.target.value }))} onKeyDown={e => e.key === 'Escape' && (setShowInput(false), setInput({ label: '', value: '' }))}/>
           <CurrencyInput className="bg-white text-xs outline-none w-20 font-mono text-right border-0 !ring-0 !p-0" value={input.value} onChange={v => setInput(f => ({ ...f, value: v }))} placeholder="R$" onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { e.preventDefault(); add() } if (e.key === 'Escape') { setShowInput(false); setInput({ label: '', value: '' }) } }}/>
-          <button type="button" className="rounded-md bg-emerald-500 px-2 py-1 text-[10px] font-semibold text-white hover:bg-emerald-400" onClick={add}>OK</button>
+          <button type="button" className="rounded-md bg-emerald-500 px-2 py-1 text-[10px] font-semibold text-black hover:bg-emerald-400" onClick={add}>OK</button>
           <button type="button" className="text-muted hover:text-paper" onClick={() => { setShowInput(false); setInput({ label: '', value: '' }) }}><X size={12}/></button>
         </div>
       ) : (
