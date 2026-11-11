@@ -244,14 +244,110 @@ export default function DashboardPage() {
 
       {/* Metric cards */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric title="Produtos cadastrados" value={String(products.length)} detail={products.length ? `Total de ${products.length} produto(s) nesta empresa` : 'Nenhum produto cadastrado ainda'} icon={Package} variant={products.length > 0 ? 'blue' : 'default'} to="/produtos"/>
+        <Metric title="Serviços cadastrados" value={String(services.length)} detail={services.length ? `Total de ${services.length} serviço(s) nesta empresa` : 'Nenhum serviço cadastrado ainda'} icon={Wallet} variant={services.length > 0 ? 'green' : 'default'} to="/produtos"/>
+        <Metric title="Margem saudável" value={productMargins.length || serviceMargins.length ? String(healthy) : '—'} detail={productMargins.length || serviceMargins.length ? 'Produtos/serviços acima da margem desejada' : 'Aguardando preços completos'} icon={TrendingUp} variant={healthy > 0 ? 'green' : 'default'} to="/produtos"/>
+        <Metric title="Atenção necessária" value={productMargins.length || serviceMargins.length ? String(lowOrNegative) : '—'} detail="Produtos/serviços abaixo da meta ou negativos" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
+      </section>
+
+      {/* Top/Bottom performers - NEW SECTION */}
+      {(products.length > 0 || services.length > 0) && (
+        <section className="grid gap-4 md:grid-cols-2">
+          {/* Maiores margens */}
+          <div className="surface p-5 sm:p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="eyebrow text-emerald-600">MAIORES MARGENS</p>
+                <h3 className="mt-1 text-lg font-bold">Produtos/serviços campeões</h3>
+              </div>
+              <CheckCircle2 className="text-emerald-500" size={20}/>
+            </div>
+            <div className="space-y-3">
+              {(() => {
+                const allItems = [
+                  ...products.flatMap(p => {
+                    if (!p.current_price_cents) return []
+                    const result = calculateProductPricing({ acquisitionCostCents: Number(p.acquisition_cost_cents), otherCostCents: Number(p.other_cost_cents), variableFeesPercent: Number(p.variable_fees_percent), taxPercent: Number(p.tax_percent), desiredMarginPercent: p.desired_margin_percent === null ? undefined : Number(p.desired_margin_percent), sellingPriceCents: Number(p.current_price_cents) })
+                    return result.contributionMarginPercent === null ? [] : [{ name: p.name, type: 'Produto', margin: result.contributionMarginPercent, price: p.current_price_cents }]
+                  }),
+                  ...services.flatMap(s => {
+                    if (!s.current_price_cents) return []
+                    try {
+                      const cost = calculateServiceCost({ hours: Number(s.hours), hourlyLaborCostCents: Number(s.hourly_labor_cost_cents), materialsCents: Number(s.materials_cents), otherCostCents: Number(s.other_cost_cents), fixedCostPerHourCents: Number(s.fixed_cost_per_hour_cents), includeFixedCostPerHour: s.include_fixed_cost_per_hour })
+                      const result = calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(s.variable_fees_percent), taxPercent: Number(s.tax_percent), desiredMarginPercent: s.desired_margin_percent === null ? undefined : Number(s.desired_margin_percent), sellingPriceCents: Number(s.current_price_cents) })
+                      return result.contributionMarginPercent === null ? [] : [{ name: s.name, type: 'Serviço', margin: result.contributionMarginPercent, price: s.current_price_cents }]
+                    } catch { return [] }
+                  })
+                ].sort((a, b) => b.margin - a.margin).slice(0, 5)
+                
+                return allItems.length ? allItems.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 hover:bg-emerald-50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-paper truncate">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted">{item.type} · {formatBRLFromCents(item.price)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-mono text-lg font-bold text-emerald-600">{formatPercent(item.margin)}</p>
+                      <p className="text-[9px] text-muted">margem</p>
+                    </div>
+                  </div>
+                )) : <p className="text-sm text-muted text-center py-4">Nenhum produto/serviço com preço cadastrado</p>
+              })()}
+            </div>
+          </div>
+
+          {/* Menores margens */}
+          <div className="surface p-5 sm:p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="eyebrow text-red-600">MENORES MARGENS</p>
+                <h3 className="mt-1 text-lg font-bold">Precisam de atenção</h3>
+              </div>
+              <AlertTriangle className="text-red-500" size={20}/>
+            </div>
+            <div className="space-y-3">
+              {(() => {
+                const allItems = [
+                  ...products.flatMap(p => {
+                    if (!p.current_price_cents) return []
+                    const result = calculateProductPricing({ acquisitionCostCents: Number(p.acquisition_cost_cents), otherCostCents: Number(p.other_cost_cents), variableFeesPercent: Number(p.variable_fees_percent), taxPercent: Number(p.tax_percent), desiredMarginPercent: p.desired_margin_percent === null ? undefined : Number(p.desired_margin_percent), sellingPriceCents: Number(p.current_price_cents) })
+                    return result.contributionMarginPercent === null ? [] : [{ name: p.name, type: 'Produto', margin: result.contributionMarginPercent, price: p.current_price_cents, desired: p.desired_margin_percent }]
+                  }),
+                  ...services.flatMap(s => {
+                    if (!s.current_price_cents) return []
+                    try {
+                      const cost = calculateServiceCost({ hours: Number(s.hours), hourlyLaborCostCents: Number(s.hourly_labor_cost_cents), materialsCents: Number(s.materials_cents), otherCostCents: Number(s.other_cost_cents), fixedCostPerHourCents: Number(s.fixed_cost_per_hour_cents), includeFixedCostPerHour: s.include_fixed_cost_per_hour })
+                      const result = calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(s.variable_fees_percent), taxPercent: Number(s.tax_percent), desiredMarginPercent: s.desired_margin_percent === null ? undefined : Number(s.desired_margin_percent), sellingPriceCents: Number(s.current_price_cents) })
+                      return result.contributionMarginPercent === null ? [] : [{ name: s.name, type: 'Serviço', margin: result.contributionMarginPercent, price: s.current_price_cents, desired: s.desired_margin_percent }]
+                    } catch { return [] }
+                  })
+                ].sort((a, b) => a.margin - b.margin).slice(0, 5)
+                
+                return allItems.length ? allItems.map((item, i) => (
+                  <div key={i} className={`flex items-center justify-between gap-4 rounded-xl border p-3 hover:bg-red-50/50 transition-colors ${item.margin < 0 ? 'border-red-300 bg-red-50/70' : 'border-amber-200 bg-amber-50/50'}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-paper truncate">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted">{item.type} · {formatBRLFromCents(item.price)}{item.desired !== null && ` · Meta: ${formatPercent(item.desired)}`}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`font-mono text-lg font-bold ${item.margin < 0 ? 'text-red-600' : 'text-amber-600'}`}>{formatPercent(item.margin)}</p>
+                      <p className="text-[9px] text-muted">margem</p>
+                    </div>
+                  </div>
+                )) : <p className="text-sm text-muted text-center py-4">Nenhum produto/serviço com preço cadastrado</p>
+              })()}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Original metric cards - adjusted */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
         <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? `Baseada nos custos variáveis (${effectiveVariableCostsPercent.toFixed(1)}% cadastrados)` : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
         <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
         <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
-        <Metric title="Produtos cadastrados" value={String(products.length)} detail="Total de produtos desta empresa" icon={Package} variant="blue" to="/produtos"/>
-        <Metric title="Margem saudável" value={productMargins.length ? String(healthy) : '—'} detail={productMargins.length ? 'Preço atual acima da margem desejada' : 'Ainda sem preços e margens completos'} icon={TrendingUp} variant={healthy > 0 ? 'green' : 'default'} to="/produtos"/>
-        <Metric title="Baixa ou negativa" value={productMargins.length ? String(lowOrNegative) : '—'} detail="Itens com margem abaixo da desejada ou negativa" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
       </section>
 
       {/* Break-even + Expenses distribution + Variable costs */}

@@ -1,6 +1,6 @@
 ﻿import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
+import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { InlineNotice } from '../components/Feedback'
 
@@ -60,38 +60,39 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   }
 
   return <main className="relative grid min-h-screen">
-    {/* Background com imagem de escritório executivo */}
+    {/* Background cinematográfico - sala de reunião com gráficos e apresentação */}
     <div 
       className="fixed inset-0 z-0 h-full w-full"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Overlay 70% para todas as telas */}
-      <div className="absolute inset-0 h-full w-full bg-black/70"></div>
+      {/* Overlay escuro cinematográfico */}
+      <div className="absolute inset-0 h-full w-full bg-gradient-to-br from-black/75 via-black/70 to-black/80"></div>
     </div>
 
     {/* Formulário centralizado */}
     <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10">
       {/* Logo acima do formulário */}
-      <div className="mb-8 text-center">
-        <h1 className="text-5xl font-bold text-white">
+      <div className="mb-10 text-center">
+        <h1 className="text-5xl font-bold text-white drop-shadow-lg sm:text-6xl">
           SPWeb
         </h1>
-        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/70">
+        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/80 drop-shadow">
           Sistemas inteligentes que geram lucro
         </p>
       </div>
 
-      {/* Card do formulário */}
-      <div className="w-full max-w-[420px] rounded-2xl bg-graphite/40 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
+      {/* Card do formulário - estilo Apple: branco puro, minimalista, clean */}
+      <div className="w-full max-w-[440px] rounded-3xl bg-white p-10 shadow-2xl">
 
         {/* Título do formulário */}
-        <div className="mb-6 text-center">
-          <h2 className="text-xl font-bold text-white sm:text-2xl">{pageCopy.title}</h2>
+        <div className="mb-8 text-center">
+          <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{pageCopy.title}</h2>
+          <p className="mt-2 text-sm text-slate-600">{pageCopy.subtitle}</p>
         </div>
 
         {/* Notices */}
@@ -100,15 +101,94 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
         </div>
 
-        {/* Formulário */}
-        <form className="mt-6 space-y-4" onSubmit={submit}>
-          {!updatingPassword && <label className="block"><span className="mb-2 block text-xs font-medium text-white">E-mail</span><span className="relative block"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pl-10 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20" type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="voce@empresa.com.br" /></span></label>}
-          {(mode !== 'recovery' || updatingPassword) && <label className="block"><span className="mb-2 block text-xs font-medium text-white">{updatingPassword ? 'Nova senha' : 'Senha'}</span><span className="relative block"><LockKeyhole className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pl-10 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20" type={showPassword ? 'text' : 'password'} autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} minLength={8} required value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo de 8 caracteres"/><button type="button" aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors" onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={16}/> : <Eye size={16}/>}</button></span></label>}
-          {!hasSupabaseConfig && <button type="button" className="btn-primary w-full opacity-60" disabled>{pageCopy.button}<ArrowRight size={15}/></button>}
-          {hasSupabaseConfig && <button className="btn-primary w-full" disabled={busy}>{busy ? 'Aguarde…' : pageCopy.button}<ArrowRight size={15}/></button>}
+        {/* Formulário estilo Apple */}
+        <form className="mt-6 space-y-5" onSubmit={submit}>
+          {!updatingPassword && (
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-900">E-mail</span>
+              <span className="relative block">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                <input 
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 pl-12 text-base text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10" 
+                  type="email" 
+                  autoComplete="email" 
+                  required 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  placeholder="voce@empresa.com.br" 
+                />
+              </span>
+            </label>
+          )}
+          {(mode !== 'recovery' || updatingPassword) && (
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-900">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
+              <span className="relative block">
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                <input 
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 pl-12 pr-12 text-base text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10" 
+                  type={showPassword ? 'text' : 'password'} 
+                  autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
+                  minLength={8} 
+                  required 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  placeholder="Mínimo de 8 caracteres"
+                />
+                <button 
+                  type="button" 
+                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
+                </button>
+              </span>
+            </label>
+          )}
+          
+          {!hasSupabaseConfig && (
+            <button 
+              type="button" 
+              className="mt-6 w-full rounded-xl bg-blue-600/40 px-6 py-4 text-base font-semibold text-white transition-all" 
+              disabled
+            >
+              {pageCopy.button}
+            </button>
+          )}
+          {hasSupabaseConfig && (
+            <button 
+              className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:shadow-xl hover:shadow-blue-600/40 active:scale-[0.98] disabled:opacity-60" 
+              disabled={busy}
+            >
+              {busy ? 'Aguarde…' : pageCopy.button}
+            </button>
+          )}
         </form>
 
-
+        {/* Links auxiliares estilo Apple */}
+        <div className="mt-6 text-center">
+          {mode === 'login' && (
+            <div className="space-y-2">
+              <a href="/auth/signup" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                Criar conta gratuita
+              </a>
+              <a href="/auth/recovery" className="block text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                Esqueci minha senha
+              </a>
+            </div>
+          )}
+          {mode === 'signup' && (
+            <a href="/auth/login" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+              Já tenho uma conta
+            </a>
+          )}
+          {mode === 'recovery' && !updatingPassword && (
+            <a href="/auth/login" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+              Voltar ao login
+            </a>
+          )}
+        </div>
       </div>
     </section>
   </main>
