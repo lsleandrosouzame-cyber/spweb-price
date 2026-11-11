@@ -59,12 +59,12 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     } finally { setBusy(false) }
   }
 
-  return <main className="relative grid min-h-screen lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,.95fr)]">
-    {/* Background com imagem para TODAS as telas (mobile, tablet, desktop) */}
+  return <main className="relative grid min-h-screen">
+    {/* Background com imagem de escritório executivo */}
     <div 
       className="fixed inset-0 z-0 h-full w-full"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1600&q=80)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1497366216548-37526070297c?w=1600&q=80)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
@@ -74,31 +74,20 @@ export default function AuthPage({ mode }: { mode: Mode }) {
       <div className="absolute inset-0 h-full w-full bg-black/70"></div>
     </div>
 
-    {/* Desktop: Painel lateral com branding */}
-    <section className="relative z-10 hidden min-h-screen overflow-hidden border-r border-white/10 p-12 lg:flex lg:flex-col lg:justify-center xl:p-16">
-      <div className="relative max-w-xl">
-        <h1 className="text-5xl font-bold leading-tight tracking-tight text-white xl:text-6xl">
+    {/* Formulário centralizado */}
+    <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10">
+      {/* Logo acima do formulário */}
+      <div className="mb-8 text-center">
+        <h1 className="text-5xl font-bold text-white">
           SPWeb
         </h1>
-        <p className="mt-4 text-sm font-medium uppercase tracking-wider text-white/80">
-          Sistemas inteligentes que geram lucro
-        </p>
-      </div>
-    </section>
-
-    {/* Mobile/Tablet/Desktop: Formulário */}
-    <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10 sm:px-10">
-      {/* Logo mobile - só aparece em telas pequenas */}
-      <div className="mb-8 text-center lg:hidden">
-        <h1 className="text-4xl font-bold text-white sm:text-5xl">
-          SPWeb
-        </h1>
-        <p className="mt-2 text-xs font-medium uppercase tracking-wider text-white/70 sm:text-sm">
+        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/70">
           Sistemas inteligentes que geram lucro
         </p>
       </div>
 
-      <div className="w-full max-w-[420px] rounded-2xl bg-graphite/40 backdrop-blur-xl border border-white/10 p-6 sm:p-8 shadow-2xl">
+      {/* Card do formulário */}
+      <div className="w-full max-w-[420px] rounded-2xl bg-graphite/40 backdrop-blur-xl border border-white/10 p-8 shadow-2xl">
 
         {/* Título do formulário */}
         <div className="mb-6 text-center">
