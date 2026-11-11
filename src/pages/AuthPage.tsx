@@ -101,15 +101,15 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
         </div>
 
-        {/* Formulário estilo Apple */}
+        {/* Formulário estilo Apple com paleta do sistema */}
         <form className="mt-6 space-y-5" onSubmit={submit}>
           {!updatingPassword && (
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-900">E-mail</span>
+              <span className="mb-2 block text-sm font-medium text-paper">E-mail</span>
               <span className="relative block">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 pl-12 text-base text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10" 
+                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 text-base text-paper placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10" 
                   type="email" 
                   autoComplete="email" 
                   required 
@@ -122,11 +122,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {(mode !== 'recovery' || updatingPassword) && (
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-900">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
+              <span className="mb-2 block text-sm font-medium text-paper">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
               <span className="relative block">
-                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 pl-12 pr-12 text-base text-slate-900 placeholder:text-slate-400 transition-all hover:border-slate-400 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10" 
+                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 pr-12 text-base text-paper placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10" 
                   type={showPassword ? 'text' : 'password'} 
                   autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
                   minLength={8} 
@@ -138,7 +138,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
                 <button 
                   type="button" 
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/60 hover:text-paper transition-colors" 
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
@@ -150,7 +150,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {!hasSupabaseConfig && (
             <button 
               type="button" 
-              className="mt-6 w-full rounded-xl bg-blue-600/40 px-6 py-4 text-base font-semibold text-white transition-all" 
+              className="mt-6 w-full rounded-xl bg-teal/40 px-6 py-4 text-base font-bold text-white transition-all" 
               disabled
             >
               {pageCopy.button}
@@ -158,37 +158,13 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {hasSupabaseConfig && (
             <button 
-              className="mt-6 w-full rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-blue-600/30 transition-all hover:shadow-xl hover:shadow-blue-600/40 active:scale-[0.98] disabled:opacity-60" 
+              className="mt-6 w-full rounded-xl bg-gradient-to-br from-teal via-teal-mid to-teal px-6 py-4 text-base font-bold text-white shadow-lg shadow-teal/30 transition-all hover:shadow-xl hover:shadow-teal/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
               disabled={busy}
             >
               {busy ? 'Aguarde…' : pageCopy.button}
             </button>
           )}
         </form>
-
-        {/* Links auxiliares estilo Apple */}
-        <div className="mt-6 text-center">
-          {mode === 'login' && (
-            <div className="space-y-2">
-              <a href="/auth/signup" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                Criar conta gratuita
-              </a>
-              <a href="/auth/recovery" className="block text-sm text-slate-600 hover:text-slate-900 transition-colors">
-                Esqueci minha senha
-              </a>
-            </div>
-          )}
-          {mode === 'signup' && (
-            <a href="/auth/login" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              Já tenho uma conta
-            </a>
-          )}
-          {mode === 'recovery' && !updatingPassword && (
-            <a href="/auth/login" className="block text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              Voltar ao login
-            </a>
-          )}
-        </div>
       </div>
     </section>
   </main>
