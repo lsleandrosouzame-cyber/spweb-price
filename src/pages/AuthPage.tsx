@@ -89,11 +89,13 @@ export default function AuthPage({ mode }: { mode: Mode }) {
       {/* Card do formulário - estilo Apple: branco puro, minimalista, clean */}
       <div className="w-full max-w-[440px] rounded-3xl bg-white p-10 shadow-2xl">
 
-        {/* Título do formulário */}
-        <div className="mb-8 text-center">
-          <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{pageCopy.title}</h2>
-          <p className="mt-2 text-sm text-slate-600">{pageCopy.subtitle}</p>
-        </div>
+        {/* Título do formulário - apenas para signup e recovery */}
+        {mode !== 'login' && (
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{pageCopy.title}</h2>
+            <p className="mt-2 text-sm text-slate-600">{pageCopy.subtitle}</p>
+          </div>
+        )}
 
         {/* Notices */}
         <div className="space-y-3">
@@ -150,7 +152,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {!hasSupabaseConfig && (
             <button 
               type="button" 
-              className="mt-6 w-full rounded-xl bg-teal/40 px-6 py-4 text-base font-bold text-white transition-all" 
+              className="mt-6 w-full rounded-xl bg-gold/40 px-6 py-4 text-base font-bold text-gold-dark transition-all" 
               disabled
             >
               {pageCopy.button}
@@ -158,7 +160,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {hasSupabaseConfig && (
             <button 
-              className="mt-6 w-full rounded-xl bg-gradient-to-br from-teal via-teal-mid to-teal px-6 py-4 text-base font-bold text-white shadow-lg shadow-teal/30 transition-all hover:shadow-xl hover:shadow-teal/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
+              className="mt-6 w-full rounded-xl bg-gradient-to-br from-gold via-[#BAEC00] to-gold px-6 py-4 text-base font-bold text-gold-dark shadow-lg shadow-gold/30 transition-all hover:shadow-xl hover:shadow-gold/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
               disabled={busy}
             >
               {busy ? 'Aguarde…' : pageCopy.button}

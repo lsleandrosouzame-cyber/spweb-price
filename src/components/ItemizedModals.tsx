@@ -154,12 +154,18 @@ export function ProductCostModal({ isOpen, onClose, onSave, editing }: ProductCo
               </span>
               <input
                 className="field"
-                type="number"
-                min="0"
-                step={selectedItem.is_fractional ? '0.01' : '1'}
+                type="text"
+                inputMode="decimal"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1"
+                onChange={(e) => {
+                  // Aceita vírgula e ponto como separador decimal
+                  const val = e.target.value
+                  // Permite apenas números, vírgula e ponto
+                  if (/^[0-9]*[,.]?[0-9]*$/.test(val)) {
+                    setQuantity(val)
+                  }
+                }}
+                placeholder={selectedItem.is_fractional ? '1 ou 0,5' : '1'}
               />
             </label>
           )}
@@ -469,12 +475,18 @@ export function ServiceCostModal({ isOpen, onClose, onSave, editing }: ServiceCo
               </span>
               <input
                 className="field"
-                type="number"
-                min="0"
-                step={selectedItem.is_fractional ? '0.01' : '1'}
+                type="text"
+                inputMode="decimal"
                 value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1"
+                onChange={(e) => {
+                  // Aceita vírgula e ponto como separador decimal
+                  const val = e.target.value
+                  // Permite apenas números, vírgula e ponto
+                  if (/^[0-9]*[,.]?[0-9]*$/.test(val)) {
+                    setQuantity(val)
+                  }
+                }}
+                placeholder={selectedItem.is_fractional ? '1 ou 0,5' : '1'}
               />
             </label>
           )}
