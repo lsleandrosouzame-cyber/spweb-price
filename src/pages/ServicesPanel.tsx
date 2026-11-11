@@ -37,8 +37,6 @@ export default function ServicesPanel() {
   const [busy, setBusy] = useState(false)
   const [history, setHistory] = useState<any[]>([])
   const [historyTarget, setHistoryTarget] = useState<ServiceRecord | null>(null)
-  const [editingCell, setEditingCell] = useState<{ id: string; field: 'other_cost' | 'fees' } | null>(null)
-  const [cellValue, setCellValue] = useState('')
   
   // Itemized costs and fees
   const [serviceCosts, setServiceCosts] = useState<ServiceCostRecord[]>([])
@@ -229,27 +227,6 @@ export default function ServicesPanel() {
     if (!currentCompany || !window.confirm(`Excluir "${row.name}"?`)) return
     try { await removeService(currentCompany.id, row.id); setMessage('Serviço excluído.'); await refresh() }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
-  }
-
-  function startEditCell(row: ServiceRecord, field: 'other_cost' | 'fees') {
-    setEditingCell({ id: row.id, field })
-    if (field === 'other_cost') setCellValue((Number(row.other_cost_cents) / 100).toFixed(2))
-    else setCellValue(String(row.variable_fees_percent))
-  }
-
-  async function saveCellEdit() {
-    if (!editingCell || !currentCompany) return
-    const row = rows.find(r => r.id === editingCell.id)
-    if (!row) return
-    const numValue = Number(cellValue.replace(',', '.'))
-    if (!Number.isFinite(numValue) || numValue < 0) { setError('Valor inválido.'); setEditingCell(null); return }
-    try {
-      const updates = { name: row.name, hours: Number(row.hours), hourly_labor_cost_cents: Number(row.hourly_labor_cost_cents), materials_cents: Number(row.materials_cents), other_cost_cents: editingCell.field === 'other_cost' ? Math.round(numValue * 100) : Number(row.other_cost_cents), fixed_cost_per_hour_cents: Number(row.fixed_cost_per_hour_cents), include_fixed_cost_per_hour: row.include_fixed_cost_per_hour, variable_fees_percent: editingCell.field === 'fees' ? numValue : Number(row.variable_fees_percent), tax_percent: Number(row.tax_percent), desired_margin_percent: row.desired_margin_percent, current_price_cents: row.current_price_cents }
-      await saveService(currentCompany.id, updates, row.id)
-      await refresh()
-      setEditingCell(null)
-      setMessage('Atualizado com sucesso.')
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao salvar.') }
   }
 
   async function openHistory(row: ServiceRecord) {
