@@ -76,21 +76,31 @@ export default function ExpensesPage() {
     if (!currentCompany) { setLoading(false); return }
     setLoading(true); setError(null)
     try {
-      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult, assetsLiabilitiesResult] = await Promise.all([
+      // Load data with individual error handling
+      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
         listExpenses(currentCompany.id),
         listVariableCosts(currentCompany.id),
         listProducts(currentCompany.id),
         listServices(currentCompany.id),
         readOperatingSettings(currentCompany.id),
         listSalesRecords(currentCompany.id, firstDay(month)),
-        listAssetsLiabilities(currentCompany.id),
       ])
+      
       setExpenses(expensesResult)
       setVariableCosts(variableCostsResult)
       setProducts(productsResult)
       setServices(servicesResult)
       setSales(salesResult)
-      setAssetsLiabilities(assetsLiabilitiesResult)
+      
+      // Load assets/liabilities separately to avoid blocking other data
+      try {
+        const assetsLiabilitiesResult = await listAssetsLiabilities(currentCompany.id)
+        setAssetsLiabilities(assetsLiabilitiesResult)
+      } catch (alError) {
+        console.warn('Assets/Liabilities table may not exist yet:', alError)
+        setAssetsLiabilities([])
+      }
+      
       if (settingsResult) {
         setWorkingDays(String(settingsResult.working_days_per_month))
         setProductiveHours(String(settingsResult.productive_hours_per_day))
@@ -103,6 +113,7 @@ export default function ExpensesPage() {
         setSettingsSaved(true)
       }
     } catch (cause) {
+      console.error('Error loading data:', cause)
       setError(cause instanceof Error ? cause.message : 'Não foi possível carregar os lançamentos.')
     } finally { setLoading(false) }
   }, [currentCompany?.id, month])

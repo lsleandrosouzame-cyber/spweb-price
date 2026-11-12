@@ -102,11 +102,10 @@ export default function DashboardPage() {
       if (!configReady || !currentCompany) { setLoading(false); return }
       setLoading(true); setError(null)
       const from = `${monthKey}-01`
-      const [productResult, serviceResult, expenseResult, salesResult, settingsResult, variableCostsResult, assetsLiabilitiesResult] = await Promise.allSettled([
+      const [productResult, serviceResult, expenseResult, salesResult, settingsResult, variableCostsResult] = await Promise.allSettled([
         listProducts(currentCompany.id), listServices(currentCompany.id),
         listExpenses(currentCompany.id), listSalesRecords(currentCompany.id, from),
         readOperatingSettings(currentCompany.id), listVariableCosts(currentCompany.id),
-        listAssetsLiabilities(currentCompany.id),
       ])
       if (!active) return
       const failed = [productResult, serviceResult, expenseResult, salesResult].find(r => r.status === 'rejected')
@@ -118,8 +117,13 @@ export default function DashboardPage() {
       if (variableCostsResult.status === 'fulfilled') {
         setVariableCosts(variableCostsResult.value)
       }
-      if (assetsLiabilitiesResult.status === 'fulfilled') {
-        setAssetsLiabilities(assetsLiabilitiesResult.value)
+      // Load assets/liabilities separately to avoid blocking dashboard
+      try {
+        const assetsLiabilitiesResult = await listAssetsLiabilities(currentCompany.id)
+        if (active) setAssetsLiabilities(assetsLiabilitiesResult)
+      } catch (alError) {
+        console.warn('Assets/Liabilities table may not exist yet:', alError)
+        if (active) setAssetsLiabilities([])
       }
       if (settingsResult.status === 'fulfilled' && settingsResult.value) {
         setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
