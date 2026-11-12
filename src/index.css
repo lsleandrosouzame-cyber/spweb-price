@@ -18,6 +18,17 @@
   font-size: 15px; /* slightly larger base */
 }
 
+/* ── Mobile responsiveness ────────────────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    font-size: 14px; /* smaller base for mobile */
+  }
+  
+  h1 { @apply text-2xl; }
+  h2 { @apply text-xl; }
+  h3 { @apply text-lg; }
+}
+
 * { box-sizing: border-box; }
 html { min-width: 320px; background: #FCFDFC; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: #FCFDFC; }
@@ -42,6 +53,13 @@ button { color: inherit; cursor: pointer; }
   }
   .surface:hover {
     box-shadow: 0 2px 8px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  
+  /* Mobile adjustments for surface cards */
+  @media (max-width: 640px) {
+    .surface {
+      @apply rounded-lg; /* smaller radius on mobile */
+    }
   }
 
   /* Global heading sizes */
@@ -69,6 +87,14 @@ button { color: inherit; cursor: pointer; }
     background-color: #FFFFFF;
     box-shadow: inset 0 1px 2px rgba(0,0,0,.04), 0 0 0 3px rgba(26,60,52,.12);
   }
+  
+  /* Mobile adjustments for fields */
+  @media (max-width: 640px) {
+    .field {
+      @apply px-3 py-2.5 text-base; /* Larger tap targets and text for mobile */
+      -webkit-appearance: none; /* Remove iOS styling */
+    }
+  }
 
   /* Primary button — lime + dark teal text */
   .btn-primary {
@@ -77,6 +103,7 @@ button { color: inherit; cursor: pointer; }
     background: #C8FF00;
     color: #0D1F1A;
     box-shadow: 0 2px 8px rgba(200,255,0,.30);
+    min-height: 44px; /* Minimum touch target for mobile */
   }
   .btn-primary:hover:not(:disabled) {
     background: #BAEC00;
@@ -86,6 +113,13 @@ button { color: inherit; cursor: pointer; }
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
   }
+  
+  /* Mobile adjustments for buttons */
+  @media (max-width: 640px) {
+    .btn-primary {
+      @apply w-full text-base; /* Full width on mobile */
+    }
+  }
 
   /* Secondary button — teal outlined */
   .btn-secondary {
@@ -94,10 +128,18 @@ button { color: inherit; cursor: pointer; }
     border-color: #C2DDD5;
     background: #FFFFFF;
     color: #1A3C34;
+    min-height: 44px; /* Minimum touch target */
   }
   .btn-secondary:hover {
     background: #E6F4EF;
     border-color: #2D5E4E;
+  }
+  
+  /* Mobile adjustments */
+  @media (max-width: 640px) {
+    .btn-secondary {
+      @apply w-full text-base;
+    }
   }
 
   /* Teal filled button (sidebar, nav active) */
@@ -286,4 +328,113 @@ button { color: inherit; cursor: pointer; }
   background: #2a2e35;
   border-radius: 4px;
   height: 8px;
+}
+
+
+/* ── Mobile-First Responsive Utilities ─────────────────────────── */
+
+/* Container padding adjustments for mobile */
+@media (max-width: 640px) {
+  .space-y-6 {
+    @apply space-y-4;
+  }
+  
+  .space-y-8 {
+    @apply space-y-5;
+  }
+  
+  /* Reduce padding on mobile containers */
+  .container-mobile {
+    @apply px-4 py-4;
+  }
+  
+  /* Stack columns on mobile */
+  .grid-responsive {
+    @apply grid-cols-1;
+  }
+  
+  /* Make tables horizontally scrollable */
+  .table-responsive {
+    @apply overflow-x-auto -mx-4 px-4;
+  }
+  
+  /* Touch-friendly spacing */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-responsive-tablet {
+    @apply grid-cols-2;
+  }
+}
+
+/* Hide elements on mobile */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+/* Show only on mobile */
+@media (min-width: 641px) {
+  .show-mobile-only {
+    display: none !important;
+  }
+}
+
+/* Improved modal responsiveness */
+@media (max-width: 640px) {
+  .modal-content {
+    @apply rounded-t-2xl rounded-b-none;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-backdrop {
+    @apply items-end;
+  }
+}
+
+/* Better card stacking on mobile */
+@media (max-width: 640px) {
+  .card-grid-mobile {
+    @apply grid-cols-1 gap-3;
+  }
+  
+  .card-grid-mobile .surface {
+    @apply p-3;
+  }
+}
+
+/* Typography adjustments for readability */
+@media (max-width: 640px) {
+  .font-mono {
+    font-size: 0.9em; /* Slightly smaller monospace on mobile */
+  }
+  
+  .eyebrow {
+    @apply text-[10px];
+  }
+}
+
+/* Improve touch targets for icon buttons */
+@media (max-width: 640px) {
+  button[aria-label] {
+    @apply p-3; /* Larger touch targets */
+  }
+}
+
+/* Safe area insets for iOS notch */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
 }

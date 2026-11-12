@@ -135,24 +135,24 @@ export default function AppShell() {
       {/* Main */}
       <div className={`min-h-screen transition-[padding] duration-200 ${collapsed ? 'lg:pl-[72px]' : 'lg:pl-[260px]'}`}>
         {/* Top header */}
-        <header className="sticky top-0 z-30 flex h-[72px] items-center justify-between border-b border-line bg-graphite/90 px-4 backdrop-blur-xl md:px-8"
+        <header className="sticky top-0 z-30 flex h-[60px] sm:h-[72px] items-center justify-between border-b border-line bg-graphite/90 px-3 sm:px-4 md:px-8 backdrop-blur-xl"
           style={{ boxShadow: '0 1px 12px rgba(0,0,0,.05)' }}>
-          <div className="flex items-center gap-3">
-            <button className="rounded-xl border border-line p-2 text-muted lg:hidden" style={{ background: '#F8FAF9' }} onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Menu size={18} /></button>
-            <div>
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <button className="rounded-xl border border-line p-2 text-muted lg:hidden shrink-0" style={{ background: '#F8FAF9' }} onClick={() => setMobileOpen(true)} aria-label="Abrir menu"><Menu size={18} /></button>
+            <div className="min-w-0">
               <p className="eyebrow hidden sm:block">SPWEB LUCRO <span className="px-1.5" style={{ color: '#1A3C34' }}>/</span> {title.toUpperCase()}</p>
-              <h1 className="mt-0.5 text-base font-extrabold tracking-tight sm:text-lg" style={{ color: '#0D1F1A' }}>{title}</h1>
+              <h1 className="text-sm sm:text-base md:text-lg font-extrabold tracking-tight truncate" style={{ color: '#0D1F1A' }}>{title}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px]" style={{ background: '#F2F4F3', color: '#3D5048' }}>
+          <div className="hidden sm:flex items-center gap-2 rounded-full border border-line px-3 py-2 text-[11px] shrink-0" style={{ background: '#F2F4F3', color: '#3D5048' }}>
             <Command size={13} style={{ color: '#1A3C34' }} />
-            <span className="hidden sm:inline font-semibold">Dados em tempo real</span>
+            <span className="hidden md:inline font-semibold">Dados em tempo real</span>
             <span className="size-2 rounded-full" style={{ background: '#00B87A' }} />
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-8 md:px-8 md:py-10">
+        {/* Page content with responsive padding */}
+        <main className="p-3 sm:p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1440px]">
           <Outlet />
         </main>
       </div>

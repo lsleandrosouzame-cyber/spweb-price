@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { Copy, LoaderCircle, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Copy, LoaderCircle, Package, Pencil, Plus, Search, Trash2, LayoutGrid, List } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
@@ -55,6 +55,7 @@ export default function CadastroPage() {
     is_fractional: false,
   })
   const [saving, setSaving] = useState(false)
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards')
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady || !supabase) {
@@ -339,7 +340,7 @@ export default function CadastroPage() {
       {/* LIST */}
       {!showForm && (
         <>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <label className="relative flex-1">
               <Search
                 size={16}
@@ -352,6 +353,25 @@ export default function CadastroPage() {
                 placeholder="Pesquisar item"
               />
             </label>
+            {/* Toggle visualização Cards/Lista */}
+            <div className="inline-flex rounded-xl border border-line bg-panel p-1">
+              <button 
+                onClick={() => setViewMode('cards')} 
+                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'cards' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                title="Visualizar em cards"
+                aria-label="Visualizar em cards"
+              >
+                <LayoutGrid size={16} />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')} 
+                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'list' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                title="Visualizar em lista"
+                aria-label="Visualizar em lista"
+              >
+                <List size={16} />
+              </button>
+            </div>
           </div>
 
           {items.length === 0 ? (
@@ -379,9 +399,10 @@ export default function CadastroPage() {
                 </div>
               </div>
 
-              {/* Grid de cards de itens */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filtered.map((item) => (
+              {/* Grid de cards OU tabela de lista */}
+              {viewMode === 'cards' ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {filtered.map((item) => (
                   <div
                     key={item.id}
                     className="surface overflow-hidden hover:border-teal-border transition-all group"
@@ -445,8 +466,80 @@ export default function CadastroPage() {
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                /* Visualização em lista (tabela) */
+                <div className="surface overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[600px] text-left">
+                      <thead>
+                        <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
+                          <th className="px-5 py-3">Item</th>
+                          <th className="px-3 py-3">Valor unitário</th>
+                          <th className="px-3 py-3">Unidade</th>
+                          <th className="px-3 py-3">Fracionável</th>
+                          <th className="px-4 py-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {filtered.map((item) => (
+                          <tr key={item.id} className="hover:bg-teal-light/20 transition-colors">
+                            <td className="px-5 py-4">
+                              <p className="text-sm font-medium">{item.name}</p>
+                            </td>
+                            <td className="px-3 py-4 font-mono text-sm">
+                              {formatBRLFromCents(item.unit_price_cents)}
+                            </td>
+                            <td className="px-3 py-4 text-sm text-muted">
+                              {item.unit_measure}
+                            </td>
+                            <td className="px-3 py-4 text-xs">
+                              {item.is_fractional ? (
+                                <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-emerald-700 font-medium">
+                                  Sim
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-gray-600">
+                                  Não
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-4">
+                              <div className="flex justify-end gap-1">
+                                <button
+                                  aria-label={`Editar ${item.name}`}
+                                  title="Editar"
+                                  className="rounded p-2 text-muted hover:text-paper transition-colors"
+                                  onClick={() => startEdit(item)}
+                                >
+                                  <Pencil size={14} />
+                                </button>
+                                <button
+                                  aria-label={`Duplicar ${item.name}`}
+                                  title="Duplicar"
+                                  className="rounded p-2 text-muted hover:text-gold transition-colors"
+                                  onClick={() => void duplicate(item)}
+                                >
+                                  <Copy size={14} />
+                                </button>
+                                <button
+                                  aria-label={`Excluir ${item.name}`}
+                                  title="Excluir"
+                                  className="rounded p-2 text-muted hover:text-red-400 transition-colors"
+                                  onClick={() => void deleteItem(item)}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {filtered.length === 0 && (
                 <div className="surface p-8 text-center">
