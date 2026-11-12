@@ -266,6 +266,15 @@ export default function DashboardPage() {
         <Metric title="Atenção necessária" value={productMargins.length || serviceMargins.length ? String(lowOrNegative) : '—'} detail="Produtos/serviços abaixo da meta ou negativos" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
       </section>
 
+      {/* Original metric cards - adjusted */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
+        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? `Baseada nos custos variáveis (${effectiveVariableCostsPercent.toFixed(1)}% cadastrados)` : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
+        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
+        <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
+      </section>
+
       {/* Menores/Maiores margens - ORDEM: Menores à esquerda, Maiores à direita */}
       {(products.length > 0 || services.length > 0) && (
         <section className="grid gap-4 md:grid-cols-2">
@@ -356,15 +365,6 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
-
-      {/* Original metric cards - adjusted */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
-        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? `Baseada nos custos variáveis (${effectiveVariableCostsPercent.toFixed(1)}% cadastrados)` : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
-        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
-        <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
-        <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
-      </section>
 
       {/* Break-even + Expenses distribution + Variable costs */}
       <section className="grid gap-4 xl:grid-cols-[1.45fr_1fr]">
