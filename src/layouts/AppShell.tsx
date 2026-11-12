@@ -87,10 +87,14 @@ export default function AppShell() {
                     : 'text-[#6B7E78] hover:bg-teal-light hover:text-[#1A3C34]'
                 }`}
                 style={({ isActive }) => isActive ? { background: '#C8FF00', fontWeight: 700 } : {}}>
-                <Icon size={17} strokeWidth={2} style={{ color: isActive ? '#0D1F1A' : color }} />
-                <span className={collapsed ? 'sr-only' : ''}>{label}</span>
-                {to === '/dashboard' && !collapsed && (
-                  <span className="ml-auto size-2 rounded-full" style={{ background: '#1A3C34' }} />
+                {({ isActive }) => (
+                  <>
+                    <Icon size={17} strokeWidth={2} style={{ color: isActive ? '#0D1F1A' : color }} />
+                    <span className={collapsed ? 'sr-only' : ''}>{label}</span>
+                    {to === '/dashboard' && !collapsed && (
+                      <span className="ml-auto size-2 rounded-full" style={{ background: '#1A3C34' }} />
+                    )}
+                  </>
                 )}
               </NavLink>
             ))}
@@ -104,9 +108,15 @@ export default function AppShell() {
             {footerNav.map(({ to, label, icon: Icon, color }) => (
               <NavLink key={to} to={to} onClick={() => setMobileOpen(false)} title={collapsed ? label : undefined}
                 className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all ${collapsed ? 'justify-center' : ''} ${isActive ? 'bg-teal-light text-teal' : 'text-[#6B7E78] hover:bg-teal-light hover:text-[#1A3C34]'}`}>
-                <Icon size={16} style={{ color: isActive ? '#1A3C34' : color }} /><span className={collapsed ? 'sr-only' : ''}>{label}</span>
+                {({ isActive }) => (
+                  <>
+                    <Icon size={16} style={{ color: isActive ? '#1A3C34' : color }} />
+                    <span className={collapsed ? 'sr-only' : ''}>{label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
+
             <button onClick={logout} title={collapsed ? 'Sair' : undefined}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all hover:bg-red-50 hover:text-red-600 ${collapsed ? 'justify-center' : ''}`}
               style={{ color: '#3D5048' }}>
