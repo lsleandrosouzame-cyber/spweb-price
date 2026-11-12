@@ -496,182 +496,182 @@ export default function SimulatorPage() {
         <div className="space-y-6">
 
       {/* Tipo de Simulação */}
-      <div className="surface p-5">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Tipo de simulação</p>
-        <div className="grid gap-3 sm:grid-cols-2">
+      <div className="surface p-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted">Tipo de simulação</p>
+        <div className="grid gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => setType('product')}
-            className={`flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${
+            className={`flex items-center gap-2 rounded-lg border-2 p-2.5 transition-all ${
               type === 'product'
                 ? 'border-gold bg-gold/5 shadow-lg shadow-gold/20'
                 : 'border-line hover:border-teal-border'
             }`}
           >
-            <div className={`grid size-12 place-items-center rounded-lg ${type === 'product' ? 'bg-gold text-ink' : 'bg-muted/10 text-muted'}`}>
-              <Package size={24} />
+            <div className={`grid size-9 place-items-center rounded-lg ${type === 'product' ? 'bg-gold text-ink' : 'bg-muted/10 text-muted'}`}>
+              <Package size={18} />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-paper">Produto</p>
-              <p className="text-xs text-muted">Simular precificação de produtos</p>
+              <p className="text-sm font-semibold text-paper">Produto</p>
+              <p className="text-[10px] text-muted">Simular precificação de produtos</p>
             </div>
           </button>
           
           <button
             type="button"
             onClick={() => setType('service')}
-            className={`flex items-center gap-3 rounded-xl border-2 p-4 transition-all ${
+            className={`flex items-center gap-2 rounded-lg border-2 p-2.5 transition-all ${
               type === 'service'
                 ? 'border-gold bg-gold/5 shadow-lg shadow-gold/20'
                 : 'border-line hover:border-teal-border'
             }`}
           >
-            <div className={`grid size-12 place-items-center rounded-lg ${type === 'service' ? 'bg-gold text-ink' : 'bg-muted/10 text-muted'}`}>
-              <Wrench size={24} />
+            <div className={`grid size-9 place-items-center rounded-lg ${type === 'service' ? 'bg-gold text-ink' : 'bg-muted/10 text-muted'}`}>
+              <Wrench size={18} />
             </div>
             <div className="text-left">
-              <p className="font-semibold text-paper">Serviço</p>
-              <p className="text-xs text-muted">Simular precificação de serviços</p>
+              <p className="text-sm font-semibold text-paper">Serviço</p>
+              <p className="text-[10px] text-muted">Simular precificação de serviços</p>
             </div>
           </button>
         </div>
       </div>
 
-      {/* Cards de Resultado no Topo */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Cards de Resultado no Topo - COMPACTOS */}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {/* Custo Total */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-lg bg-blue-500/10 text-blue-400">
-              <Calculator size={18} />
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className="grid size-7 place-items-center rounded-lg bg-blue-500/10 text-blue-400">
+              <Calculator size={14} />
             </div>
-            <p className="text-xs font-semibold text-muted">CUSTO TOTAL</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">CUSTO TOTAL</p>
           </div>
-          <p className="mt-3 font-mono text-3xl font-bold text-blue-400">
+          <p className="mt-2 font-mono text-xl font-bold text-blue-400">
             {formatBRLFromCents(pricing.totalCostCents)}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-1 text-[10px] text-muted">
             Custo base + adicionais
           </p>
         </div>
 
         {/* Preço de Venda */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-lg bg-gold/10 text-gold">
-              <DollarSign size={18} />
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className="grid size-7 place-items-center rounded-lg bg-gold/10 text-gold">
+              <DollarSign size={14} />
             </div>
-            <p className="text-xs font-semibold text-muted">PREÇO DE VENDA</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">PREÇO DE VENDA</p>
           </div>
-          <p className="mt-3 font-mono text-2xl font-bold text-gold">
+          <p className="mt-2 font-mono text-xl font-bold text-gold">
             {formatBRLFromCents(sellingPrice)}
           </p>
-          <p className="mt-2 text-xs text-muted">
-            Mínimo: <span className="font-mono font-semibold text-amber-400">{formatBRLFromCents(pricing.minimumPriceCents)}</span>
+          <p className="mt-1 text-[10px] text-muted">
+            Mín: <span className="font-mono font-semibold text-amber-400">{formatBRLFromCents(pricing.minimumPriceCents)}</span>
           </p>
         </div>
 
         {/* Resultado por Unidade */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className={`grid size-9 place-items-center rounded-lg ${isLoss ? 'bg-red-400/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-              {isLoss ? <TrendingDown size={18} /> : <TrendingUp size={18} />}
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className={`grid size-7 place-items-center rounded-lg ${isLoss ? 'bg-red-400/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+              {isLoss ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
             </div>
-            <p className="text-xs font-semibold text-muted">{isLoss ? 'PREJUÍZO' : 'LUCRO'} / UNIDADE</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">{isLoss ? 'PREJUÍZO' : 'LUCRO'}</p>
           </div>
-          <p className={`mt-3 font-mono text-3xl font-bold ${isLoss ? 'text-red-400' : 'text-emerald-400'}`}>
+          <p className={`mt-2 font-mono text-xl font-bold ${isLoss ? 'text-red-400' : 'text-emerald-400'}`}>
             {formatBRLFromCents(Math.abs(contributionCents))}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-1 text-[10px] text-muted">
             {isLoss ? 'Perda por venda' : 'Ganho por venda'}
           </p>
         </div>
 
         {/* Margem de Lucro */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className={`grid size-9 place-items-center rounded-lg ${status.bg}`}>
-              <Target size={18} className={status.color} />
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className={`grid size-7 place-items-center rounded-lg ${status.bg}`}>
+              <Target size={14} className={status.color} />
             </div>
-            <p className="text-xs font-semibold text-muted">MARGEM DE LUCRO</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">MARGEM</p>
           </div>
-          <p className={`mt-3 font-mono text-3xl font-bold ${status.color}`}>
+          <p className={`mt-2 font-mono text-xl font-bold ${status.color}`}>
             {formatPercent(profitMargin)}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-1 text-[10px] text-muted">
             Meta: {formatPercent(type === 'product' ? desiredMargin : serviceDesiredMargin)}
           </p>
         </div>
 
         {/* Total de Taxas (Variáveis + Impostos) */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-lg bg-orange-500/10 text-orange-400">
-              <Percent size={18} />
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className="grid size-7 place-items-center rounded-lg bg-orange-500/10 text-orange-400">
+              <Percent size={14} />
             </div>
-            <p className="text-xs font-semibold text-muted">TAXAS + IMPOSTOS</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">TAXAS</p>
           </div>
-          <p className="mt-3 font-mono text-3xl font-bold text-orange-400">
+          <p className="mt-2 font-mono text-xl font-bold text-orange-400">
             {formatPercent(totalTaxesPercent)}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-1 text-[10px] text-muted">
             Var: {formatPercent(currentVariableFees)} + Imp: {formatPercent(currentTax)}
           </p>
         </div>
 
         {/* Total Geral sobre Venda */}
-        <div className="surface p-5">
-          <div className="flex items-center gap-2">
-            <div className="grid size-9 place-items-center rounded-lg bg-purple-500/10 text-purple-400">
-              <Receipt size={18} />
+        <div className="surface p-3">
+          <div className="flex items-center gap-1.5">
+            <div className="grid size-7 place-items-center rounded-lg bg-purple-500/10 text-purple-400">
+              <Receipt size={14} />
             </div>
-            <p className="text-xs font-semibold text-muted">ENCARGOS TOTAIS</p>
+            <p className="text-[10px] font-semibold text-muted uppercase tracking-wide">ENCARGOS</p>
           </div>
-          <p className="mt-3 font-mono text-3xl font-bold text-purple-400">
+          <p className="mt-2 font-mono text-xl font-bold text-purple-400">
             {formatPercent(totalBurdensPercent)}
           </p>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-1 text-[10px] text-muted">
             Total sobre a venda
           </p>
         </div>
       </div>
 
-      {/* Status Banner */}
-      <div className={`surface border-2 ${status.border} ${status.bg} p-6`}>
-        <div className="flex items-start gap-4">
-          <div className={`grid size-16 shrink-0 place-items-center rounded-2xl ${status.bg} ring-2 ring-offset-2 ring-offset-graphite ${status.border}`}>
-            <StatusIcon size={32} className={status.color} />
+      {/* Status Banner - COMPACTO */}
+      <div className={`surface border-2 ${status.border} ${status.bg} p-4`}>
+        <div className="flex items-start gap-3">
+          <div className={`grid size-12 shrink-0 place-items-center rounded-xl ${status.bg} ring-2 ring-offset-2 ring-offset-graphite ${status.border}`}>
+            <StatusIcon size={24} className={status.color} />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <p className={`text-xl font-bold ${status.color}`}>{status.label}</p>
-              <Sparkles size={20} className={status.color} />
+            <div className="flex items-center gap-2">
+              <p className={`text-lg font-bold ${status.color}`}>{status.label}</p>
+              <Sparkles size={16} className={status.color} />
             </div>
-            <p className="mt-2 text-sm leading-relaxed text-paper">
+            <p className="mt-1.5 text-sm leading-relaxed text-paper">
               {getMessage()}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Controles Deslizantes */}
+      {/* Controles Deslizantes - COMPACTOS */}
       {type === 'product' ? (
-        <div className="surface p-6 space-y-6">
-          <div className="flex items-center gap-3 border-b border-line pb-4">
-            <div className="grid size-10 place-items-center rounded-lg bg-gold/10 text-gold">
-              <Package size={20} />
+        <div className="surface p-4 space-y-4">
+          <div className="flex items-center gap-2 border-b border-line pb-3">
+            <div className="grid size-8 place-items-center rounded-lg bg-gold/10 text-gold">
+              <Package size={16} />
             </div>
             <div>
-              <p className="font-semibold">Configuração do Produto</p>
-              <p className="text-xs text-muted">Ajuste os custos e margens desejadas</p>
+              <p className="text-sm font-semibold">Configuração do Produto</p>
+              <p className="text-[10px] text-muted">Ajuste os custos e margens desejadas</p>
             </div>
           </div>
 
           {/* Custo de Aquisição */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Custo de Aquisição/Produção</label>
-              <span className="font-mono text-lg font-bold text-gold">{formatBRLFromCents(acquisitionCost)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Custo de Aquisição/Produção</label>
+              <span className="font-mono text-base font-bold text-gold">{formatBRLFromCents(acquisitionCost)}</span>
             </div>
             <input
               type="range"
@@ -682,7 +682,7 @@ export default function SimulatorPage() {
               onChange={(e) => setAcquisitionCost(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>R$ 0</span>
               <span>R$ 1.000</span>
             </div>
@@ -690,9 +690,9 @@ export default function SimulatorPage() {
 
           {/* Custos Adicionais */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Custos Adicionais</label>
-              <span className="font-mono text-lg font-bold text-gold">{formatBRLFromCents(otherCost)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Custos Adicionais</label>
+              <span className="font-mono text-base font-bold text-gold">{formatBRLFromCents(otherCost)}</span>
             </div>
             <input
               type="range"
@@ -703,7 +703,7 @@ export default function SimulatorPage() {
               onChange={(e) => setOtherCost(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>R$ 0</span>
               <span>R$ 500</span>
             </div>
@@ -711,9 +711,9 @@ export default function SimulatorPage() {
 
           {/* Taxas Variáveis */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Taxas Variáveis (Cartão, Comissões)</label>
-              <span className="font-mono text-lg font-bold text-amber-400">{formatPercent(variableFees)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Taxas Variáveis (Cartão, Comissões)</label>
+              <span className="font-mono text-base font-bold text-amber-400">{formatPercent(variableFees)}</span>
             </div>
             <input
               type="range"
@@ -724,7 +724,7 @@ export default function SimulatorPage() {
               onChange={(e) => setVariableFees(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>0%</span>
               <span>40%</span>
             </div>
@@ -732,9 +732,9 @@ export default function SimulatorPage() {
 
           {/* Impostos */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Impostos sobre Venda</label>
-              <span className="font-mono text-lg font-bold text-red-400">{formatPercent(tax)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Impostos sobre Venda</label>
+              <span className="font-mono text-base font-bold text-red-400">{formatPercent(tax)}</span>
             </div>
             <input
               type="range"
@@ -745,7 +745,7 @@ export default function SimulatorPage() {
               onChange={(e) => setTax(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>0%</span>
               <span>30%</span>
             </div>
@@ -753,9 +753,9 @@ export default function SimulatorPage() {
 
           {/* Margem Desejada */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Margem Desejada</label>
-              <span className="font-mono text-lg font-bold text-emerald-400">{formatPercent(desiredMargin)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Margem Desejada</label>
+              <span className="font-mono text-base font-bold text-emerald-400">{formatPercent(desiredMargin)}</span>
             </div>
             <input
               type="range"
@@ -766,29 +766,29 @@ export default function SimulatorPage() {
               onChange={(e) => setDesiredMargin(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>0%</span>
               <span>100%</span>
             </div>
           </div>
         </div>
       ) : (
-        <div className="surface p-6 space-y-6">
-          <div className="flex items-center gap-3 border-b border-line pb-4">
-            <div className="grid size-10 place-items-center rounded-lg bg-gold/10 text-gold">
-              <Wrench size={20} />
+        <div className="surface p-4 space-y-4">
+          <div className="flex items-center gap-2 border-b border-line pb-3">
+            <div className="grid size-8 place-items-center rounded-lg bg-gold/10 text-gold">
+              <Wrench size={16} />
             </div>
             <div>
-              <p className="font-semibold">Configuração do Serviço</p>
-              <p className="text-xs text-muted">Ajuste horas, custos e margens</p>
+              <p className="text-sm font-semibold">Configuração do Serviço</p>
+              <p className="text-[10px] text-muted">Ajuste horas, custos e margens</p>
             </div>
           </div>
 
           {/* Horas de Execução */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Horas de Execução</label>
-              <span className="font-mono text-lg font-bold text-gold">{hours}h</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Horas de Execução</label>
+              <span className="font-mono text-base font-bold text-gold">{hours}h</span>
             </div>
             <input
               type="range"
@@ -799,7 +799,7 @@ export default function SimulatorPage() {
               onChange={(e) => setHours(Number(e.target.value))}
               className="slider w-full"
             />
-            <div className="mt-1 flex justify-between text-xs text-muted">
+            <div className="mt-0.5 flex justify-between text-[10px] text-muted">
               <span>0.5h</span>
               <span>40h</span>
             </div>
@@ -807,9 +807,9 @@ export default function SimulatorPage() {
 
           {/* Custo-hora de M.O. */}
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <label className="text-sm font-medium text-paper">Custo-hora de Mão de Obra</label>
-              <span className="font-mono text-lg font-bold text-gold">{formatBRLFromCents(hourlyLabor)}</span>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-medium text-paper">Custo-hora de Mão de Obra</label>
+              <span className="font-mono text-base font-bold text-gold">{formatBRLFromCents(hourlyLabor)}</span>
             </div>
             <input
               type="range"
