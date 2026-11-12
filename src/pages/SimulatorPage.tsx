@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Sparkles, Package, Wrench, DollarSign, Target, Zap, Save, Search, Trash2, Edit2, Percent, Receipt } from 'lucide-react'
+import { Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Sparkles, Package, Wrench, DollarSign, Target, Zap, Save, Search, Trash2, Edit2, Percent, Receipt, LayoutGrid, List } from 'lucide-react'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatPercent } from '../lib/money'
 
@@ -39,6 +39,7 @@ export default function SimulatorPage() {
   const [savedTab, setSavedTab] = useState<SavedTab>('products')
   const [searchTerm, setSearchTerm] = useState('')
   const [simulationName, setSimulationName] = useState('')
+  const [listViewMode, setListViewMode] = useState<'cards' | 'list'>('cards')
   const [savedSimulations, setSavedSimulations] = useState<SavedSimulation[]>(() => {
     // Carregar simulações do localStorage na inicialização
     try {
@@ -299,93 +300,196 @@ export default function SimulatorPage() {
                 </button>
               </div>
               
-              <div className="relative flex-1 max-w-md">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar simulação..."
-                  className="field pl-10 w-full"
-                />
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar simulação..."
+                    className="field pl-10 w-full"
+                  />
+                </div>
+                
+                {/* Botão Cards/List */}
+                <div className="flex gap-1 rounded-lg border border-line bg-panel p-1">
+                  <button
+                    onClick={() => setListViewMode('cards')}
+                    className={`rounded-md p-2 transition-colors ${listViewMode === 'cards' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
+                    title="Visualização em cards"
+                  >
+                    <LayoutGrid size={16} />
+                  </button>
+                  <button
+                    onClick={() => setListViewMode('list')}
+                    className={`rounded-md p-2 transition-colors ${listViewMode === 'list' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
+                    title="Visualização em lista"
+                  >
+                    <List size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Lista de Simulações */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredSimulations.length === 0 ? (
-              <div className="surface p-8 text-center col-span-full">
-                <p className="text-sm text-muted">
-                  {searchTerm ? 'Nenhuma simulação encontrada' : 'Nenhuma simulação salva ainda'}
-                </p>
-              </div>
-            ) : (
-              filteredSimulations.map((simulation) => (
-                <div key={simulation.id} className="surface p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {simulation.type === 'product' ? (
-                        <Package size={16} className="text-gold shrink-0" />
-                      ) : (
-                        <Wrench size={16} className="text-gold shrink-0" />
-                      )}
-                      <h3 className="font-semibold text-sm truncate">{simulation.name}</h3>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => loadSimulation(simulation)}
-                        className="p-2 rounded-lg hover:bg-teal-light text-muted hover:text-gold transition-colors"
-                        title="Carregar"
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => deleteSimulation(simulation.id)}
-                        className="p-2 rounded-lg hover:bg-red-400/10 text-muted hover:text-red-400 transition-colors"
-                        title="Excluir"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-muted">Custo total:</span>
-                      <span className="font-mono font-semibold">{formatBRLFromCents(simulation.totalCostCents)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">Preço de venda:</span>
-                      <span className="font-mono font-semibold text-gold">{formatBRLFromCents(simulation.sellingPrice)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">Lucro/unidade:</span>
-                      <span className={`font-mono font-semibold ${simulation.profitCents >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {formatBRLFromCents(simulation.profitCents)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted">Margem de lucro:</span>
-                      <span className={`font-mono font-semibold ${simulation.profitMargin >= simulation.desiredMargin ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        {formatPercent(simulation.profitMargin)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-2 border-t border-line text-xs text-muted">
-                    {new Date(simulation.timestamp).toLocaleDateString('pt-BR', { 
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
+          {listViewMode === 'cards' ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredSimulations.length === 0 ? (
+                <div className="surface p-8 text-center col-span-full">
+                  <p className="text-sm text-muted">
+                    {searchTerm ? 'Nenhuma simulação encontrada' : 'Nenhuma simulação salva ainda'}
+                  </p>
                 </div>
-              ))
-            )}
-          </div>
+              ) : (
+                filteredSimulations.map((simulation) => (
+                  <div key={simulation.id} className="surface p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {simulation.type === 'product' ? (
+                          <Package size={16} className="text-blue-400 shrink-0" />
+                        ) : (
+                          <Wrench size={16} className="text-purple-400 shrink-0" />
+                        )}
+                        <h3 className="font-semibold text-sm truncate">{simulation.name}</h3>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <button
+                          onClick={() => loadSimulation(simulation)}
+                          className="p-2 rounded-lg hover:bg-teal-light text-muted hover:text-gold transition-colors"
+                          title="Carregar"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => deleteSimulation(simulation.id)}
+                          className="p-2 rounded-lg hover:bg-red-400/10 text-muted hover:text-red-400 transition-colors"
+                          title="Excluir"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted">Custo total:</span>
+                        <span className="font-mono font-semibold">{formatBRLFromCents(simulation.totalCostCents)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Preço de venda:</span>
+                        <span className="font-mono font-semibold text-gold">{formatBRLFromCents(simulation.sellingPrice)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Lucro/unidade:</span>
+                        <span className={`font-mono font-semibold ${simulation.profitCents >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatBRLFromCents(simulation.profitCents)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted">Margem de lucro:</span>
+                        <span className={`font-mono font-semibold ${simulation.profitMargin >= simulation.desiredMargin ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {formatPercent(simulation.profitMargin)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-line text-xs text-muted">
+                      {new Date(simulation.timestamp).toLocaleDateString('pt-BR', { 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="surface overflow-x-auto">
+              <table className="w-full min-w-[800px]">
+                <thead className="border-b border-line bg-panel/50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted">Nome</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted">Tipo</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted">Custo Total</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted">Preço</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted">Lucro</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-muted">Margem</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-muted">Data</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-muted">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSimulations.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted">
+                        {searchTerm ? 'Nenhuma simulação encontrada' : 'Nenhuma simulação salva ainda'}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSimulations.map((simulation) => (
+                      <tr key={simulation.id} className="border-b border-line hover:bg-panel/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            {simulation.type === 'product' ? (
+                              <Package size={14} className="text-blue-400 shrink-0" />
+                            ) : (
+                              <Wrench size={14} className="text-purple-400 shrink-0" />
+                            )}
+                            <span className="text-sm font-medium truncate max-w-[200px]">{simulation.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted">
+                          {simulation.type === 'product' ? 'Produto' : 'Serviço'}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-sm">
+                          {formatBRLFromCents(simulation.totalCostCents)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-sm font-semibold text-gold">
+                          {formatBRLFromCents(simulation.sellingPrice)}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-mono text-sm font-semibold ${simulation.profitCents >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {formatBRLFromCents(simulation.profitCents)}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-mono text-sm font-semibold ${simulation.profitMargin >= simulation.desiredMargin ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {formatPercent(simulation.profitMargin)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-xs text-muted">
+                          {new Date(simulation.timestamp).toLocaleDateString('pt-BR', { 
+                            day: '2-digit', 
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => loadSimulation(simulation)}
+                              className="p-2 rounded-lg hover:bg-teal-light text-muted hover:text-gold transition-colors"
+                              title="Carregar"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => deleteSimulation(simulation.id)}
+                              className="p-2 rounded-lg hover:bg-red-400/10 text-muted hover:text-red-400 transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
         // View do Simulador

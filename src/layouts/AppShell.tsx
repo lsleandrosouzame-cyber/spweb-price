@@ -4,16 +4,16 @@ import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, L
 import { useAuth } from '../contexts/AuthContext'
 
 const primaryNav = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/simulador', label: 'Simulador', icon: Calculator },
-  { to: '/cadastro', label: 'Cadastro', icon: Package },
-  { to: '/produtos', label: 'Precificação', icon: Calculator },
-  { to: '/videos', label: 'Vídeos', icon: Video },
-  { to: '/lancamentos', label: 'Lançamentos', icon: ReceiptText },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, color: '#3b82f6' },
+  { to: '/simulador', label: 'Simulador', icon: Calculator, color: '#D4AF37' },
+  { to: '/cadastro', label: 'Cadastro', icon: Package, color: '#8b5cf6' },
+  { to: '/produtos', label: 'Precificação', icon: Calculator, color: '#22c55e' },
+  { to: '/videos', label: 'Vídeos', icon: Video, color: '#f97316' },
+  { to: '/lancamentos', label: 'Lançamentos', icon: ReceiptText, color: '#ef4444' },
 ]
 const footerNav = [
-  { to: '/perfil', label: 'Perfil', icon: CircleUserRound },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings2 },
+  { to: '/perfil', label: 'Perfil', icon: CircleUserRound, color: '#06b6d4' },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings2, color: '#6B7E78' },
 ]
 const titles: Record<string, string> = {
   '/dashboard': 'Dashboard', '/simulador': 'Simulador', '/cadastro': 'Cadastro', '/produtos': 'Precificação', '/videos': 'Central de conhecimento',
@@ -79,7 +79,7 @@ export default function AppShell() {
         <nav aria-label="Navegação principal" className="mt-5 flex-1 px-3">
           {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Visão geral</p>}
           <div className="space-y-0.5">
-            {primaryNav.map(({ to, label, icon: Icon }) => (
+            {primaryNav.map(({ to, label, icon: Icon, color }) => (
               <NavLink key={to} to={to} onClick={() => setMobileOpen(false)} title={collapsed ? label : undefined}
                 className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition-all duration-150 ${collapsed ? 'justify-center' : ''} ${
                   isActive
@@ -87,7 +87,7 @@ export default function AppShell() {
                     : 'text-[#6B7E78] hover:bg-teal-light hover:text-[#1A3C34]'
                 }`}
                 style={({ isActive }) => isActive ? { background: '#C8FF00', fontWeight: 700 } : {}}>
-                <Icon size={17} strokeWidth={2} />
+                <Icon size={17} strokeWidth={2} style={{ color: isActive ? '#0D1F1A' : color }} />
                 <span className={collapsed ? 'sr-only' : ''}>{label}</span>
                 {to === '/dashboard' && !collapsed && (
                   <span className="ml-auto size-2 rounded-full" style={{ background: '#1A3C34' }} />
@@ -101,10 +101,10 @@ export default function AppShell() {
         <div className="border-t border-line px-3 py-4">
           {!collapsed && <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Conta</p>}
           <div className="space-y-0.5">
-            {footerNav.map(({ to, label, icon: Icon }) => (
+            {footerNav.map(({ to, label, icon: Icon, color }) => (
               <NavLink key={to} to={to} onClick={() => setMobileOpen(false)} title={collapsed ? label : undefined}
                 className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all ${collapsed ? 'justify-center' : ''} ${isActive ? 'bg-teal-light text-teal' : 'text-[#6B7E78] hover:bg-teal-light hover:text-[#1A3C34]'}`}>
-                <Icon size={16} /><span className={collapsed ? 'sr-only' : ''}>{label}</span>
+                <Icon size={16} style={{ color: isActive ? '#1A3C34' : color }} /><span className={collapsed ? 'sr-only' : ''}>{label}</span>
               </NavLink>
             ))}
             <button onClick={logout} title={collapsed ? 'Sair' : undefined}
