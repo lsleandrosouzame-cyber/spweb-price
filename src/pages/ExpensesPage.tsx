@@ -69,8 +69,11 @@ export default function ExpensesPage() {
     description: '',
     amount: '',
     date: today(),
-    notes: ''
+    notes: '',
+    repeatMonths: '1'
   })
+  
+  const [expenseFormRepeat, setExpenseFormRepeat] = useState('1')
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -216,6 +219,7 @@ export default function ExpensesPage() {
     setExpenseForm(row
       ? { description: row.description, category: row.category, amount: (Number(row.amount_cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), date: row.reference_date, notes: row.notes ?? '' }
       : blankExpense)
+    setExpenseFormRepeat('1')
     setError(null)
     setShowExpenseForm(true)
     // Only scroll to top for new expense; editing opens inline
@@ -229,12 +233,46 @@ export default function ExpensesPage() {
     if (!expenseForm.description.trim() || cents === null || cents < 0) {
       setError('Informe descrição e valor válido.'); return
     }
-    const draft: FixedExpenseDraft = { description: expenseForm.description.trim(), category: expenseForm.category, amount_cents: cents, reference_date: expenseForm.date, notes: expenseForm.notes.trim() || null }
+
+    const repeatMonths = parseInt(expenseFormRepeat) || 1
+    if (repeatMonths < 1 || repeatMonths > 60) {
+      setError('Informe entre 1 e 60 meses.'); return
+    }
+
     setBusy(true); setError(null)
     try {
-      await saveExpense(currentCompany.id, draft, editing?.id)
+      // Se estiver editando, apenas atualiza o registro existente
+      if (editing) {
+        const draft: FixedExpenseDraft = { 
+          description: expenseForm.description.trim(), 
+          category: expenseForm.category, 
+          amount_cents: cents, 
+          reference_date: expenseForm.date, 
+          notes: expenseForm.notes.trim() || null 
+        }
+        await saveExpense(currentCompany.id, draft, editing.id)
+        setNotice('Despesa atualizada.')
+      } else {
+        // Se for novo, cria múltiplos registros (um para cada mês)
+        const baseDate = new Date(expenseForm.date + 'T12:00:00')
+        for (let i = 0; i < repeatMonths; i++) {
+          const currentDate = new Date(baseDate)
+          currentDate.setMonth(currentDate.getMonth() + i)
+          const refDate = currentDate.toISOString().split('T')[0]
+          
+          const draft: FixedExpenseDraft = { 
+            description: expenseForm.description.trim(), 
+            category: expenseForm.category, 
+            amount_cents: cents, 
+            reference_date: refDate, 
+            notes: expenseForm.notes.trim() || null 
+          }
+          await saveExpense(currentCompany.id, draft)
+        }
+        setNotice(repeatMonths > 1 ? `${repeatMonths} despesas criadas.` : 'Despesa registrada.')
+      }
+      
       setShowExpenseForm(false)
-      setNotice(editing ? 'Despesa atualizada.' : 'Despesa registrada.')
       await refresh()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível salvar a despesa.') }
     finally { setBusy(false) }
@@ -335,9 +373,10 @@ export default function ExpensesPage() {
           description: row.description, 
           amount: (Number(row.amount_cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 
           date: row.reference_date, 
-          notes: row.notes ?? '' 
+          notes: row.notes ?? '',
+          repeatMonths: '1'
         }
-      : { type: 'asset' as 'asset' | 'liability', description: '', amount: '', date: today(), notes: '' })
+      : { type: 'asset' as 'asset' | 'liability', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' })
     setError(null)
     setShowAssetLiabilityForm(true)
     if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -352,22 +391,49 @@ export default function ExpensesPage() {
       setError('Informe descrição e valor válido.'); return
     }
 
-    const draft: AssetLiabilityDraft = {
-      type: assetLiabilityForm.type,
-      description: assetLiabilityForm.description.trim(),
-      amount_cents: cents,
-      reference_date: assetLiabilityForm.date,
-      notes: assetLiabilityForm.notes.trim() || null
+    const repeatMonths = parseInt(assetLiabilityForm.repeatMonths) || 1
+    if (repeatMonths < 1 || repeatMonths > 60) {
+      setError('Informe entre 1 e 60 meses.'); return
     }
 
     setBusy(true); setError(null)
     try {
-      await saveAssetLiability(currentCompany.id, draft, editingAssetLiability?.id)
+      // Se estiver editando, apenas atualiza o registro existente
+      if (editingAssetLiability) {
+        const draft: AssetLiabilityDraft = {
+          type: assetLiabilityForm.type,
+          description: assetLiabilityForm.description.trim(),
+          amount_cents: cents,
+          reference_date: assetLiabilityForm.date,
+          notes: assetLiabilityForm.notes.trim() || null
+        }
+        await saveAssetLiability(currentCompany.id, draft, editingAssetLiability.id)
+        setNotice('Atualizado.')
+      } else {
+        // Se for novo, cria múltiplos registros (um para cada mês)
+        const baseDate = new Date(assetLiabilityForm.date + 'T12:00:00')
+        for (let i = 0; i < repeatMonths; i++) {
+          const currentDate = new Date(baseDate)
+          currentDate.setMonth(currentDate.getMonth() + i)
+          const refDate = currentDate.toISOString().split('T')[0]
+          
+          const draft: AssetLiabilityDraft = {
+            type: assetLiabilityForm.type,
+            description: assetLiabilityForm.description.trim(),
+            amount_cents: cents,
+            reference_date: refDate,
+            notes: assetLiabilityForm.notes.trim() || null
+          }
+          await saveAssetLiability(currentCompany.id, draft)
+        }
+        setNotice(repeatMonths > 1 ? `${repeatMonths} lançamentos criados.` : 'Registrado.')
+      }
+      
       setShowAssetLiabilityForm(false)
       setEditingAssetLiability(null)
-      setNotice(editingAssetLiability ? 'Atualizado.' : 'Registrado.')
       await refresh()
-    } catch (cause) { 
+    } catch (cause) {
+      console.error('Error saving asset/liability:', cause)
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar.') 
     } finally { 
       setBusy(false) 
@@ -385,9 +451,10 @@ export default function ExpensesPage() {
     }
   }
 
-  // Separate assets and liabilities
-  const assets = assetsLiabilities.filter(al => al.type === 'asset')
-  const liabilities = assetsLiabilities.filter(al => al.type === 'liability')
+  // Separate assets and liabilities - filtered by current month
+  const monthAssetsLiabilities = assetsLiabilities.filter(al => al.reference_date.startsWith(month))
+  const assets = monthAssetsLiabilities.filter(al => al.type === 'asset')
+  const liabilities = monthAssetsLiabilities.filter(al => al.type === 'liability')
   const totalAssetsCents = assets.reduce((sum, a) => sum + Number(a.amount_cents), 0)
   const totalLiabilitiesCents = liabilities.reduce((sum, l) => sum + Number(l.amount_cents), 0)
   const netWorthCents = totalAssetsCents - totalLiabilitiesCents
@@ -593,8 +660,15 @@ export default function ExpensesPage() {
             <label><span className={labelClass}>Categoria</span><select className="field" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></label>
             <label><span className={labelClass}>Valor mensal (R$)</span><CurrencyInput className="field" required value={expenseForm.amount} onChange={value => setExpenseForm({ ...expenseForm, amount: value })} placeholder="0,00"/></label>
             <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })}/></label>
-            <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })}/></label>
+            <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={expenseFormRepeat} onChange={e => setExpenseFormRepeat(e.target.value)} placeholder="1"/></label>
           </div>
+          <label className="block"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })}/></label>
+          {parseInt(expenseFormRepeat) > 1 && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-700">
+              <p className="font-semibold">📅 Serão criadas {expenseFormRepeat} despesas consecutivas</p>
+              <p className="mt-1 text-muted">Uma despesa para cada mês, começando em {new Date(expenseForm.date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+            </div>
+          )}
           {error && <InlineNotice>{error}</InlineNotice>}
           <div className="flex justify-end gap-2 pt-2">
             <button className="btn-secondary" type="button" onClick={() => { setShowExpenseForm(false); setError(null) }}>Cancelar</button>
@@ -789,11 +863,18 @@ export default function ExpensesPage() {
             </select>
           </label>
           <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })} placeholder="Ex.: Caixa, Contas a pagar"/></label>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })} placeholder="0,00"/></label>
             <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
+            <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={assetLiabilityForm.repeatMonths} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, repeatMonths: e.target.value })} placeholder="1"/></label>
           </div>
           <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
+          {parseInt(assetLiabilityForm.repeatMonths) > 1 && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-700">
+              <p className="font-semibold">📅 Serão criados {assetLiabilityForm.repeatMonths} lançamentos consecutivos</p>
+              <p className="mt-1 text-muted">Um lançamento para cada mês, começando em {new Date(assetLiabilityForm.date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+            </div>
+          )}
           {error && <InlineNotice>{error}</InlineNotice>}
           <div className="flex justify-end gap-2 pt-2">
             <button className="btn-secondary" type="button" onClick={() => { setShowAssetLiabilityForm(false); setError(null) }}>Cancelar</button>
@@ -808,7 +889,7 @@ export default function ExpensesPage() {
           <div><p className="eyebrow text-emerald-600">ATIVOS</p><p className="mt-1 text-xs text-muted">{assets.length} ativo(s) cadastrado(s)</p></div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</span>
-            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
+            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
           </div>
         </div>
         {assets.length
@@ -849,7 +930,7 @@ export default function ExpensesPage() {
                 </div>
               )
             })}</div>
-          : <div className="p-5"><EmptyState title="Nenhum ativo cadastrado" description="Cadastre caixa, contas a receber, estoque e outros ativos da empresa." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar ativo</button>}/></div>}
+          : <div className="p-5"><EmptyState title="Nenhum ativo cadastrado" description="Cadastre caixa, contas a receber, estoque e outros ativos da empresa." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar ativo</button>}/></div>}
       </section>
 
       {/* Liabilities Section */}
@@ -858,7 +939,7 @@ export default function ExpensesPage() {
           <div><p className="eyebrow text-red-600">PASSIVOS</p><p className="mt-1 text-xs text-muted">{liabilities.length} passivo(s) cadastrado(s)</p></div>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</span>
-            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
+            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
           </div>
         </div>
         {liabilities.length
@@ -899,7 +980,7 @@ export default function ExpensesPage() {
                 </div>
               )
             })}</div>
-          : <div className="p-5"><EmptyState title="Nenhum passivo cadastrado" description="Cadastre contas a pagar, empréstimos, fornecedores e outras obrigações." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar passivo</button>}/></div>}
+          : <div className="p-5"><EmptyState title="Nenhum passivo cadastrado" description="Cadastre contas a pagar, empréstimos, fornecedores e outras obrigações." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar passivo</button>}/></div>}
       </section>
 
       {/* Summary Card */}
