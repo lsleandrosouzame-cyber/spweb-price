@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, TrendingDown, Scale } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, TrendingDown, Scale, TrendingUp } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -519,6 +519,39 @@ export default function ExpensesPage() {
           {parseBrazilianCurrency(revenueForecast) ? formatBRLFromCents(parseBrazilianCurrency(revenueForecast)!) : 'R$ 0,00'}
         </p>
         <p className="mt-1 text-[10px] text-muted">Meta do período</p>
+      </div>
+    </div>
+
+    {/* NOVO: Cards de Ativos, Passivos e Patrimônio Líquido - ACIMA dos cards de Ponto/Despesas */}
+    <div className="grid gap-4 sm:grid-cols-3">
+      {/* Ativos */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted">Total de ativos</p>
+          <TrendingUp size={15} className="text-emerald-500"/>
+        </div>
+        <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</p>
+        <p className="mt-1 text-[10px] text-muted">{assets.length} ativo(s) cadastrado(s)</p>
+      </div>
+
+      {/* Passivos */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted">Total de passivos</p>
+          <TrendingDown size={15} className="text-red-500"/>
+        </div>
+        <p className="font-mono text-2xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</p>
+        <p className="mt-1 text-[10px] text-muted">{liabilities.length} passivo(s) cadastrado(s)</p>
+      </div>
+
+      {/* Patrimônio Líquido */}
+      <div className="surface p-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted">Patrimônio líquido</p>
+          <Scale size={15} className={netWorthCents >= 0 ? 'text-blue-500' : 'text-red-500'}/>
+        </div>
+        <p className={`font-mono text-2xl font-bold ${netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatBRLFromCents(netWorthCents)}</p>
+        <p className="mt-1 text-[10px] text-muted">Ativos - Passivos</p>
       </div>
     </div>
 
