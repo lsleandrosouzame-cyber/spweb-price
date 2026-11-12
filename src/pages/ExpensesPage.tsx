@@ -781,12 +781,13 @@ export default function ExpensesPage() {
 
     {/* ── ATIVOS / PASSIVOS ──────────────────────────────────────────────── */}
     {tab === 'assetsLiabilities' && <div className="space-y-5">
-      {/* Form for NEW asset/liability only (editing is inline per row) */}
-      {showAssetLiabilityForm && !editingAssetLiability && <section className="surface p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">ATIVO / PASSIVO</p><h3 className="mt-1 text-sm font-semibold">Novo lançamento</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowAssetLiabilityForm(false); setError(null) }}>Cancelar</button>
-        </div>
+      {/* Modal para Ativos/Passivos */}
+      <Modal
+        isOpen={showAssetLiabilityForm}
+        onClose={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}
+        title={editingAssetLiability ? `Editar ${editingAssetLiability.type === 'asset' ? 'Ativo' : 'Passivo'}` : 'Novo Lançamento: Ativo ou Passivo'}
+        maxWidth="xl"
+      >
         <form onSubmit={submitAssetLiability} className="space-y-4">
           <label className="block">
             <span className={labelClass}>Tipo</span>
@@ -799,22 +800,22 @@ export default function ExpensesPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })} placeholder="0,00"/></label>
             <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
-            <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={assetLiabilityForm.repeatMonths} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, repeatMonths: e.target.value })} placeholder="1"/></label>
+            {!editingAssetLiability && <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={assetLiabilityForm.repeatMonths} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, repeatMonths: e.target.value })} placeholder="1"/></label>}
           </div>
           <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
-          {parseInt(assetLiabilityForm.repeatMonths) > 1 && (
+          {!editingAssetLiability && parseInt(assetLiabilityForm.repeatMonths) > 1 && (
             <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-700">
               <p className="font-semibold">📅 Serão criados {assetLiabilityForm.repeatMonths} lançamentos consecutivos</p>
-              <p className="mt-1 text-muted">Um lançamento para cada mês, começando em {new Date(assetLiabilityForm.date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+              <p className="mt-1 text-muted">Um lançamento para cada mês, começando em {new Date(assetLiabilityForm.date + 'T12:00:00').toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</p>
             </div>
           )}
           {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="btn-secondary" type="button" onClick={() => { setShowAssetLiabilityForm(false); setError(null) }}>Cancelar</button>
-            <button className="btn-primary" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn-secondary" type="button" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
+            <button className="btn-primary" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={16}/> Salvando...</> : editingAssetLiability ? 'Atualizar' : 'Salvar'}</button>
           </div>
         </form>
-      </section>}
+      </Modal>
 
       {/* Assets Section */}
       <section className="surface overflow-hidden">
@@ -826,30 +827,7 @@ export default function ExpensesPage() {
           </div>
         </div>
         {assets.length
-          ? <div className="divide-y divide-line">{assets.map(asset => {
-              const isEditing = editingAssetLiability?.id === asset.id && showAssetLiabilityForm
-              if (isEditing) return (
-                <div key={asset.id} className="px-5 py-4 bg-panel">
-                  <form onSubmit={submitAssetLiability} className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-gold">Editando ativo</p>
-                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
-                    </div>
-                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })}/></label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })}/></label>
-                      <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
-                      <label className="sm:col-span-2"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
-                    </div>
-                    {error && <InlineNotice>{error}</InlineNotice>}
-                    <div className="flex justify-end gap-2">
-                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
-                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
-                    </div>
-                  </form>
-                </div>
-              )
-              return (
+          ? <div className="divide-y divide-line">{assets.map(asset => (
                 <div key={asset.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{asset.description}</p>
@@ -861,8 +839,7 @@ export default function ExpensesPage() {
                     <button title="Excluir" aria-label={`Excluir ${asset.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteAssetLiability(asset)}><Trash2 size={14}/></button>
                   </div>
                 </div>
-              )
-            })}</div>
+              ))}</div>
           : <div className="p-5"><EmptyState title="Nenhum ativo cadastrado" description="Cadastre caixa, contas a receber, estoque e outros ativos da empresa." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar ativo</button>}/></div>}
       </section>
 
@@ -876,30 +853,7 @@ export default function ExpensesPage() {
           </div>
         </div>
         {liabilities.length
-          ? <div className="divide-y divide-line">{liabilities.map(liability => {
-              const isEditing = editingAssetLiability?.id === liability.id && showAssetLiabilityForm
-              if (isEditing) return (
-                <div key={liability.id} className="px-5 py-4 bg-panel">
-                  <form onSubmit={submitAssetLiability} className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-gold">Editando passivo</p>
-                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
-                    </div>
-                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })}/></label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })}/></label>
-                      <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
-                      <label className="sm:col-span-2"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
-                    </div>
-                    {error && <InlineNotice>{error}</InlineNotice>}
-                    <div className="flex justify-end gap-2">
-                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
-                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
-                    </div>
-                  </form>
-                </div>
-              )
-              return (
+          ? <div className="divide-y divide-line">{liabilities.map(liability => (
                 <div key={liability.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{liability.description}</p>
@@ -911,8 +865,7 @@ export default function ExpensesPage() {
                     <button title="Excluir" aria-label={`Excluir ${liability.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteAssetLiability(liability)}><Trash2 size={14}/></button>
                   </div>
                 </div>
-              )
-            })}</div>
+              ))}</div>
           : <div className="p-5"><EmptyState title="Nenhum passivo cadastrado" description="Cadastre contas a pagar, empréstimos, fornecedores e outras obrigações." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' }); startAssetLiability() }}><Plus size={14}/>Adicionar passivo</button>}/></div>}
       </section>
 
