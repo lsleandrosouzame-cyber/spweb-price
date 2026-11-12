@@ -266,53 +266,10 @@ export default function DashboardPage() {
         <Metric title="Atenção necessária" value={productMargins.length || serviceMargins.length ? String(lowOrNegative) : '—'} detail="Produtos/serviços abaixo da meta ou negativos" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
       </section>
 
-      {/* Menores/Maiores margens - ORDEM CORRIGIDA: Maiores primeiro, Menores depois */}
+      {/* Menores/Maiores margens - ORDEM: Menores à esquerda, Maiores à direita */}
       {(products.length > 0 || services.length > 0) && (
         <section className="grid gap-4 md:grid-cols-2">
-          {/* Maiores margens - PRIMEIRO CARD */}
-          <div className="surface p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="eyebrow text-emerald-600">MAIORES MARGENS</p>
-                <h3 className="mt-1 text-base font-bold">Produtos/serviços campeões</h3>
-              </div>
-              <CheckCircle2 className="text-emerald-500" size={18}/>
-            </div>
-            <div className="space-y-2.5">
-              {(() => {
-                const allItems = [
-                  ...products.flatMap(p => {
-                    if (!p.current_price_cents) return []
-                    const result = calculateProductPricing({ acquisitionCostCents: Number(p.acquisition_cost_cents), otherCostCents: Number(p.other_cost_cents), variableFeesPercent: Number(p.variable_fees_percent), taxPercent: Number(p.tax_percent), desiredMarginPercent: p.desired_margin_percent === null ? undefined : Number(p.desired_margin_percent), sellingPriceCents: Number(p.current_price_cents) })
-                    return result.contributionMarginPercent === null ? [] : [{ name: p.name, type: 'Produto', margin: result.contributionMarginPercent, price: p.current_price_cents }]
-                  }),
-                  ...services.flatMap(s => {
-                    if (!s.current_price_cents) return []
-                    try {
-                      const cost = calculateServiceCost({ hours: Number(s.hours), hourlyLaborCostCents: Number(s.hourly_labor_cost_cents), materialsCents: Number(s.materials_cents), otherCostCents: Number(s.other_cost_cents), fixedCostPerHourCents: Number(s.fixed_cost_per_hour_cents), includeFixedCostPerHour: s.include_fixed_cost_per_hour })
-                      const result = calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(s.variable_fees_percent), taxPercent: Number(s.tax_percent), desiredMarginPercent: s.desired_margin_percent === null ? undefined : Number(s.desired_margin_percent), sellingPriceCents: Number(s.current_price_cents) })
-                      return result.contributionMarginPercent === null ? [] : [{ name: s.name, type: 'Serviço', margin: result.contributionMarginPercent, price: s.current_price_cents }]
-                    } catch { return [] }
-                  })
-                ].sort((a, b) => b.margin - a.margin).slice(0, 5)
-                
-                return allItems.length ? allItems.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5 hover:bg-emerald-50 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-paper truncate">{item.name}</p>
-                      <p className="mt-0.5 text-[10px] text-muted">{item.type} · {formatBRLFromCents(item.price)}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-mono text-base font-bold text-emerald-600">{formatPercent(item.margin)}</p>
-                      <p className="text-[9px] text-muted">margem</p>
-                    </div>
-                  </div>
-                )) : <p className="text-sm text-muted text-center py-4">Nenhum produto/serviço com preço cadastrado</p>
-              })()}
-            </div>
-          </div>
-
-          {/* Menores margens - SEGUNDO CARD */}
+          {/* Menores margens - PRIMEIRO CARD (esquerda) */}
           <div className="surface p-4">
             <div className="flex items-start justify-between mb-3">
               <div>
@@ -347,6 +304,49 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right shrink-0">
                       <p className={`font-mono text-base font-bold ${item.margin < 0 ? 'text-red-600' : 'text-amber-600'}`}>{formatPercent(item.margin)}</p>
+                      <p className="text-[9px] text-muted">margem</p>
+                    </div>
+                  </div>
+                )) : <p className="text-sm text-muted text-center py-4">Nenhum produto/serviço com preço cadastrado</p>
+              })()}
+            </div>
+          </div>
+
+          {/* Maiores margens - SEGUNDO CARD (direita) */}
+          <div className="surface p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <p className="eyebrow text-emerald-600">MAIORES MARGENS</p>
+                <h3 className="mt-1 text-base font-bold">Produtos/serviços campeões</h3>
+              </div>
+              <CheckCircle2 className="text-emerald-500" size={18}/>
+            </div>
+            <div className="space-y-2.5">
+              {(() => {
+                const allItems = [
+                  ...products.flatMap(p => {
+                    if (!p.current_price_cents) return []
+                    const result = calculateProductPricing({ acquisitionCostCents: Number(p.acquisition_cost_cents), otherCostCents: Number(p.other_cost_cents), variableFeesPercent: Number(p.variable_fees_percent), taxPercent: Number(p.tax_percent), desiredMarginPercent: p.desired_margin_percent === null ? undefined : Number(p.desired_margin_percent), sellingPriceCents: Number(p.current_price_cents) })
+                    return result.contributionMarginPercent === null ? [] : [{ name: p.name, type: 'Produto', margin: result.contributionMarginPercent, price: p.current_price_cents }]
+                  }),
+                  ...services.flatMap(s => {
+                    if (!s.current_price_cents) return []
+                    try {
+                      const cost = calculateServiceCost({ hours: Number(s.hours), hourlyLaborCostCents: Number(s.hourly_labor_cost_cents), materialsCents: Number(s.materials_cents), otherCostCents: Number(s.other_cost_cents), fixedCostPerHourCents: Number(s.fixed_cost_per_hour_cents), includeFixedCostPerHour: s.include_fixed_cost_per_hour })
+                      const result = calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(s.variable_fees_percent), taxPercent: Number(s.tax_percent), desiredMarginPercent: s.desired_margin_percent === null ? undefined : Number(s.desired_margin_percent), sellingPriceCents: Number(s.current_price_cents) })
+                      return result.contributionMarginPercent === null ? [] : [{ name: s.name, type: 'Serviço', margin: result.contributionMarginPercent, price: s.current_price_cents }]
+                    } catch { return [] }
+                  })
+                ].sort((a, b) => b.margin - a.margin).slice(0, 5)
+                
+                return allItems.length ? allItems.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50/50 p-2.5 hover:bg-emerald-50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-paper truncate">{item.name}</p>
+                      <p className="mt-0.5 text-[10px] text-muted">{item.type} · {formatBRLFromCents(item.price)}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-mono text-base font-bold text-emerald-600">{formatPercent(item.margin)}</p>
                       <p className="text-[9px] text-muted">margem</p>
                     </div>
                   </div>
