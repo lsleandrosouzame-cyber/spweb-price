@@ -78,11 +78,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10">
       {/* Logo acima do formulário */}
       <div className="mb-10 text-center">
-        <h1 className="text-5xl font-bold text-white drop-shadow-lg sm:text-6xl">
+        <h1 className="text-4xl font-bold text-white drop-shadow-lg sm:text-5xl" style={{ fontFamily: 'Sora, sans-serif' }}>
           SPWeb
         </h1>
-        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/80 drop-shadow">
-          Sistemas inteligentes que geram lucro
+        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/80 drop-shadow" style={{ fontFamily: 'Sora, sans-serif' }}>
+          Precificação Lucrativa
         </p>
       </div>
 

@@ -53,12 +53,12 @@ export default function AppShell() {
           <button className="flex items-center gap-3" onClick={() => navigate('/dashboard')} aria-label="Dashboard">
             {!collapsed && (
               <div className="text-left leading-tight">
-                <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>SPWeb <span style={{ color: '#1A3C34' }}>Lucro</span></span>
-                <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Inteligência financeira</span>
+                <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A', fontFamily: 'Sora, sans-serif' }}>SPWeb <span style={{ color: '#1A3C34' }}>Lucro</span></span>
+                <span className="mt-0.5 block text-[9px] font-semibold uppercase tracking-[.18em]" style={{ color: '#3D5048', fontFamily: 'Sora, sans-serif' }}>Precificação Lucrativa</span>
               </div>
             )}
             {collapsed && (
-              <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>SPWeb</span>
+              <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A', fontFamily: 'Sora, sans-serif' }}>SPWeb</span>
             )}
           </button>
           <button className="hidden rounded-lg p-1.5 transition-colors hover:bg-teal-light lg:block" style={{ color: '#3D5048' }} onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? 'Expandir' : 'Recolher'}>
@@ -67,11 +67,11 @@ export default function AppShell() {
           <button className="rounded-lg p-1.5 lg:hidden" style={{ color: '#3D5048' }} onClick={() => setMobileOpen(false)}><X size={17} /></button>
         </div>
 
-        {/* Company badge */}
+        {/* Company info - sem card */}
         {!collapsed && (
-          <div className="mx-4 mt-5 rounded-2xl p-3" style={{ background: 'linear-gradient(135deg, #1A3C34 0%, #2D5E4E 100%)' }}>
-            <p className="text-[9px] font-bold uppercase tracking-[.18em] text-white/60">Empresa ativa</p>
-            <p className="mt-1 truncate text-sm font-bold text-white">{currentCompany?.name ?? 'Nenhuma empresa'}</p>
+          <div className="mx-4 mt-5 px-3">
+            <p className="text-[9px] font-bold uppercase tracking-[.18em]" style={{ color: '#3D5048' }}>Empresa ativa</p>
+            <p className="mt-1 truncate text-sm font-bold" style={{ color: '#0D1F1A' }}>{currentCompany?.name ?? 'Nenhuma empresa'}</p>
           </div>
         )}
 
