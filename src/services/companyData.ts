@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductDraft, ProductRecord, SalesRecord, SalesRecordDraft, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductDraft, ProductRecord, SalesRecord, SalesRecordDraft, ServiceRecord, VariableCostDraft, VariableCostRecord, AssetLiabilityRecord, AssetLiabilityDraft } from '../types/database'
 
 function requireClient() {
   if (!supabase) throw new Error('Conexão Supabase não configurada.')
@@ -127,5 +127,34 @@ export async function saveVariableCost(companyId: string, draft: VariableCostDra
 
 export async function removeVariableCost(companyId: string, id: string) {
   const { error } = await requireClient().from('variable_costs').delete().eq('company_id', companyId).eq('id', id)
+  if (error) throw error
+}
+
+// ── Assets & Liabilities ────────────────────────────────────────────────────
+export async function listAssetsLiabilities(companyId: string): Promise<AssetLiabilityRecord[]> {
+  if (!supabase) throw new Error('Supabase not initialized')
+  const { data, error } = await supabase
+    .from('assets_liabilities')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('reference_date', { ascending: false })
+  if (error) throw error
+  return (data as AssetLiabilityRecord[]) ?? []
+}
+
+export async function saveAssetLiability(companyId: string, draft: AssetLiabilityDraft, id?: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase not initialized')
+  if (id) {
+    const { error } = await supabase.from('assets_liabilities').update(draft).eq('id', id).eq('company_id', companyId)
+    if (error) throw error
+  } else {
+    const { error } = await supabase.from('assets_liabilities').insert({ ...draft, company_id: companyId })
+    if (error) throw error
+  }
+}
+
+export async function removeAssetLiability(companyId: string, id: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase not initialized')
+  const { error } = await supabase.from('assets_liabilities').delete().eq('id', id).eq('company_id', companyId)
   if (error) throw error
 }

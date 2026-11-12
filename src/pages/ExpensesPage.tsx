@@ -1,15 +1,13 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, TrendingDown } from 'lucide-react'
+import { BarChart3, CalendarDays, CircleDollarSign, Clock3, LoaderCircle, Plus, ReceiptText, Search, Trash2, Wallet, Pencil, TrendingDown, Scale } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { CurrencyInput } from '../components/CurrencyInput'
-import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
-void calculateProductPricing; void calculateServiceCost
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
-import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost } from '../services/companyData'
-import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost, listAssetsLiabilities, saveAssetLiability, removeAssetLiability } from '../services/companyData'
+import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord, AssetLiabilityRecord, AssetLiabilityDraft } from '../types/database'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
 const costTypes = ['Taxa', 'Comissão', 'Frete', 'Embalagem', 'Outros'] as const
@@ -24,10 +22,11 @@ const labelClass = 'mb-2 block text-xs font-medium text-paper'
 
 export default function ExpensesPage() {
   const { currentCompany } = useAuth()
-  const [tab, setTab] = useState<'expenses' | 'variableCosts'>('expenses')
+  const [tab, setTab] = useState<'expenses' | 'variableCosts' | 'assetsLiabilities'>('expenses')
   const [month, setMonth] = useState(currentMonth())
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
   const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
+  const [assetsLiabilities, setAssetsLiabilities] = useState<AssetLiabilityRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [products, setProducts] = useState<ProductRecord[]>([]); void products
   const [services, setServices] = useState<ServiceRecord[]>([]); void services
@@ -62,23 +61,36 @@ export default function ExpensesPage() {
   const [editingVarCost, setEditingVarCost] = useState<VariableCostRecord | null>(null)
   const [varCostForm, setVarCostForm] = useState(blankVariableCost)
 
+  // Assets/Liabilities forms
+  const [showAssetLiabilityForm, setShowAssetLiabilityForm] = useState(false)
+  const [editingAssetLiability, setEditingAssetLiability] = useState<AssetLiabilityRecord | null>(null)
+  const [assetLiabilityForm, setAssetLiabilityForm] = useState({
+    type: 'asset' as 'asset' | 'liability',
+    description: '',
+    amount: '',
+    date: today(),
+    notes: ''
+  })
+
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
     setLoading(true); setError(null)
     try {
-      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult] = await Promise.all([
+      const [expensesResult, variableCostsResult, productsResult, servicesResult, settingsResult, salesResult, assetsLiabilitiesResult] = await Promise.all([
         listExpenses(currentCompany.id),
         listVariableCosts(currentCompany.id),
         listProducts(currentCompany.id),
         listServices(currentCompany.id),
         readOperatingSettings(currentCompany.id),
         listSalesRecords(currentCompany.id, firstDay(month)),
+        listAssetsLiabilities(currentCompany.id),
       ])
       setExpenses(expensesResult)
       setVariableCosts(variableCostsResult)
       setProducts(productsResult)
       setServices(servicesResult)
       setSales(salesResult)
+      setAssetsLiabilities(assetsLiabilitiesResult)
       if (settingsResult) {
         setWorkingDays(String(settingsResult.working_days_per_month))
         setProductiveHours(String(settingsResult.productive_hours_per_day))
@@ -303,7 +315,71 @@ export default function ExpensesPage() {
     }
   }
 
-  // sales helpers removed (Vendas e mix tab removed)
+  // Assets/Liabilities CRUD
+  function startAssetLiability(row?: AssetLiabilityRecord) {
+    setEditingAssetLiability(row ?? null)
+    setAssetLiabilityForm(row
+      ? { 
+          type: row.type, 
+          description: row.description, 
+          amount: (Number(row.amount_cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }), 
+          date: row.reference_date, 
+          notes: row.notes ?? '' 
+        }
+      : { type: 'asset' as 'asset' | 'liability', description: '', amount: '', date: today(), notes: '' })
+    setError(null)
+    setShowAssetLiabilityForm(true)
+    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function submitAssetLiability(event: FormEvent) {
+    event.preventDefault()
+    if (!currentCompany) return
+    
+    const cents = parseBrazilianCurrency(assetLiabilityForm.amount)
+    if (!assetLiabilityForm.description.trim() || cents === null || cents < 0) {
+      setError('Informe descrição e valor válido.'); return
+    }
+
+    const draft: AssetLiabilityDraft = {
+      type: assetLiabilityForm.type,
+      description: assetLiabilityForm.description.trim(),
+      amount_cents: cents,
+      reference_date: assetLiabilityForm.date,
+      notes: assetLiabilityForm.notes.trim() || null
+    }
+
+    setBusy(true); setError(null)
+    try {
+      await saveAssetLiability(currentCompany.id, draft, editingAssetLiability?.id)
+      setShowAssetLiabilityForm(false)
+      setEditingAssetLiability(null)
+      setNotice(editingAssetLiability ? 'Atualizado.' : 'Registrado.')
+      await refresh()
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar.') 
+    } finally { 
+      setBusy(false) 
+    }
+  }
+
+  async function deleteAssetLiability(row: AssetLiabilityRecord) {
+    if (!currentCompany || !window.confirm(`Excluir "${row.description}"?`)) return
+    try { 
+      await removeAssetLiability(currentCompany.id, row.id); 
+      setNotice('Excluído.'); 
+      await refresh() 
+    } catch (cause) { 
+      setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
+    }
+  }
+
+  // Separate assets and liabilities
+  const assets = assetsLiabilities.filter(al => al.type === 'asset')
+  const liabilities = assetsLiabilities.filter(al => al.type === 'liability')
+  const totalAssetsCents = assets.reduce((sum, a) => sum + Number(a.amount_cents), 0)
+  const totalLiabilitiesCents = liabilities.reduce((sum, l) => sum + Number(l.amount_cents), 0)
+  const netWorthCents = totalAssetsCents - totalLiabilitiesCents
 
   if (loading) return <LoadingScreen label="Carregando lançamentos reais" />
 
@@ -470,7 +546,7 @@ export default function ExpensesPage() {
       </div>
     </form>
 
-    {/* Tabs — Despesas fixas and Custos Variáveis */}
+    {/* Tabs — Despesas fixas, Custos Variáveis, and Ativos/Passivos */}
     <div className="inline-flex rounded-xl border border-line bg-panel p-1">
       <button 
         className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
@@ -483,6 +559,12 @@ export default function ExpensesPage() {
         onClick={() => setTab('variableCosts')}
       >
         <TrendingDown size={15}/>Custos Variáveis
+      </button>
+      <button 
+        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'assetsLiabilities' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
+        onClick={() => setTab('assetsLiabilities')}
+      >
+        <Scale size={15}/>Ativos/Passivos
       </button>
     </div>
 
@@ -676,6 +758,162 @@ export default function ExpensesPage() {
               )
             })}</div>
           : <div className="p-5"><EmptyState title="Nenhum custo variável cadastrado" description="Cadastre taxas, comissões, fretes e custos específicos que variam conforme as vendas." action={<button className="btn-secondary" onClick={() => startVariableCost()}><Plus size={14}/>Adicionar custo</button>}/></div>}
+      </section>
+    </div>}
+
+    {/* ── ATIVOS / PASSIVOS ──────────────────────────────────────────────── */}
+    {tab === 'assetsLiabilities' && <div className="space-y-5">
+      {/* Form for NEW asset/liability only (editing is inline per row) */}
+      {showAssetLiabilityForm && !editingAssetLiability && <section className="surface p-5 space-y-4">
+        <div className="flex items-center justify-between border-b border-line pb-4">
+          <div><p className="eyebrow text-gold">ATIVO / PASSIVO</p><h3 className="mt-1 text-sm font-semibold">Novo lançamento</h3></div>
+          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowAssetLiabilityForm(false); setError(null) }}>Cancelar</button>
+        </div>
+        <form onSubmit={submitAssetLiability} className="space-y-4">
+          <label className="block">
+            <span className={labelClass}>Tipo</span>
+            <select className="field" value={assetLiabilityForm.type} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, type: e.target.value as 'asset' | 'liability' })}>
+              <option value="asset">Ativo</option>
+              <option value="liability">Passivo</option>
+            </select>
+          </label>
+          <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })} placeholder="Ex.: Caixa, Contas a pagar"/></label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })} placeholder="0,00"/></label>
+            <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
+          </div>
+          <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
+          {error && <InlineNotice>{error}</InlineNotice>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button className="btn-secondary" type="button" onClick={() => { setShowAssetLiabilityForm(false); setError(null) }}>Cancelar</button>
+            <button className="btn-primary" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+          </div>
+        </form>
+      </section>}
+
+      {/* Assets Section */}
+      <section className="surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <div><p className="eyebrow text-emerald-600">ATIVOS</p><p className="mt-1 text-xs text-muted">{assets.length} ativo(s) cadastrado(s)</p></div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</span>
+            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
+          </div>
+        </div>
+        {assets.length
+          ? <div className="divide-y divide-line">{assets.map(asset => {
+              const isEditing = editingAssetLiability?.id === asset.id && showAssetLiabilityForm
+              if (isEditing) return (
+                <div key={asset.id} className="px-5 py-4 bg-panel">
+                  <form onSubmit={submitAssetLiability} className="space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gold">Editando ativo</p>
+                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
+                    </div>
+                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })}/></label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })}/></label>
+                      <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
+                      <label className="sm:col-span-2"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
+                    </div>
+                    {error && <InlineNotice>{error}</InlineNotice>}
+                    <div className="flex justify-end gap-2">
+                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
+                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+                    </div>
+                  </form>
+                </div>
+              )
+              return (
+                <div key={asset.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{asset.description}</p>
+                    <p className="mt-1 text-[10px] text-muted">referência {asset.reference_date}{asset.notes && ` · ${asset.notes}`}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-mono text-sm text-emerald-600">{formatBRLFromCents(Number(asset.amount_cents))}</span>
+                    <button title="Editar" aria-label={`Editar ${asset.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startAssetLiability(asset)}><Pencil size={14}/></button>
+                    <button title="Excluir" aria-label={`Excluir ${asset.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteAssetLiability(asset)}><Trash2 size={14}/></button>
+                  </div>
+                </div>
+              )
+            })}</div>
+          : <div className="p-5"><EmptyState title="Nenhum ativo cadastrado" description="Cadastre caixa, contas a receber, estoque e outros ativos da empresa." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'asset', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar ativo</button>}/></div>}
+      </section>
+
+      {/* Liabilities Section */}
+      <section className="surface overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <div><p className="eyebrow text-red-600">PASSIVOS</p><p className="mt-1 text-xs text-muted">{liabilities.length} passivo(s) cadastrado(s)</p></div>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</span>
+            <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar</button>
+          </div>
+        </div>
+        {liabilities.length
+          ? <div className="divide-y divide-line">{liabilities.map(liability => {
+              const isEditing = editingAssetLiability?.id === liability.id && showAssetLiabilityForm
+              if (isEditing) return (
+                <div key={liability.id} className="px-5 py-4 bg-panel">
+                  <form onSubmit={submitAssetLiability} className="space-y-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-semibold text-gold">Editando passivo</p>
+                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
+                    </div>
+                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={assetLiabilityForm.description} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, description: e.target.value })}/></label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={assetLiabilityForm.amount} onChange={value => setAssetLiabilityForm({ ...assetLiabilityForm, amount: value })}/></label>
+                      <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={assetLiabilityForm.date} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, date: e.target.value })}/></label>
+                      <label className="sm:col-span-2"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={assetLiabilityForm.notes} onChange={e => setAssetLiabilityForm({ ...assetLiabilityForm, notes: e.target.value })}/></label>
+                    </div>
+                    {error && <InlineNotice>{error}</InlineNotice>}
+                    <div className="flex justify-end gap-2">
+                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowAssetLiabilityForm(false); setEditingAssetLiability(null); setError(null) }}>Cancelar</button>
+                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
+                    </div>
+                  </form>
+                </div>
+              )
+              return (
+                <div key={liability.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{liability.description}</p>
+                    <p className="mt-1 text-[10px] text-muted">referência {liability.reference_date}{liability.notes && ` · ${liability.notes}`}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-mono text-sm text-red-600">{formatBRLFromCents(Number(liability.amount_cents))}</span>
+                    <button title="Editar" aria-label={`Editar ${liability.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startAssetLiability(liability)}><Pencil size={14}/></button>
+                    <button title="Excluir" aria-label={`Excluir ${liability.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteAssetLiability(liability)}><Trash2 size={14}/></button>
+                  </div>
+                </div>
+              )
+            })}</div>
+          : <div className="p-5"><EmptyState title="Nenhum passivo cadastrado" description="Cadastre contas a pagar, empréstimos, fornecedores e outras obrigações." action={<button className="btn-secondary" onClick={() => { setAssetLiabilityForm({ type: 'liability', description: '', amount: '', date: today(), notes: '' }); startAssetLiability() }}><Plus size={14}/>Adicionar passivo</button>}/></div>}
+      </section>
+
+      {/* Summary Card */}
+      <section className="surface p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div><p className="eyebrow">PATRIMÔNIO LÍQUIDO</p><h3 className="mt-1 text-lg font-bold">Balanço patrimonial simplificado</h3></div>
+          <Scale size={20} className="text-gold"/>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+            <p className="text-xs text-muted">Total de ativos</p>
+            <p className="mt-2 font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</p>
+            <p className="mt-1 text-[10px] text-muted">{assets.length} lançamento(s)</p>
+          </div>
+          <div className="rounded-xl border border-red-200 bg-red-50/50 p-4">
+            <p className="text-xs text-muted">Total de passivos</p>
+            <p className="mt-2 font-mono text-2xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</p>
+            <p className="mt-1 text-[10px] text-muted">{liabilities.length} lançamento(s)</p>
+          </div>
+          <div className={`rounded-xl border p-4 ${netWorthCents >= 0 ? 'border-blue-200 bg-blue-50/50' : 'border-red-300 bg-red-100/50'}`}>
+            <p className="text-xs text-muted">Patrimônio líquido</p>
+            <p className={`mt-2 font-mono text-2xl font-bold ${netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatBRLFromCents(netWorthCents)}</p>
+            <p className="mt-1 text-[10px] text-muted">Ativos - Passivos</p>
+          </div>
+        </div>
       </section>
     </div>}
   </div>

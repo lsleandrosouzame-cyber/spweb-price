@@ -121,3 +121,17 @@ export type ProductCostDraft = Omit<ProductCostRecord, 'id' | 'product_id' | 'co
 export type ProductFeeDraft = Omit<ProductFeeRecord, 'id' | 'product_id' | 'company_id' | 'created_at' | 'updated_at'>
 export type ServiceCostDraft = Omit<ServiceCostRecord, 'id' | 'service_id' | 'company_id' | 'created_at' | 'updated_at'>
 export type ServiceFeeDraft = Omit<ServiceFeeRecord, 'id' | 'service_id' | 'company_id' | 'created_at' | 'updated_at'>
+
+export type AssetLiabilityRecord = {
+  id: string
+  company_id: string
+  type: 'asset' | 'liability'
+  description: string
+  amount_cents: number
+  reference_date: string
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type AssetLiabilityDraft = Omit<AssetLiabilityRecord, 'id' | 'company_id' | 'created_at' | 'updated_at'>

@@ -1,11 +1,11 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, ArrowUpRight, CircleHelp, Package, Plus, ShieldAlert, Target, Wallet, Scale, ChartNoAxesCombined, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
+import { Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip as RechartsTooltip, Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
-import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings } from '../services/companyData'
-import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostRecord } from '../types/database'
+import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, listAssetsLiabilities } from '../services/companyData'
+import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostRecord, AssetLiabilityRecord } from '../types/database'
 import { calculateBreakEven, type SalesMixLine } from '../finance/operations'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent } from '../lib/money'
@@ -87,6 +87,7 @@ export default function DashboardPage() {
   const [expenses, setExpenses] = useState<FixedExpenseRecord[]>([])
   const [sales, setSales] = useState<SalesRecord[]>([])
   const [variableCosts, setVariableCosts] = useState<VariableCostRecord[]>([])
+  const [assetsLiabilities, setAssetsLiabilities] = useState<AssetLiabilityRecord[]>([])
   const [revenueForecastCents, setRevenueForecastCents] = useState<number | null>(null)
   const [proLaboreCents, setProLaboreCents] = useState<number | null>(null)
   const [feeTags, setFeeTags] = useState<Array<{ label: string; percent: string }>>([])
@@ -101,10 +102,11 @@ export default function DashboardPage() {
       if (!configReady || !currentCompany) { setLoading(false); return }
       setLoading(true); setError(null)
       const from = `${monthKey}-01`
-      const [productResult, serviceResult, expenseResult, salesResult, settingsResult, variableCostsResult] = await Promise.allSettled([
+      const [productResult, serviceResult, expenseResult, salesResult, settingsResult, variableCostsResult, assetsLiabilitiesResult] = await Promise.allSettled([
         listProducts(currentCompany.id), listServices(currentCompany.id),
         listExpenses(currentCompany.id), listSalesRecords(currentCompany.id, from),
         readOperatingSettings(currentCompany.id), listVariableCosts(currentCompany.id),
+        listAssetsLiabilities(currentCompany.id),
       ])
       if (!active) return
       const failed = [productResult, serviceResult, expenseResult, salesResult].find(r => r.status === 'rejected')
@@ -115,6 +117,9 @@ export default function DashboardPage() {
       }
       if (variableCostsResult.status === 'fulfilled') {
         setVariableCosts(variableCostsResult.value)
+      }
+      if (assetsLiabilitiesResult.status === 'fulfilled') {
+        setAssetsLiabilities(assetsLiabilitiesResult.value)
       }
       if (settingsResult.status === 'fulfilled' && settingsResult.value) {
         setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
@@ -137,6 +142,13 @@ export default function DashboardPage() {
   const mix: SalesMixLine[] = monthSales.map(s => ({ sellingPriceCents: Number(s.selling_price_cents), contributionCents: Number(s.contribution_cents), quantity: Number(s.quantity) }))
   const breakEven = fixedTotal === null ? null : calculateBreakEven(fixedTotal, mix)
   const revenue = monthSales.length ? monthSales.reduce((sum, row) => sum + Number(row.selling_price_cents) * Number(row.quantity), 0) : null
+
+  // Assets and Liabilities calculations
+  const assets = assetsLiabilities.filter(al => al.type === 'asset')
+  const liabilities = assetsLiabilities.filter(al => al.type === 'liability')
+  const totalAssetsCents = assets.reduce((sum, a) => sum + Number(a.amount_cents), 0)
+  const totalLiabilitiesCents = liabilities.reduce((sum, l) => sum + Number(l.amount_cents), 0)
+  const netWorthCents = totalAssetsCents - totalLiabilitiesCents
 
   // Calculate variable costs from Custos Variáveis tab (primary source)
   const totalVariableCostsPercent = variableCosts
@@ -471,6 +483,95 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Assets and Liabilities Card + Chart */}
+      {(assets.length > 0 || liabilities.length > 0) && (
+        <section className="surface p-5 sm:p-7">
+          <div className="flex items-start justify-between gap-3 mb-6">
+            <div>
+              <p className="eyebrow text-gold">BALANÇO PATRIMONIAL</p>
+              <h3 className="mt-2 text-xl font-bold">Ativos vs. Passivos</h3>
+              <p className="mt-1 text-xs text-muted">Confronto simplificado da sua posição patrimonial</p>
+            </div>
+            <Link to="/lancamentos" className="text-xs font-medium text-gold hover:text-[#ead584]">Gerenciar <ArrowRight size={13} className="ml-1 inline"/></Link>
+          </div>
+
+          {/* Summary cards */}
+          <div className="grid gap-4 sm:grid-cols-3 mb-6">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-emerald-700">ATIVOS</p>
+                <TrendingUp size={16} className="text-emerald-600"/>
+              </div>
+              <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</p>
+              <p className="mt-1 text-[10px] text-muted">{assets.length} lançamento(s)</p>
+            </div>
+
+            <div className="rounded-xl border border-red-200 bg-red-50/50 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-red-700">PASSIVOS</p>
+                <TrendingDown size={16} className="text-red-600"/>
+              </div>
+              <p className="font-mono text-2xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</p>
+              <p className="mt-1 text-[10px] text-muted">{liabilities.length} lançamento(s)</p>
+            </div>
+
+            <div className={`rounded-xl border p-4 ${netWorthCents >= 0 ? 'border-blue-200 bg-blue-50/50' : 'border-red-300 bg-red-100/50'}`}>
+              <div className="flex items-center justify-between mb-2">
+                <p className={`text-xs font-semibold ${netWorthCents >= 0 ? 'text-blue-700' : 'text-red-700'}`}>PATRIMÔNIO LÍQUIDO</p>
+                <Scale size={16} className={netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}/>
+              </div>
+              <p className={`font-mono text-2xl font-bold ${netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatBRLFromCents(netWorthCents)}</p>
+              <p className="mt-1 text-[10px] text-muted">Ativos - Passivos</p>
+            </div>
+          </div>
+
+          {/* Horizontal bar chart comparison */}
+          <div className="rounded-xl border border-line bg-panel p-5">
+            <p className="mb-4 text-xs font-semibold text-muted">COMPARATIVO VISUAL</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { name: 'Ativos', value: totalAssetsCents / 100, fill: '#059669' },
+                  { name: 'Passivos', value: totalLiabilitiesCents / 100, fill: '#dc2626' }
+                ]} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8ECEB" horizontal={false}/>
+                  <XAxis type="number" tick={{ fill: '#9CA3AF', fontSize: 12 }} axisLine={{ stroke: '#E8ECEB' }}/>
+                  <YAxis type="category" dataKey="name" tick={{ fill: '#1F2937', fontSize: 14, fontWeight: 600 }} axisLine={{ stroke: '#E8ECEB' }} width={80}/>
+                  <RechartsTooltip content={({ active, payload }) => {
+                    if (!active || !payload?.length) return null
+                    const item = payload[0]
+                    return (
+                      <div className="rounded-xl border border-line bg-graphite px-4 py-3 shadow-xl text-xs">
+                        <p className="font-semibold text-paper">{item.payload.name}</p>
+                        <p className="mt-1 font-mono text-gold">R$ {Number(item.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    )
+                  }}/>
+                  <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={50}>
+                    {[
+                      { name: 'Ativos', value: totalAssetsCents / 100, fill: '#059669' },
+                      { name: 'Passivos', value: totalLiabilitiesCents / 100, fill: '#dc2626' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill}/>
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Insight */}
+            <div className={`mt-4 rounded-xl border p-3 text-xs flex items-center justify-between gap-4 ${netWorthCents >= 0 ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-red-500/30 bg-red-500/5'}`}>
+              <span className="text-muted">Situação patrimonial</span>
+              <span className={`font-mono font-bold ${netWorthCents >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {netWorthCents >= 0 
+                  ? `Patrimônio positivo em ${formatBRLFromCents(netWorthCents)}` 
+                  : `Passivo descoberto em ${formatBRLFromCents(Math.abs(netWorthCents))}`}
+              </span>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Alerts */}
       <section className="surface p-5 sm:p-6">
