@@ -4,6 +4,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { CurrencyInput } from '../components/CurrencyInput'
+import { Modal } from '../components/Modal'
 import { calculateBreakEven, calculateOperatingCosts } from '../finance/operations'
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
 import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost, listAssetsLiabilities, saveAssetLiability, removeAssetLiability } from '../services/companyData'
@@ -222,8 +223,6 @@ export default function ExpensesPage() {
     setExpenseFormRepeat('1')
     setError(null)
     setShowExpenseForm(true)
-    // Only scroll to top for new expense; editing opens inline
-    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function submitExpense(event: FormEvent) {
@@ -299,8 +298,6 @@ export default function ExpensesPage() {
       : blankVariableCost)
     setError(null)
     setShowVariableCostForm(true)
-    // Only scroll to top for new cost; editing opens inline
-    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function submitVariableCost(event: FormEvent) {
@@ -379,7 +376,6 @@ export default function ExpensesPage() {
       : { type: 'asset' as 'asset' | 'liability', description: '', amount: '', date: today(), notes: '', repeatMonths: '1' })
     setError(null)
     setShowAssetLiabilityForm(true)
-    if (!row) window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function submitAssetLiability(event: FormEvent) {
@@ -648,34 +644,35 @@ export default function ExpensesPage() {
 
     {/* ── DESPESAS FIXAS ──────────────────────────────────────────────── */}
     {tab === 'expenses' && <div className="space-y-5">
-      {/* Form for NEW expense only (editing is inline per row) */}
-      {showExpenseForm && !editing && <section className="surface p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">DESPESA FIXA</p><h3 className="mt-1 text-sm font-semibold">Nova despesa</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowExpenseForm(false); setError(null) }}>Cancelar</button>
-        </div>
+      {/* Modal para Despesas Fixas */}
+      <Modal 
+        isOpen={showExpenseForm} 
+        onClose={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}
+        title={editing ? 'Editar Despesa Fixa' : 'Nova Despesa Fixa'}
+        maxWidth="xl"
+      >
         <form onSubmit={submitExpense} className="space-y-4">
           <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} placeholder="Ex.: Aluguel do escritório"/></label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label><span className={labelClass}>Categoria</span><select className="field" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></label>
             <label><span className={labelClass}>Valor mensal (R$)</span><CurrencyInput className="field" required value={expenseForm.amount} onChange={value => setExpenseForm({ ...expenseForm, amount: value })} placeholder="0,00"/></label>
             <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })}/></label>
-            <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={expenseFormRepeat} onChange={e => setExpenseFormRepeat(e.target.value)} placeholder="1"/></label>
+            {!editing && <label><span className={labelClass}>Repetir por (meses)</span><input className="field" type="number" min="1" max="60" required value={expenseFormRepeat} onChange={e => setExpenseFormRepeat(e.target.value)} placeholder="1"/></label>}
           </div>
           <label className="block"><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })}/></label>
-          {parseInt(expenseFormRepeat) > 1 && (
+          {!editing && parseInt(expenseFormRepeat) > 1 && (
             <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-700">
               <p className="font-semibold">📅 Serão criadas {expenseFormRepeat} despesas consecutivas</p>
-              <p className="mt-1 text-muted">Uma despesa para cada mês, começando em {new Date(expenseForm.date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</p>
+              <p className="mt-1 text-muted">Uma despesa para cada mês, começando em {new Date(expenseForm.date + 'T12:00:00').toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}</p>
             </div>
           )}
           {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="btn-secondary" type="button" onClick={() => { setShowExpenseForm(false); setError(null) }}>Cancelar</button>
-            <button className="btn-primary" disabled={busy}>{busy ? 'Salvando…' : 'Salvar despesa'}</button>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn-secondary" type="button" onClick={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}>Cancelar</button>
+            <button className="btn-primary" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={16}/> Salvando...</> : editing ? 'Atualizar despesa' : 'Salvar despesa'}</button>
           </div>
         </form>
-      </section>}
+      </Modal>
 
       <section className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]">
         <div className="surface overflow-hidden">
@@ -688,41 +685,16 @@ export default function ExpensesPage() {
             <select aria-label="Filtrar por categoria" className="field" value={expenseCategory} onChange={e => setExpenseCategory(e.target.value)}><option value="">Todas as categorias</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select>
           </div>
           {expenseRows.length
-            ? <div className="divide-y divide-line">{filteredExpenseRows.map(row => {
-                const isEditing = editing?.id === row.id && showExpenseForm
-                if (isEditing) return (
-                  <div key={row.id} className="px-5 py-4 bg-panel">
-                    <form onSubmit={submitExpense} className="space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-gold">Editando despesa</p>
-                        <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}>Cancelar</button>
-                      </div>
-                      <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} placeholder="Ex.: Aluguel"/></label>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <label><span className={labelClass}>Categoria</span><select className="field" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></label>
-                        <label><span className={labelClass}>Valor (R$)</span><CurrencyInput className="field" required value={expenseForm.amount} onChange={value => setExpenseForm({ ...expenseForm, amount: value })} placeholder="0,00"/></label>
-                        <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })}/></label>
-                        <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={expenseForm.notes} onChange={e => setExpenseForm({ ...expenseForm, notes: e.target.value })}/></label>
-                      </div>
-                      {error && <InlineNotice>{error}</InlineNotice>}
-                      <div className="flex justify-end gap-2">
-                        <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowExpenseForm(false); setEditing(null); setError(null) }}>Cancelar</button>
-                        <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
-                      </div>
-                    </form>
+            ? <div className="divide-y divide-line">{filteredExpenseRows.map(row => (
+                <div key={row.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                  <div className="min-w-0"><p className="truncate text-sm font-medium">{row.description}</p><p className="mt-1 text-[10px] text-muted">{row.category} · referência {row.reference_date}</p></div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-mono text-sm">{formatBRLFromCents(Number(row.amount_cents))}</span>
+                    <button title="Editar" aria-label={`Editar ${row.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startExpense(row)}><Pencil size={14}/></button>
+                    <button title="Excluir" aria-label={`Excluir ${row.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteExpense(row)}><Trash2 size={14}/></button>
                   </div>
-                )
-                return (
-                  <div key={row.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
-                    <div className="min-w-0"><p className="truncate text-sm font-medium">{row.description}</p><p className="mt-1 text-[10px] text-muted">{row.category} · referência {row.reference_date}</p></div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <span className="font-mono text-sm">{formatBRLFromCents(Number(row.amount_cents))}</span>
-                      <button title="Editar" aria-label={`Editar ${row.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startExpense(row)}><Pencil size={14}/></button>
-                      <button title="Excluir" aria-label={`Excluir ${row.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteExpense(row)}><Trash2 size={14}/></button>
-                    </div>
-                  </div>
-                )
-              })}</div>
+                </div>
+              ))}</div>
             : <div className="p-5"><EmptyState title="Nenhuma despesa neste período" description="Cadastre aluguel, energia, salários e outros compromissos mensais." action={<button className="btn-secondary" onClick={() => startExpense()}><Plus size={14}/>Adicionar despesa</button>}/></div>}
           {expenseRows.length > 0 && filteredExpenseRows.length === 0 && <p className="px-5 py-4 text-center text-xs text-muted">Nenhum lançamento corresponde à pesquisa ou categoria.</p>}
         </div>
@@ -744,19 +716,20 @@ export default function ExpensesPage() {
 
     {/* ── CUSTOS VARIÁVEIS ──────────────────────────────────────────────── */}
     {tab === 'variableCosts' && <div className="space-y-5">
-      {/* Form for NEW variable cost only (editing is inline per row) */}
-      {showVariableCostForm && !editingVarCost && <section className="surface p-5 space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-4">
-          <div><p className="eyebrow text-gold">CUSTO VARIÁVEL</p><h3 className="mt-1 text-sm font-semibold">Novo custo</h3></div>
-          <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => { setShowVariableCostForm(false); setError(null) }}>Cancelar</button>
-        </div>
+      {/* Modal para Custos Variáveis */}
+      <Modal
+        isOpen={showVariableCostForm}
+        onClose={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}
+        title={editingVarCost ? 'Editar Custo Variável' : 'Novo Custo Variável'}
+        maxWidth="xl"
+      >
         <form onSubmit={submitVariableCost} className="space-y-4">
           <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={varCostForm.description} onChange={e => setVarCostForm({ ...varCostForm, description: e.target.value })} placeholder="Ex.: ICMS, Comissão de vendas"/></label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label><span className={labelClass}>Tipo de custo</span><select className="field" value={varCostForm.costType} onChange={e => setVarCostForm({ ...varCostForm, costType: e.target.value as typeof costTypes[number] })}>{costTypes.map(c => <option key={c}>{c}</option>)}</select></label>
             <label>
               <span className={labelClass}>Formato do valor</span>
-              <div className="flex gap-4">
+              <div className="flex gap-4 mt-2">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="valueType" value="percent" checked={varCostForm.valueType === 'percent'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
                   <span className="text-xs">Percentual (%)</span>
@@ -774,12 +747,12 @@ export default function ExpensesPage() {
             <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={varCostForm.notes} onChange={e => setVarCostForm({ ...varCostForm, notes: e.target.value })}/></label>
           </div>
           {error && <InlineNotice>{error}</InlineNotice>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button className="btn-secondary" type="button" onClick={() => { setShowVariableCostForm(false); setError(null) }}>Cancelar</button>
-            <button className="btn-primary" disabled={busy}>{busy ? 'Salvando…' : 'Salvar custo'}</button>
+          <div className="flex justify-end gap-3 pt-4">
+            <button className="btn-secondary" type="button" onClick={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}>Cancelar</button>
+            <button className="btn-primary" disabled={busy}>{busy ? <><LoaderCircle className="animate-spin" size={16}/> Salvando...</> : editingVarCost ? 'Atualizar custo' : 'Salvar custo'}</button>
           </div>
         </form>
-      </section>}
+      </Modal>
 
       <section className="surface overflow-hidden">
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -787,61 +760,21 @@ export default function ExpensesPage() {
           <button className="btn-primary !px-3 !py-2 text-xs" onClick={() => startVariableCost()}><Plus size={14}/>Adicionar</button>
         </div>
         {variableCosts.length
-          ? <div className="divide-y divide-line">{variableCosts.map(vc => {
-              const isEditing = editingVarCost?.id === vc.id && showVariableCostForm
-              if (isEditing) return (
-                <div key={vc.id} className="px-5 py-4 bg-panel">
-                  <form onSubmit={submitVariableCost} className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-gold">Editando custo</p>
-                      <button type="button" className="text-xs text-muted hover:text-paper" onClick={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}>Cancelar</button>
-                    </div>
-                    <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={varCostForm.description} onChange={e => setVarCostForm({ ...varCostForm, description: e.target.value })} placeholder="Ex.: ICMS"/></label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <label><span className={labelClass}>Tipo de custo</span><select className="field" value={varCostForm.costType} onChange={e => setVarCostForm({ ...varCostForm, costType: e.target.value as typeof costTypes[number] })}>{costTypes.map(c => <option key={c}>{c}</option>)}</select></label>
-                      <label>
-                        <span className={labelClass}>Formato do valor</span>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="valueTypeEdit" value="percent" checked={varCostForm.valueType === 'percent'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
-                            <span className="text-xs">Percentual (%)</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="valueTypeEdit" value="fixed" checked={varCostForm.valueType === 'fixed'} onChange={e => setVarCostForm({ ...varCostForm, valueType: e.target.value as 'percent' | 'fixed', percentValue: '', fixedValue: '' })} className="text-gold" />
-                            <span className="text-xs">Valor fixo (R$)</span>
-                          </label>
-                        </div>
-                      </label>
-                      {varCostForm.valueType === 'percent' 
-                        ? <label><span className={labelClass}>Percentual (%)</span><input className="field" type="number" step="0.01" min="0" max="100" required value={varCostForm.percentValue} onChange={e => setVarCostForm({ ...varCostForm, percentValue: e.target.value })} placeholder="Ex.: 18.00"/></label>
-                        : <label><span className={labelClass}>Valor fixo (R$)</span><CurrencyInput className="field" required value={varCostForm.fixedValue} onChange={value => setVarCostForm({ ...varCostForm, fixedValue: value })} placeholder="0,00"/></label>
-                      }
-                      <label><span className={labelClass}>Observação</span><input className="field" maxLength={500} value={varCostForm.notes} onChange={e => setVarCostForm({ ...varCostForm, notes: e.target.value })}/></label>
-                    </div>
-                    {error && <InlineNotice>{error}</InlineNotice>}
-                    <div className="flex justify-end gap-2">
-                      <button className="btn-secondary !px-3 !py-2 text-xs" type="button" onClick={() => { setShowVariableCostForm(false); setEditingVarCost(null); setError(null) }}>Cancelar</button>
-                      <button className="btn-primary !px-3 !py-2 text-xs" disabled={busy}>{busy ? 'Salvando…' : 'Salvar'}</button>
-                    </div>
-                  </form>
+          ? <div className="divide-y divide-line">{variableCosts.map(vc => (
+              <div key={vc.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{vc.description}</p>
+                  <p className="mt-1 text-[10px] text-muted">{vc.cost_type}</p>
                 </div>
-              )
-              return (
-                <div key={vc.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/[.015] transition-colors">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{vc.description}</p>
-                    <p className="mt-1 text-[10px] text-muted">{vc.cost_type}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="font-mono text-sm">
-                      {vc.percent_value !== null ? `${Number(vc.percent_value).toFixed(2)}%` : formatBRLFromCents(Number(vc.fixed_value_cents))}
-                    </span>
-                    <button title="Editar" aria-label={`Editar ${vc.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startVariableCost(vc)}><Pencil size={14}/></button>
-                    <button title="Excluir" aria-label={`Excluir ${vc.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteVariableCost(vc)}><Trash2 size={14}/></button>
-                  </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-mono text-sm">
+                    {vc.percent_value !== null ? `${Number(vc.percent_value).toFixed(2)}%` : formatBRLFromCents(Number(vc.fixed_value_cents))}
+                  </span>
+                  <button title="Editar" aria-label={`Editar ${vc.description}`} className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => startVariableCost(vc)}><Pencil size={14}/></button>
+                  <button title="Excluir" aria-label={`Excluir ${vc.description}`} className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteVariableCost(vc)}><Trash2 size={14}/></button>
                 </div>
-              )
-            })}</div>
+              </div>
+            ))}</div>
           : <div className="p-5"><EmptyState title="Nenhum custo variável cadastrado" description="Cadastre taxas, comissões, fretes e custos específicos que variam conforme as vendas." action={<button className="btn-secondary" onClick={() => startVariableCost()}><Plus size={14}/>Adicionar custo</button>}/></div>}
       </section>
     </div>}
