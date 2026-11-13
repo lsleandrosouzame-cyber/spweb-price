@@ -95,10 +95,12 @@ export default function AuthPage({ mode }: { mode: Mode }) {
             boxShadow: '0 8px 32px 0 rgba(0,0,0,0.45)',
           }}
         >
-          {/* Título do modo */}
-          <h2 className="mb-8 text-center text-3xl font-bold text-white tracking-wide">
-            {pageCopy.title}
-          </h2>
+          {/* Título do modo — oculto no login */}
+          {mode !== 'login' && (
+            <h2 className="mb-8 text-center text-3xl font-bold text-white tracking-wide">
+              {pageCopy.title}
+            </h2>
+          )}
 
           {/* Notices */}
           {(configMissing || notice) && (
@@ -184,15 +186,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
             )}
           </form>
 
-          {/* Rodapé do card */}
+          {/* Rodapé do card — apenas signup e recovery */}
           <div className="mt-7 text-center text-sm text-white/50">
-            {mode === 'login' && (
-              <p>Não tem conta?{' '}
-                <a href="/signup" className="font-semibold text-white/80 hover:text-white transition-colors underline underline-offset-2">
-                  Cadastre-se
-                </a>
-              </p>
-            )}
             {mode === 'signup' && (
               <p>Já tem conta?{' '}
                 <a href="/login" className="font-semibold text-white/80 hover:text-white transition-colors underline underline-offset-2">
