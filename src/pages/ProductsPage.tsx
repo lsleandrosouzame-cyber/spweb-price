@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List } from 'lucide-react'
+import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List, Info } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -7,6 +7,7 @@ import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
 import { listProducts, removeProduct, saveProduct } from '../services/companyData'
 import { listProductCosts, listProductFees, saveProductCost, saveProductFee, removeProductCost, removeProductFee } from '../services/itemizedData'
+import { calculateDefaultFeesPercent, getDefaultFeesBreakdown } from '../services/defaultFees'
 import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord } from '../types/database'
 import { supabase } from '../lib/supabase'
 import { CurrencyInput } from '../components/CurrencyInput'
@@ -67,6 +68,11 @@ export default function ProductsPage() {
   const [editingCost, setEditingCost] = useState<ProductCostRecord | null>(null)
   const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards')
+  
+  // Taxas padrão da aba Lançamentos
+  const [defaultFeesPercent, setDefaultFeesPercent] = useState<number>(0)
+  const [defaultFeesBreakdown, setDefaultFeesBreakdown] = useState<Array<{ label: string; percent: number }>>([])
+
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -79,7 +85,23 @@ export default function ProductsPage() {
     finally { setLoading(false) }
   }, [currentCompany?.id, configReady])
 
+  // Carregar taxas padrão da aba Lançamentos
+  const loadDefaultFees = useCallback(async () => {
+    if (!currentCompany) return
+    try {
+      const [totalPercent, breakdown] = await Promise.all([
+        calculateDefaultFeesPercent(currentCompany.id),
+        getDefaultFeesBreakdown(currentCompany.id)
+      ])
+      setDefaultFeesPercent(totalPercent)
+      setDefaultFeesBreakdown(breakdown)
+    } catch (error) {
+      console.error('Erro ao carregar taxas padrão:', error)
+    }
+  }, [currentCompany?.id])
+
   useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
 
   const filtered = useMemo(() => rows.filter(row => {
     if (!row.name.toLowerCase().includes(search.toLowerCase())) return false
@@ -169,7 +191,24 @@ export default function ProductsPage() {
         listProductFees(row.id)
       ])
       setProductCosts(costs)
-      setProductFees(fees)
+      
+      // Se não há taxas cadastradas E as taxas padrão estão disponíveis, pré-preenche
+      if (fees.length === 0 && defaultFeesBreakdown.length > 0) {
+        // Cria taxas baseadas no padrão
+        const defaultFees: ProductFeeRecord[] = defaultFeesBreakdown.map(item => ({
+          id: crypto.randomUUID(),
+          product_id: row.id,
+          company_id: row.company_id,
+          label: item.label,
+          percent: item.percent,
+          fee_type: 'variable' as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }))
+        setProductFees(defaultFees)
+      } else {
+        setProductFees(fees)
+      }
     } catch (err) {
       // Tabelas podem não existir ainda - usar fallback vazio
       console.warn('Itemized data not available:', err)
@@ -571,20 +610,45 @@ export default function ProductsPage() {
 
             {/* Custos + Taxas lado a lado como TABELAS */}
             {editing && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ProductCostsList
-                  costs={productCosts}
-                  onEdit={handleEditCost}
-                  onDelete={handleDeleteCost}
-                  onAdd={handleAddCost}
-                />
-                <ProductFeesList
-                  fees={productFees}
-                  onEdit={handleEditFee}
-                  onDelete={handleDeleteFee}
-                  onAdd={handleAddFee}
-                />
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <ProductCostsList
+                    costs={productCosts}
+                    onEdit={handleEditCost}
+                    onDelete={handleDeleteCost}
+                    onAdd={handleAddCost}
+                  />
+                  <ProductFeesList
+                    fees={productFees}
+                    onEdit={handleEditFee}
+                    onDelete={handleDeleteFee}
+                    onAdd={handleAddFee}
+                  />
+                </div>
+                
+                {/* Info sobre taxas padrão da aba Lançamentos */}
+                {defaultFeesBreakdown.length > 0 && (
+                  <div className="surface p-4 border border-blue-500/20 bg-blue-500/5">
+                    <div className="flex items-start gap-3">
+                      <Info size={16} className="text-blue-600 mt-0.5 shrink-0"/>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-700">Taxas padrão da aba Lançamentos</p>
+                        <p className="mt-1 text-xs text-blue-600">
+                          Base automática: {formatPercent(defaultFeesPercent)} 
+                          {defaultFeesBreakdown.length > 0 && (
+                            <span className="ml-2">
+                              ({defaultFeesBreakdown.map(item => `${item.label}: ${formatPercent(item.percent)}`).join(' + ')})
+                            </span>
+                          )}
+                        </p>
+                        <p className="mt-2 text-xs text-blue-600">
+                          💡 As taxas acima já são aplicadas automaticamente. Adicione taxas adicionais apenas se este produto tiver encargos específicos.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* For new products, show message */}
