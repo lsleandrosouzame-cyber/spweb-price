@@ -622,17 +622,16 @@ export default function ProductsPage() {
                 ) : (
                   /* Visualização em lista (tabela) */
                   <div className="surface overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1300px] text-left">
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <table className="w-full min-w-[900px] text-left">
                         <thead>
                           <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
-                            <th className="px-5 py-2">Produto</th>
-                            <th className="px-3 py-2">Preço praticado</th>
-                            <th className="px-3 py-2">Custo aquis.</th>
-                            <th className="px-3 py-2">Taxas</th>
-                            <th className="px-3 py-2">% Lucro</th>
-                            <th className="px-3 py-2">Preço recomendado</th>
-                            <th className="px-4 py-2"></th>
+                            <th className="px-3 sm:px-5 py-2">Produto</th>
+                            <th className="px-2 sm:px-3 py-2">Preço praticado</th>
+                            <th className="px-2 sm:px-3 py-2">Custo aquis.</th>
+                            <th className="px-2 sm:px-3 py-2">% Lucro</th>
+                            <th className="px-2 sm:px-3 py-2">Preço recomendado</th>
+                            <th className="px-2 sm:px-4 py-2"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
@@ -649,9 +648,9 @@ export default function ProductsPage() {
 
                             return (
                               <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
-                                <td className="px-5 py-2.5">
+                                <td className="px-3 sm:px-5 py-2.5">
                                   <button type="button" className="text-left hover:text-gold transition-colors" onClick={() => openDetails(row)}>
-                                    <p className="text-sm font-medium">{row.name}</p>
+                                    <p className="text-xs sm:text-sm font-medium">{row.name}</p>
                                     {row.notes && <p className="mt-0.5 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
                                   </button>
                                   <div className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
@@ -659,10 +658,9 @@ export default function ProductsPage() {
                                     {statusLabel}
                                   </div>
                                 </td>
-                                <td className="px-3 py-2.5 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
-                                <td className="px-3 py-2.5 font-mono text-xs">
+                                <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
+                                <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
+                                <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs">
                                   {effectiveMargin !== undefined ? (
                                     <span className="text-paper">
                                       {formatPercent(effectiveMargin)}
@@ -671,7 +669,7 @@ export default function ProductsPage() {
                                     <span className="text-muted">—</span>
                                   )}
                                 </td>
-                                <td className="px-3 py-2.5 font-mono text-xs">
+                                <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs">
                                   {result?.recommendedPriceCents ? (
                                     <span className="text-gold">
                                       {formatBRLFromCents(result.recommendedPriceCents)}
@@ -680,13 +678,13 @@ export default function ProductsPage() {
                                     <span className="text-muted">—</span>
                                   )}
                                 </td>
-                                <td className="px-3 py-2.5">
-                                  <div className="flex justify-end gap-1">
-                                    <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
-                                    <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
-                                    <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={14}/></button>
-                                    <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
-                                    <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={14}/></button>
+                                <td className="px-2 sm:px-3 py-2.5">
+                                  <div className="flex justify-end gap-0.5 sm:gap-1">
+                                    <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-1.5 sm:p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
+                                    <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-1.5 sm:p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
+                                    <button aria-label={`Editar ${row.name}`} title="Editar" className="rounded p-1.5 sm:p-2 text-muted hover:text-paper transition-colors" onClick={() => startEdit(row)}><Pencil size={14}/></button>
+                                    <button aria-label={`Duplicar ${row.name}`} title="Duplicar" className="hidden sm:inline-flex rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void duplicate(row)}><Copy size={14}/></button>
+                                    <button aria-label={`Excluir ${row.name}`} title="Excluir" className="rounded p-1.5 sm:p-2 text-muted hover:text-red-400 transition-colors" onClick={() => void deleteRow(row)}><Trash2 size={14}/></button>
                                   </div>
                                 </td>
                               </tr>
