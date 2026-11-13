@@ -9,6 +9,7 @@ import { calculateBreakEven, calculateOperatingCosts } from '../finance/operatio
 import { formatBRLFromCents, parseBrazilianCurrency } from '../lib/money'
 import { listExpenses, listProducts, listSalesRecords, listServices, listVariableCosts, readOperatingSettings, removeExpense, removeVariableCost, saveExpense, saveOperatingSettings, saveVariableCost, listAssetsLiabilities, saveAssetLiability, removeAssetLiability } from '../services/companyData'
 import type { FixedExpenseDraft, FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostDraft, VariableCostRecord, AssetLiabilityRecord, AssetLiabilityDraft } from '../types/database'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 const categories = ['Aluguel', 'Energia', 'Água', 'Internet', 'Salários', 'Pró-labore', 'Contabilidade', 'Sistemas', 'Marketing', 'Outras despesas']
 const costTypes = ['Taxa', 'Comissão', 'Frete', 'Embalagem', 'Outros'] as const
@@ -49,6 +50,10 @@ export default function ExpensesPage() {
   const [expenseSearch, setExpenseSearch] = useState('')
   const [expenseCategory, setExpenseCategory] = useState('')
   const [busy, setBusy] = useState(false)
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean; title: string; message: string; onConfirm: () => void
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
 
   // inline forms
   const [showExpenseForm, setShowExpenseForm] = useState(false)
@@ -293,9 +298,16 @@ export default function ExpensesPage() {
   }
 
   async function deleteExpense(row: FixedExpenseRecord) {
-    if (!currentCompany || !window.confirm(`Excluir a despesa "${row.description}"?`)) return
-    try { await removeExpense(currentCompany.id, row.id); setNotice('Despesa excluída.'); await refresh() }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') }
+    if (!currentCompany) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir despesa',
+      message: `Tem certeza que deseja excluir a despesa "${row.description}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try { await removeExpense(currentCompany.id, row.id); setNotice('Despesa excluída.'); await refresh() }
+        catch (cause) { setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') }
+      }
+    })
   }
 
   // Variable costs CRUD
@@ -366,14 +378,21 @@ export default function ExpensesPage() {
   }
 
   async function deleteVariableCost(row: VariableCostRecord) {
-    if (!currentCompany || !window.confirm(`Excluir o custo variável "${row.description}"?`)) return
-    try { 
-      await removeVariableCost(currentCompany.id, row.id); 
-      setNotice('Custo variável excluído.'); 
-      await refresh() 
-    } catch (cause) { 
-      setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
-    }
+    if (!currentCompany) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir custo variável',
+      message: `Tem certeza que deseja excluir o custo variável "${row.description}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try { 
+          await removeVariableCost(currentCompany.id, row.id); 
+          setNotice('Custo variável excluído.'); 
+          await refresh() 
+        } catch (cause) { 
+          setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
+        }
+      }
+    })
   }
 
   // Assets/Liabilities CRUD
@@ -452,14 +471,21 @@ export default function ExpensesPage() {
   }
 
   async function deleteAssetLiability(row: AssetLiabilityRecord) {
-    if (!currentCompany || !window.confirm(`Excluir "${row.description}"?`)) return
-    try { 
-      await removeAssetLiability(currentCompany.id, row.id); 
-      setNotice('Excluído.'); 
-      await refresh() 
-    } catch (cause) { 
-      setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
-    }
+    if (!currentCompany) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir lançamento',
+      message: `Tem certeza que deseja excluir "${row.description}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try { 
+          await removeAssetLiability(currentCompany.id, row.id); 
+          setNotice('Excluído.'); 
+          await refresh() 
+        } catch (cause) { 
+          setError(cause instanceof Error ? cause.message : 'Falha ao excluir.') 
+        }
+      }
+    })
   }
 
   // Separate assets and liabilities - filtered by current month
@@ -962,5 +988,15 @@ export default function ExpensesPage() {
         </div>
       </section>
     </div>}
+    <ConfirmDialog
+      isOpen={confirmDialog.isOpen}
+      onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      onConfirm={confirmDialog.onConfirm}
+      title={confirmDialog.title}
+      message={confirmDialog.message}
+      confirmText="Sim, excluir"
+      cancelText="Cancelar"
+      variant="danger"
+    />
   </div>
 }

@@ -14,6 +14,7 @@ import { TAG_COLORS, COST_COLORS } from './CalculationPage'
 import { ServiceCostsList, ServiceFeesList } from '../components/ItemizedLists'
 import { ServiceCostModal, ServiceFeeModal } from '../components/ItemizedModals'
 import { calculateDefaultFeesPercent, getDefaultFeesBreakdown } from '../services/defaultFees'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 
 const empty = { name: '', hours: '1', hourly: '', materials: '', fixedHourly: '', includeFixed: false, desired: '', price: '' }
 const fieldLabel = 'mb-2 block text-xs font-medium text-paper'
@@ -48,6 +49,10 @@ export default function ServicesPanel() {
   const [editingFee, setEditingFee] = useState<ServiceFeeRecord | null>(null)
   const [defaultFeesPercent, setDefaultFeesPercent] = useState(0)
   const [defaultFeesBreakdown, setDefaultFeesBreakdown] = useState<Array<{ label: string; percent: number }>>([])
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean; title: string; message: string; onConfirm: () => void
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} })
   
   // Margem de lucratividade padrão dos Parâmetros Operacionais
   const [defaultDesiredMargin, setDefaultDesiredMargin] = useState<number | null>(null)
@@ -209,9 +214,15 @@ export default function ServicesPanel() {
   }
 
   async function handleDeleteCost(id: string) {
-    if (!window.confirm('Excluir este custo?')) return
-    await removeServiceCost(id)
-    setServiceCosts(serviceCosts.filter(c => c.id !== id))
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir custo',
+      message: 'Tem certeza que deseja excluir este custo? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        await removeServiceCost(id)
+        setServiceCosts(serviceCosts.filter(c => c.id !== id))
+      }
+    })
   }
 
   // Fee modal handlers
@@ -235,9 +246,15 @@ export default function ServicesPanel() {
   }
 
   async function handleDeleteFee(id: string) {
-    if (!window.confirm('Excluir esta taxa?')) return
-    await removeServiceFee(id)
-    setServiceFees(serviceFees.filter(f => f.id !== id))
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir taxa',
+      message: 'Tem certeza que deseja excluir esta taxa? Esta ação não pode ser desfeita.',
+      onConfirm: async () => {
+        await removeServiceFee(id)
+        setServiceFees(serviceFees.filter(f => f.id !== id))
+      }
+    })
   }
 
   async function submit(event: FormEvent) {
@@ -300,9 +317,16 @@ export default function ServicesPanel() {
   }
 
   async function remove(row: ServiceRecord) {
-    if (!currentCompany || !window.confirm(`Excluir "${row.name}"?`)) return
-    try { await removeService(currentCompany.id, row.id); setMessage('Serviço excluído.'); await refresh() }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
+    if (!currentCompany) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir serviço',
+      message: `Tem certeza que deseja excluir "${row.name}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try { await removeService(currentCompany.id, row.id); setMessage('Serviço excluído.'); await refresh() }
+        catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
+      }
+    })
   }
 
   async function openHistory(row: ServiceRecord) {
@@ -826,6 +850,16 @@ export default function ServicesPanel() {
       onClose={() => { setFeeModalOpen(false); setEditingFee(null) }}
       onSave={handleSaveFee}
       editing={editingFee}
+    />
+    <ConfirmDialog
+      isOpen={confirmDialog.isOpen}
+      onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+      onConfirm={confirmDialog.onConfirm}
+      title={confirmDialog.title}
+      message={confirmDialog.message}
+      confirmText="Sim, excluir"
+      cancelText="Cancelar"
+      variant="danger"
     />
   </div>
 }

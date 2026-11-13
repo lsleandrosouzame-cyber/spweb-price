@@ -4,6 +4,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } 
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
 import { listProducts, removeProduct, saveProduct, readOperatingSettings } from '../services/companyData'
@@ -81,6 +82,19 @@ export default function ProductsPage() {
   
   // Margem de lucratividade padrão dos Parâmetros Operacionais
   const [defaultDesiredMargin, setDefaultDesiredMargin] = useState<number | null>(null)
+  
+  // Confirm dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  }); void confirmDialog // used in component render
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -306,9 +320,23 @@ export default function ProductsPage() {
   }
 
   async function handleDeleteCost(id: string) {
-    if (!window.confirm('Excluir este custo?')) return
-    await removeProductCost(id)
-    setProductCosts(productCosts.filter(c => c.id !== id))
+    const cost = productCosts.find(c => c.id === id)
+    if (!cost) return
+    
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir custo',
+      message: `Tem certeza que deseja excluir o custo "${cost.label}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try {
+          await removeProductCost(id)
+          setProductCosts(productCosts.filter(c => c.id !== id))
+          setNotice('Custo excluído com sucesso.')
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : 'Não foi possível excluir o custo.')
+        }
+      }
+    })
   }
 
   // Fee modal handlers
@@ -332,9 +360,23 @@ export default function ProductsPage() {
   }
 
   async function handleDeleteFee(id: string) {
-    if (!window.confirm('Excluir esta taxa?')) return
-    await removeProductFee(id)
-    setProductFees(productFees.filter(f => f.id !== id))
+    const fee = productFees.find(f => f.id === id)
+    if (!fee) return
+    
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir taxa',
+      message: `Tem certeza que deseja excluir a taxa "${fee.label}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try {
+          await removeProductFee(id)
+          setProductFees(productFees.filter(f => f.id !== id))
+          setNotice('Taxa excluída com sucesso.')
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : 'Não foi possível excluir a taxa.')
+        }
+      }
+    })
   }
 
   async function openDetails(row: ProductRecord) { 
@@ -450,9 +492,22 @@ export default function ProductsPage() {
   }
 
   async function deleteRow(row: ProductRecord) {
-    if (!currentCompany || !window.confirm(`Excluir "${row.name}"?`)) return
-    try { await removeProduct(currentCompany.id, row.id); setNotice('Produto excluído.'); await refresh() }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') }
+    if (!currentCompany) return
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Excluir produto',
+      message: `Tem certeza que deseja excluir "${row.name}"? Esta ação não pode ser desfeita.`,
+      onConfirm: async () => {
+        try { 
+          await removeProduct(currentCompany.id, row.id)
+          setNotice('Produto excluído com sucesso.')
+          await refresh()
+        }
+        catch (cause) { 
+          setError(cause instanceof Error ? cause.message : 'Não foi possível excluir.') 
+        }
+      }
+    })
   }
 
   if (loading) return <LoadingScreen label="Carregando produtos cadastrados" />
@@ -1140,6 +1195,18 @@ export default function ProductsPage() {
         onClose={() => { setFeeModalOpen(false); setEditingFee(null) }}
         onSave={handleSaveFee}
         editing={editingFee}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="danger"
       />
     </div>
   )

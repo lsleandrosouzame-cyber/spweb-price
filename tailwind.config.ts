@@ -40,6 +40,19 @@ export default {
         card: '18px',
         chip: '100px',
       },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'zoom-in': {
+          '0%': { transform: 'scale(0.95)' },
+          '100%': { transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'in': 'fade-in 0.2s ease-out',
+      },
     },
   },
   plugins: [],
