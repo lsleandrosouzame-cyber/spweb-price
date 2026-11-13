@@ -6,7 +6,6 @@ import { lazy, Suspense, type ReactNode } from 'react'
 const AppShell = lazy(() => import('./layouts/AppShell'))
 const AuthPage = lazy(() => import('./pages/AuthPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
-const OnboardingPage = lazy(() => import('./pages/OnboardingPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const CadastroPage = lazy(() => import('./pages/CadastroPage'))
@@ -17,14 +16,13 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const AdminPage = lazy(() => import('./pages/AdminPage'))
 
-function Protected({ children, needsCompany = true }: { children: ReactNode; needsCompany?: boolean }) {
-  const { user, loading, companies, companyError, refreshCompanies } = useAuth()
+function Protected({ children }: { children: ReactNode }) {
+  const { user, loading, companyError, refreshCompanies } = useAuth()
   const location = useLocation()
   // Only block render while auth state is being resolved
   if (loading) return <LoadingScreen label="Verificando sua sessão" />
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   if (companyError) return <CompanyLookupFailure onRetry={() => void refreshCompanies()} />
-  if (needsCompany && companies.length === 0) return <Navigate to="/setup" replace />
   return <>{children}</>
 }
 
@@ -46,8 +44,7 @@ export default function App() {
       <Route path="/signup" element={<AuthPage mode="signup" />} />
       <Route path="/recovery" element={<AuthPage mode="recovery" />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
-      <Route path="/setup" element={<Protected needsCompany={false}><OnboardingPage /></Protected>} />
-      <Route path="/admin" element={<Protected needsCompany={false}><AdminPage /></Protected>} />
+      <Route path="/admin" element={<Protected><AdminPage /></Protected>} />
       <Route element={<Protected><AppShell /></Protected>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/simulador" element={<SimulatorPage />} />
