@@ -1218,18 +1218,15 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
           {/* Tabela de produtos */}
           <div className="surface overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px] text-left">
+              <table className="w-full min-w-[900px] text-left">
                 <thead>
                   <tr className="border-b border-line text-[9px] uppercase tracking-[.12em] text-muted">
                     <th className="px-5 py-2">Produto</th>
                     <th className="px-3 py-2 text-center">Qtd</th>
                     <th className="px-3 py-2">Custo Unit.</th>
                     <th className="px-3 py-2">Valor Estoque</th>
-                    <th className="px-3 py-2">Preço Unit.</th>
                     <th className="px-3 py-2">Valor Venda</th>
                     <th className="px-3 py-2">Lucro Bruto</th>
-                    <th className="px-3 py-2">Lucro Oper.</th>
-                    <th className="px-3 py-2">Markup</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -1248,14 +1245,9 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                     const grossProfitUnit = sellingPrice - totalCost
                     const grossProfitTotal = grossProfitUnit * quantity
                     
-                    // Lucro Operacional = considera as taxas
-                    const feesPercent = Number(product.variable_fees_percent) + Number(product.tax_percent)
-                    const feesCents = Math.round((sellingPrice * feesPercent) / 100)
-                    const operationalProfitUnit = sellingPrice - totalCost - feesCents
-                    const operationalProfitTotal = operationalProfitUnit * quantity
-                    
-                    const markup = totalCost > 0 && sellingPrice > 0 
-                      ? ((sellingPrice - totalCost) / totalCost) * 100 
+                    // Cálculo do percentual de lucro bruto
+                    const grossProfitPercent = sellingPrice > 0 
+                      ? ((grossProfitUnit / sellingPrice) * 100)
                       : 0
                     
                     return (
@@ -1275,36 +1267,21 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                         <td className="px-3 py-2.5 font-mono text-xs font-semibold text-blue-700">
                           {formatBRLFromCents(totalStockValue)}
                         </td>
-                        <td className="px-3 py-2.5 font-mono text-xs text-emerald-600">
-                          {formatBRLFromCents(sellingPrice)}
-                        </td>
                         <td className="px-3 py-2.5 font-mono text-xs font-semibold text-emerald-700">
                           {formatBRLFromCents(totalSalesValue)}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs font-semibold">
-                          <div>
+                          <div className="flex items-center gap-2">
                             <span className={grossProfitUnit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
                               {formatBRLFromCents(grossProfitTotal)}
+                            </span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${grossProfitPercent >= 0 ? 'bg-emerald-600/10 text-emerald-600' : 'bg-red-600/10 text-red-600'}`}>
+                              {grossProfitPercent >= 0 ? '+' : ''}{grossProfitPercent.toFixed(1)}%
                             </span>
                           </div>
                           <div className="text-[10px] text-muted mt-0.5">
                             {formatBRLFromCents(grossProfitUnit)}/un
                           </div>
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
-                          <div>
-                            <span className={operationalProfitUnit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                              {formatBRLFromCents(operationalProfitTotal)}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted mt-0.5">
-                            {formatBRLFromCents(operationalProfitUnit)}/un
-                          </div>
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
-                          <span className={markup > 0 ? 'text-emerald-600' : 'text-muted'}>
-                            {markup > 0 ? `+${formatMarkup(markup)}` : '—'}
-                          </span>
                         </td>
                       </tr>
                     )
