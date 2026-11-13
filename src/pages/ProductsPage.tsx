@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List, Info } from 'lucide-react'
+import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List, Info, Box } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -57,7 +57,7 @@ export default function ProductsPage() {
   const [historyTarget, setHistoryTarget] = useState<ProductRecord | null>(null)
   const [selectedDetails, setSelectedDetails] = useState<ProductRecord | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [tab, setTab] = useState<'products' | 'services'>('products')
+  const [tab, setTab] = useState<'products' | 'services' | 'inventory'>('products')
   const [activeSlice, setActiveSlice] = useState<number | null>(null)
   
   // Itemized costs and fees
@@ -424,9 +424,16 @@ export default function ProductsPage() {
       <div className="inline-flex rounded-xl border border-line bg-panel p-1">
         <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'products' ? 'bg-gold text-black' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
         <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'services' ? 'bg-gold text-black' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
+        <button onClick={() => { setTab('inventory'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'inventory' ? 'bg-gold text-black' : 'text-muted'}`}><Box size={14} className="mr-2 inline"/>Inventário</button>
       </div>
 
-      {tab === 'services' ? <ServicesPanel/> : <>
+      {tab === 'services' ? (
+        <ServicesPanel/>
+      ) : tab === 'inventory' ? (
+        /* ── INVENTORY ─────────────────────────────── */
+        <InventoryPanel rows={rows} />
+      ) : (
+        <>
         {/* ── LIST ─────────────────────────────────── */}
         {panel === 'list' && <>
           {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
@@ -1066,7 +1073,7 @@ export default function ProductsPage() {
               : <p className="text-sm text-muted">Ainda não há alterações de preço registradas.</p>}
           </section>
         )}
-      </>}
+      </>)}
 
       {/* Modals */}
       <ProductCostModal
@@ -1081,6 +1088,173 @@ export default function ProductsPage() {
         onSave={handleSaveFee}
         editing={editingFee}
       />
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INVENTORY PANEL COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+
+function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
+  const [search, setSearch] = useState('')
+  
+  // Produtos ordenados alfabeticamente
+  const sortedProducts = useMemo(() => {
+    return [...rows].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+  }, [rows])
+  
+  // Filtrar por busca
+  const filteredProducts = useMemo(() => {
+    if (!search.trim()) return sortedProducts
+    return sortedProducts.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+  }, [sortedProducts, search])
+  
+  // Cálculos do inventário
+  const inventoryStats = useMemo(() => {
+    const totalProducts = rows.length
+    const totalStockValue = rows.reduce((sum, p) => {
+      const acquisitionCost = Number(p.acquisition_cost_cents) + Number(p.other_cost_cents)
+      return sum + acquisitionCost
+    }, 0)
+    
+    return {
+      totalProducts,
+      totalStockValue,
+    }
+  }, [rows])
+  
+  return (
+    <div className="space-y-4">
+      {/* Cards de resumo do inventário */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {/* Total de produtos */}
+        <div className="surface p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted">Total de produtos</p>
+            <Package size={15} className="text-gold"/>
+          </div>
+          <p className="font-mono text-2xl font-bold text-paper">{inventoryStats.totalProducts}</p>
+          <p className="mt-1 text-[10px] text-muted">produtos cadastrados</p>
+        </div>
+        
+        {/* Valor total do estoque */}
+        <div className="surface p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted">Valor do estoque</p>
+            <Box size={15} className="text-emerald-500"/>
+          </div>
+          <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(inventoryStats.totalStockValue)}</p>
+          <p className="mt-1 text-[10px] text-muted">custo de aquisição total</p>
+        </div>
+        
+        {/* Custo médio por produto */}
+        <div className="surface p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted">Custo médio/produto</p>
+            <TrendingUp size={15} className="text-blue-500"/>
+          </div>
+          <p className="font-mono text-2xl font-bold text-blue-600">
+            {inventoryStats.totalProducts > 0 
+              ? formatBRLFromCents(Math.round(inventoryStats.totalStockValue / inventoryStats.totalProducts))
+              : 'R$ 0,00'
+            }
+          </p>
+          <p className="mt-1 text-[10px] text-muted">média por item</p>
+        </div>
+      </div>
+      
+      {/* Barra de pesquisa */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="relative flex-1">
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/>
+          <input 
+            className="field pl-10" 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+            placeholder="Pesquisar produto no inventário"
+          />
+        </label>
+      </div>
+      
+      {/* Lista de produtos por ordem alfabética */}
+      {filteredProducts.length === 0 ? (
+        <EmptyState 
+          title={search ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"} 
+          description={search ? "Tente pesquisar com outros termos" : "Cadastre produtos para visualizar o inventário"}
+        />
+      ) : (
+        <div className="space-y-4">
+          <div className="surface px-5 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="eyebrow">INVENTÁRIO</p>
+                <p className="mt-1 text-xs text-muted">
+                  {filteredProducts.length} produto(s) {filteredProducts.length !== rows.length && `de ${rows.length} no total`}
+                </p>
+              </div>
+              <Box className="text-gold" size={18}/>
+            </div>
+          </div>
+          
+          {/* Tabela de produtos */}
+          <div className="surface overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left">
+                <thead>
+                  <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
+                    <th className="px-5 py-2">Produto</th>
+                    <th className="px-3 py-2">Custo de Aquisição</th>
+                    <th className="px-3 py-2">Custos Adicionais</th>
+                    <th className="px-3 py-2">Custo Total</th>
+                    <th className="px-3 py-2">Preço Praticado</th>
+                    <th className="px-3 py-2">Markup</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {filteredProducts.map(product => {
+                    const acquisitionCost = Number(product.acquisition_cost_cents)
+                    const otherCosts = Number(product.other_cost_cents)
+                    const totalCost = acquisitionCost + otherCosts
+                    const sellingPrice = Number(product.current_price_cents || 0)
+                    const markup = totalCost > 0 && sellingPrice > 0 
+                      ? ((sellingPrice - totalCost) / totalCost) * 100 
+                      : 0
+                    
+                    return (
+                      <tr key={product.id} className="hover:bg-teal-light/20 transition-colors">
+                        <td className="px-5 py-2.5">
+                          <p className="text-sm font-medium">{product.name}</p>
+                          {product.notes && (
+                            <p className="mt-0.5 text-[10px] text-muted line-clamp-1">{product.notes}</p>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-blue-600">
+                          {formatBRLFromCents(acquisitionCost)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-purple-600">
+                          {formatBRLFromCents(otherCosts)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-paper">
+                          {formatBRLFromCents(totalCost)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-emerald-600">
+                          {formatBRLFromCents(sellingPrice)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
+                          <span className={markup > 0 ? 'text-emerald-600' : 'text-muted'}>
+                            {markup > 0 ? `+${formatMarkup(markup)}` : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
