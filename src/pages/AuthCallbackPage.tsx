@@ -152,11 +152,6 @@ export default function AuthCallbackPage() {
             onClick={() => navigate('/login', { replace: true })}>
             Ir para o login
           </button>
-          <button
-            className="text-xs text-muted hover:text-paper transition-colors text-center py-2"
-            onClick={() => navigate('/signup', { replace: true })}>
-            Criar nova conta
-          </button>
         </div>
 
         <p className="text-center text-[10px] text-muted">

@@ -41,7 +41,7 @@ export default function App() {
     <Suspense fallback={<LoadingScreen label="Abrindo o SPWeb Lucro" />}><Routes>
       <Route path="/" element={<LandingRedirect />} />
       <Route path="/login" element={<AuthPage mode="login" />} />
-      <Route path="/signup" element={<AuthPage mode="signup" />} />
+      <Route path="/signup" element={<Navigate to="/login" replace />} />
       <Route path="/recovery" element={<AuthPage mode="recovery" />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/admin" element={<Protected><AdminPage /></Protected>} />

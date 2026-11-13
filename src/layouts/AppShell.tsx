@@ -162,7 +162,7 @@ export default function AppShell() {
         </header>
 
         {/* Page content with responsive padding */}
-        <main className="p-3 sm:p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1440px]">
+        <main className="p-3 sm:p-6 md:p-8 lg:p-10 mx-auto w-full max-w-[1440px] overflow-x-hidden">
           <Outlet />
         </main>
       </div>

@@ -278,8 +278,8 @@ export default function DashboardPage() {
               </div>
               <AlertTriangle className="text-red-500" size={18}/>
             </div>
-            <div className="overflow-x-auto pb-2">
-              <div className="flex gap-2.5 min-w-max">
+            <div className="overflow-x-auto pb-2 -mx-1 px-1">
+              <div className="flex gap-2.5">
                 {(() => {
                   const allItems = [
                     ...products.flatMap(p => {
@@ -301,7 +301,7 @@ export default function DashboardPage() {
                     <Link 
                       key={i} 
                       to={item.type === 'Produto' ? `/produtos?id=${item.id}` : `/produtos?tab=services&id=${item.id}`}
-                      className={`flex flex-col justify-between gap-3 rounded-xl border p-3 hover:shadow-md transition-all cursor-pointer min-w-[260px] ${item.margin < 0 ? 'border-red-300 bg-red-50/70 hover:bg-red-50' : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50'}`}
+                      className={`flex flex-col justify-between gap-3 rounded-xl border p-3 hover:shadow-md transition-all cursor-pointer shrink-0 min-w-[200px] sm:min-w-[240px] ${item.margin < 0 ? 'border-red-300 bg-red-50/70 hover:bg-red-50' : 'border-amber-200 bg-amber-50/50 hover:bg-amber-50'}`}
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-paper line-clamp-2">{item.name}</p>
@@ -327,8 +327,8 @@ export default function DashboardPage() {
               </div>
               <CheckCircle2 className="text-emerald-500" size={18}/>
             </div>
-            <div className="overflow-x-auto pb-2">
-              <div className="flex gap-2.5 min-w-max">
+            <div className="overflow-x-auto pb-2 -mx-1 px-1">
+              <div className="flex gap-2.5">
                 {(() => {
                   const allItems = [
                     ...products.flatMap(p => {
@@ -350,7 +350,7 @@ export default function DashboardPage() {
                     <Link 
                       key={i} 
                       to={item.type === 'Produto' ? `/produtos?id=${item.id}` : `/produtos?tab=services&id=${item.id}`}
-                      className="flex flex-col justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 hover:bg-emerald-50 hover:shadow-md transition-all cursor-pointer min-w-[260px]"
+                      className="flex flex-col justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 hover:bg-emerald-50 hover:shadow-md transition-all cursor-pointer shrink-0 min-w-[200px] sm:min-w-[240px]"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-paper line-clamp-2">{item.name}</p>
