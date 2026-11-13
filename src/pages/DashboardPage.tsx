@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, ArrowUpRight, CircleHelp, Package, Plus, ShieldAlert, Target, Wallet, Scale, ChartNoAxesCombined, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CircleHelp, Package, Plus, ShieldAlert, Target, Wallet, Scale, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Cell, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, Tooltip as RechartsTooltip, Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
@@ -8,7 +8,7 @@ import { listExpenses, listProducts, listSalesRecords, listServices, listVariabl
 import type { FixedExpenseRecord, ProductRecord, SalesRecord, ServiceRecord, VariableCostRecord, AssetLiabilityRecord } from '../types/database'
 import { calculateBreakEven, type SalesMixLine } from '../finance/operations'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
-import { formatBRLFromCents, formatMarkup, formatPercent } from '../lib/money'
+import { formatBRLFromCents, formatPercent } from '../lib/money'
 import { Tooltip, TooltipContent, TooltipTrigger } from '../components/ui/tooltip'
 
 // Rich color palette
@@ -91,6 +91,7 @@ export default function DashboardPage() {
   const [revenueForecastCents, setRevenueForecastCents] = useState<number | null>(null)
   const [proLaboreCents, setProLaboreCents] = useState<number | null>(null)
   const [feeTags, setFeeTags] = useState<Array<{ label: string; percent: string }>>([])
+  const [operatingSettings, setOperatingSettings] = useState<{ working_days_per_month: number; productive_hours_per_day: number; revenue_forecast_cents: number | null; pro_labore_cents: number | null; default_desired_margin_percent: number | null; fee_tags: Array<{ label: string; percent: string }> | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const monthKey = localDate().slice(0, 7)
@@ -129,6 +130,7 @@ export default function DashboardPage() {
         setRevenueForecastCents(settingsResult.value.revenue_forecast_cents ?? null)
         setProLaboreCents(settingsResult.value.pro_labore_cents ?? null)
         setFeeTags(settingsResult.value.fee_tags ?? [])
+        setOperatingSettings(settingsResult.value)
       }
       setLoading(false)
     }
@@ -173,8 +175,7 @@ export default function DashboardPage() {
     const result = calculateProductPricing({ acquisitionCostCents: Number(product.acquisition_cost_cents), otherCostCents: Number(product.other_cost_cents), variableFeesPercent: Number(product.variable_fees_percent), taxPercent: Number(product.tax_percent), desiredMarginPercent: product.desired_margin_percent === null ? undefined : Number(product.desired_margin_percent), sellingPriceCents: Number(product.current_price_cents) })
     return result.contributionMarginPercent === null ? [] : [{ margin: result.contributionMarginPercent, desired: product.desired_margin_percent === null ? 0 : Number(product.desired_margin_percent) }]
   })
-  const healthy = productMargins.filter(item => item.margin >= item.desired && item.margin >= 0).length
-  const lowOrNegative = productMargins.length - healthy
+  const healthy = productMargins.filter(item => item.margin >= item.desired && item.margin >= 0).length; void healthy
 
   const productOpportunities = products.flatMap(product => {
     try {
@@ -217,26 +218,10 @@ export default function DashboardPage() {
       acc[item.category] = group
       return acc
     }, {})
-  ).sort((a, b) => b.value - a.value).slice(0, 8)
-
-  const revenueWeightedMarkup = (() => {
-    let numerator = 0; let denominator = 0
-    for (const sale of monthSales) {
-      const item = sale.product_id ? products.find(p => p.id === sale.product_id) : services.find(s => s.id === sale.service_id)
-      if (!item) continue
-      let cost: number
-      if ('acquisition_cost_cents' in item) cost = Number(item.acquisition_cost_cents) + Number(item.other_cost_cents)
-      else cost = calculateServiceCost({ hours: Number(item.hours), hourlyLaborCostCents: Number(item.hourly_labor_cost_cents), materialsCents: Number(item.materials_cents), otherCostCents: Number(item.other_cost_cents), fixedCostPerHourCents: Number(item.fixed_cost_per_hour_cents), includeFixedCostPerHour: item.include_fixed_cost_per_hour })
-      if (cost <= 0) continue
-      const rowRevenue = Number(sale.selling_price_cents) * Number(sale.quantity)
-      numerator += Number(sale.selling_price_cents) / cost * rowRevenue; denominator += rowRevenue
-    }
-    return denominator > 0 ? numerator / denominator : null
-  })()
+  ).sort((a, b) => b.value - a.value).slice(0, 8); void distribution
 
   const statusText = monthSales.length ? `${monthSales.length} registro(s) de venda no mês` : 'Aguardando registros de vendas'
   void statusText // used for future reference
-  const marginVariant: MetricVariant = !breakEven && !breakEvenEstimated ? 'default' : (effectiveMarginPct ?? 0) >= 30 ? 'green' : (effectiveMarginPct ?? 0) >= 10 ? 'gold' : 'red'
   const breakEvenVariant: MetricVariant = !effectiveBreakEvenCents ? 'default' : (breakEven?.progressPercent ?? 0) >= 100 ? 'green' : 'blue'
 
   // Radial bar data for break-even progress
@@ -258,21 +243,27 @@ export default function DashboardPage() {
       {products.length === 0 && monthExpenses.length === 0 && monthSales.length === 0 &&
         <InlineNotice tone="info">Seu painel ainda não tem dados. Cadastre um produto, lance uma despesa e registre vendas para liberar indicadores reais.</InlineNotice>}
 
-      {/* Metric cards */}
+      {/* Metric cards - Cards da aba Lançamentos */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Produtos cadastrados" value={String(products.length)} detail={products.length ? `Total de ${products.length} produto(s) nesta empresa` : 'Nenhum produto cadastrado ainda'} icon={Package} variant={products.length > 0 ? 'blue' : 'default'} to="/produtos"/>
         <Metric title="Serviços cadastrados" value={String(services.length)} detail={services.length ? `Total de ${services.length} serviço(s) nesta empresa` : 'Nenhum serviço cadastrado ainda'} icon={Wallet} variant={services.length > 0 ? 'green' : 'default'} to="/produtos"/>
-        <Metric title="Margem saudável" value={productMargins.length || serviceMargins.length ? String(healthy) : '—'} detail={productMargins.length || serviceMargins.length ? 'Produtos/serviços acima da margem desejada' : 'Aguardando preços completos'} icon={TrendingUp} variant={healthy > 0 ? 'green' : 'default'} to="/produtos"/>
-        <Metric title="Atenção necessária" value={productMargins.length || serviceMargins.length ? String(lowOrNegative) : '—'} detail="Produtos/serviços abaixo da meta ou negativos" icon={TrendingDown} variant={lowOrNegative > 0 ? 'red' : 'default'} to="/produtos"/>
+        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
+        <Metric title="Custos variáveis" value={`${effectiveVariableCostsPercent.toFixed(2)}%`} detail={variableCosts.filter(vc => vc.percent_value !== null).length ? `${variableCosts.filter(vc => vc.percent_value !== null).length} custo(s) cadastrado(s)` : 'Configure custos variáveis'} icon={TrendingDown} variant="default" to="/lancamentos"/>
       </section>
 
-      {/* Original metric cards - adjusted */}
+      {/* Segunda linha - mais cards da aba Lançamentos */}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
-        <Metric title="Margem de contribuição" value={formatPercent(effectiveMarginPct)} detail={breakEven ? 'Ponderada pelo mix de vendas registrado' : breakEvenEstimated ? `Baseada nos custos variáveis (${effectiveVariableCostsPercent.toFixed(1)}% cadastrados)` : 'Depende de vendas com mix informado'} icon={ChartNoAxesCombined} variant={marginVariant} to="/lancamentos"/>
-        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Pró-labore mensal" value={formatBRLFromCents(proLaboreCents)} detail={proLaboreCents ? `${formatBRLFromCents(Math.floor(proLaboreCents / (Number(operatingSettings?.working_days_per_month) || 22)))}/dia` : 'Configure em Lançamentos'} icon={Wallet} variant={proLaboreCents !== null ? 'green' : 'default'} to="/lancamentos"/>
         <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
-        <Metric title="Markup de referência" value={formatMarkup(revenueWeightedMarkup)} detail={revenueWeightedMarkup === null ? 'Disponível quando preço e mix estiverem completos' : 'Ponderado pelo faturamento vendido'} icon={ArrowUpRight} variant={revenueWeightedMarkup !== null ? 'gold' : 'default'} to="/lancamentos"/>
+        <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
+        <Metric title="Total de ativos" value={formatBRLFromCents(totalAssetsCents)} detail={assets.length ? `${assets.length} ativo(s) cadastrado(s)` : 'Configure em Lançamentos'} icon={TrendingUp} variant={totalAssetsCents > 0 ? 'green' : 'default'} to="/lancamentos"/>
+      </section>
+
+      {/* Terceira linha - Passivos e Patrimônio */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Metric title="Total de passivos" value={formatBRLFromCents(totalLiabilitiesCents)} detail={assetsLiabilities.filter(al => al.type === 'liability').length ? `${assetsLiabilities.filter(al => al.type === 'liability').length} passivo(s) cadastrado(s)` : 'Configure em Lançamentos'} icon={TrendingDown} variant={totalLiabilitiesCents > 0 ? 'red' : 'default'} to="/lancamentos"/>
+        <Metric title="Patrimônio líquido" value={formatBRLFromCents(netWorthCents)} detail="Ativos - Passivos" icon={Scale} variant={netWorthCents >= 0 ? 'blue' : 'red'} to="/lancamentos"/>
+        <Metric title="Dias trabalhados/mês" value={operatingSettings?.working_days_per_month ? String(operatingSettings.working_days_per_month) : '0'} detail={operatingSettings?.productive_hours_per_day ? `${operatingSettings.productive_hours_per_day}h produtivas/dia` : 'Configure em Lançamentos'} icon={Wallet} variant="default" to="/lancamentos"/>
       </section>
 
       {/* Menores/Maiores margens - ORDEM: Menores à esquerda, Maiores à direita */}
