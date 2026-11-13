@@ -599,13 +599,15 @@ export default function ProductsPage() {
                   /* Visualização em lista (tabela) */
                   <div className="surface overflow-hidden">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1100px] text-left">
+                      <table className="w-full min-w-[1300px] text-left">
                         <thead>
                           <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
                             <th className="px-5 py-2">Produto</th>
                             <th className="px-3 py-2">Preço praticado</th>
                             <th className="px-3 py-2">Custo aquis.</th>
                             <th className="px-3 py-2">Taxas</th>
+                            <th className="px-3 py-2">% Lucro</th>
+                            <th className="px-3 py-2">Lucro Unit.</th>
                             <th className="px-4 py-2"></th>
                           </tr>
                         </thead>
@@ -636,6 +638,24 @@ export default function ProductsPage() {
                                 <td className="px-3 py-2.5 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
+                                <td className="px-3 py-2.5 font-mono text-xs">
+                                  {margin !== null ? (
+                                    <span className={isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}>
+                                      {formatPercent(margin)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted">—</span>
+                                  )}
+                                </td>
+                                <td className="px-3 py-2.5 font-mono text-xs">
+                                  {result ? (
+                                    <span className={isNeg ? 'text-red-400' : (result.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}>
+                                      {formatBRLFromCents(result.contributionCents)}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted">—</span>
+                                  )}
+                                </td>
                                 <td className="px-3 py-2.5">
                                   <div className="flex justify-end gap-1">
                                     <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>

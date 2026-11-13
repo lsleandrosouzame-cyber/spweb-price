@@ -7,9 +7,44 @@ function requireClient() {
 }
 
 export async function listProducts(companyId: string) {
-  const { data, error } = await requireClient().from('products').select('*').eq('company_id', companyId).order('name')
-  if (error) throw error
-  return (data ?? []) as ProductRecord[]
+  const client = requireClient()
+  
+  // Buscar produtos
+  const { data: products, error: productsError } = await client
+    .from('products')
+    .select('*')
+    .eq('company_id', companyId)
+    .order('name')
+  
+  if (productsError) throw productsError
+  if (!products || products.length === 0) return []
+  
+  // Buscar todas as taxas dos produtos
+  const productIds = products.map(p => p.id)
+  const { data: fees, error: feesError } = await client
+    .from('product_fees')
+    .select('product_id, percent')
+    .in('product_id', productIds)
+  
+  if (feesError) throw feesError
+  
+  // Calcular soma das taxas por produto
+  const feesByProduct = new Map<string, number>()
+  if (fees) {
+    for (const fee of fees) {
+      const current = feesByProduct.get(fee.product_id) || 0
+      feesByProduct.set(fee.product_id, current + Number(fee.percent))
+    }
+  }
+  
+  // Adicionar as taxas calculadas aos produtos
+  const enrichedProducts = products.map(p => ({
+    ...p,
+    // Se variable_fees_percent está vazio ou zero, usar a soma das taxas detalhadas
+    variable_fees_percent: Number(p.variable_fees_percent) || feesByProduct.get(p.id) || 0
+  }))
+  
+  return enrichedProducts as ProductRecord[]
 }
 
 export async function saveProduct(companyId: string, draft: ProductDraft, id?: string) {
