@@ -638,13 +638,6 @@ export default function ProductsPage() {
                           {paginatedRows.map(row => {
                             const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
                             const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) }) : null
-                            const margin = result?.contributionMarginPercent ?? null
-                            const isNeg = margin !== null && margin < 0
-                            const isBelowDesired = margin !== null && !isNeg && effectiveMargin !== undefined && margin < effectiveMargin
-                            const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
-                            const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
-                            const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
-                            const statusIcon = margin === null ? null : isNeg ? <AlertTriangle size={13}/> : isBelowDesired ? <TrendingUp size={13}/> : <CheckCircle2 size={13}/>
 
                             return (
                               <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
@@ -653,10 +646,6 @@ export default function ProductsPage() {
                                     <p className="text-xs sm:text-sm font-medium">{row.name}</p>
                                     {row.notes && <p className="mt-0.5 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
                                   </button>
-                                  <div className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
-                                    {statusIcon}
-                                    {statusLabel}
-                                  </div>
                                 </td>
                                 <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
                                 <td className="px-2 sm:px-3 py-2.5 font-mono text-[11px] sm:text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
