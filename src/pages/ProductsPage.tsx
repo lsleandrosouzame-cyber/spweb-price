@@ -67,7 +67,11 @@ export default function ProductsPage() {
   const [feeModalOpen, setFeeModalOpen] = useState(false)
   const [editingCost, setEditingCost] = useState<ProductCostRecord | null>(null)
   const [editingFee, setEditingFee] = useState<ProductFeeRecord | null>(null)
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards')
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('list')
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
   
   // Taxas padrão da aba Lançamentos
   const [defaultFeesPercent, setDefaultFeesPercent] = useState<number>(0)
@@ -112,6 +116,18 @@ export default function ProductsPage() {
     if (filter === 'atencao') return margin >= 0 && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
     return margin >= 0 && (row.desired_margin_percent === null || margin >= Number(row.desired_margin_percent))
   }), [rows, search, filter])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / itemsPerPage)
+  const paginatedRows = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filtered.slice(startIndex, startIndex + itemsPerPage)
+  }, [filtered, currentPage, itemsPerPage])
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [search, filter, itemsPerPage])
 
   const selectedPricing = selectedDetails ? calculateProductPricing({
     acquisitionCostCents: Number(selectedDetails.acquisition_cost_cents),
@@ -420,6 +436,16 @@ export default function ProductsPage() {
             <select aria-label="Filtrar situação da margem" className="field sm:w-56" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
               <option value="todos">Todas as margens</option><option value="saudavel">Margem saudável</option><option value="atencao">Abaixo da desejada</option><option value="negativa">Margem negativa</option>
             </select>
+            {/* Items per page selector */}
+            <select 
+              aria-label="Itens por página" 
+              className="field sm:w-32" 
+              value={itemsPerPage} 
+              onChange={e => setItemsPerPage(Number(e.target.value))}
+            >
+              <option value="50">50 itens</option>
+              <option value="100">100 itens</option>
+            </select>
             {/* Toggle visualização Cards/Lista */}
             <div className="inline-flex rounded-xl border border-line bg-panel p-1">
               <button 
@@ -445,7 +471,7 @@ export default function ProductsPage() {
             : <div className="space-y-4">
                 <div className="surface px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} de {rows.length} produto(s)</p></div>
+                    <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} produto(s) {filtered.length !== rows.length && `de ${rows.length} no total`} · Página {currentPage} de {totalPages}</p></div>
                     <Package className="text-gold" size={18}/>
                   </div>
                 </div>
@@ -453,7 +479,7 @@ export default function ProductsPage() {
                 {/* Grid de cards OU tabela de lista */}
                 {viewMode === 'cards' ? (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtered.map(row => {
+                    {paginatedRows.map(row => {
                       const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
                       const margin = result?.contributionMarginPercent ?? null
                       const isNeg = margin !== null && margin < 0
@@ -543,18 +569,18 @@ export default function ProductsPage() {
                       <table className="w-full min-w-[1100px] text-left">
                         <thead>
                           <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
-                            <th className="px-5 py-3">Produto</th>
-                            <th className="px-3 py-3">Preço praticado</th>
-                            <th className="px-3 py-3">Custo aquis.</th>
-                            <th className="px-3 py-3">Taxas</th>
-                            <th className="px-3 py-3">Impostos</th>
-                            <th className="px-3 py-3">Margem Contrib.</th>
-                            <th className="px-3 py-3">Resultado / un.</th>
-                            <th className="px-4 py-3"></th>
+                            <th className="px-5 py-2">Produto</th>
+                            <th className="px-3 py-2">Preço praticado</th>
+                            <th className="px-3 py-2">Custo aquis.</th>
+                            <th className="px-3 py-2">Taxas</th>
+                            <th className="px-3 py-2">Impostos</th>
+                            <th className="px-3 py-2">Margem Contrib.</th>
+                            <th className="px-3 py-2">Resultado / un.</th>
+                            <th className="px-4 py-2"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-line">
-                          {filtered.map(row => {
+                          {paginatedRows.map(row => {
                             const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
                             const margin = result?.contributionMarginPercent ?? null
                             const isNeg = margin !== null && margin < 0
@@ -566,23 +592,23 @@ export default function ProductsPage() {
 
                             return (
                               <tr key={row.id} className="hover:bg-teal-light/20 transition-colors">
-                                <td className="px-5 py-4">
+                                <td className="px-5 py-2.5">
                                   <button type="button" className="text-left hover:text-gold transition-colors" onClick={() => openDetails(row)}>
                                     <p className="text-sm font-medium">{row.name}</p>
-                                    {row.notes && <p className="mt-1 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
+                                    {row.notes && <p className="mt-0.5 text-[10px] text-muted line-clamp-1">{row.notes}</p>}
                                   </button>
-                                  <div className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
+                                  <div className={`mt-1.5 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${statusColor} ${statusTextColor}`}>
                                     {statusIcon}
                                     {statusLabel}
                                   </div>
                                 </td>
-                                <td className="px-3 py-4 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
-                                <td className="px-3 py-4 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
-                                <td className="px-3 py-4 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
-                                <td className="px-3 py-4 font-mono text-xs text-red-400">{formatPercent(row.tax_percent)}</td>
-                                <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
-                                <td className={`px-3 py-4 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
-                                <td className="px-3 py-4">
+                                <td className="px-3 py-2.5 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
+                                <td className="px-3 py-2.5 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
+                                <td className="px-3 py-2.5 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
+                                <td className="px-3 py-2.5 font-mono text-xs text-red-400">{formatPercent(row.tax_percent)}</td>
+                                <td className={`px-3 py-2.5 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
+                                <td className={`px-3 py-2.5 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
+                                <td className="px-3 py-2.5">
                                   <div className="flex justify-end gap-1">
                                     <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
                                     <button aria-label={`Histórico de ${row.name}`} title="Histórico" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => void openHistory(row)}><History size={14}/></button>
@@ -596,6 +622,63 @@ export default function ProductsPage() {
                           })}
                         </tbody>
                       </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pagination controls */}
+                {totalPages > 1 && (
+                  <div className="surface px-5 py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <p className="text-xs text-muted">
+                        Exibindo {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filtered.length)} de {filtered.length} produto(s)
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Anterior
+                        </button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum
+                            if (totalPages <= 5) {
+                              pageNum = i + 1
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i
+                            } else {
+                              pageNum = currentPage - 2 + i
+                            }
+                            
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => setCurrentPage(pageNum)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                                  currentPage === pageNum
+                                    ? 'border-gold bg-gold text-black'
+                                    : 'border-line bg-panel hover:bg-teal-light/20'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Próxima
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -60,11 +60,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   }
 
   return <main className="relative grid min-h-screen">
-    {/* Background cinematográfico - MacBook Pro com gráficos, iPhone Pro Max, mesa executiva em escritório moderno */}
+    {/* Background cinematográfico - Reunião executiva no escritório da empresa */}
     <div 
       className="fixed inset-0 z-0 h-full w-full"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&q=95)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=95)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
