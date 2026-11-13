@@ -83,6 +83,17 @@ export default function ServicesPanel() {
   
   useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
 
+  // Escuta mudanças nos Parâmetros Operacionais
+  useEffect(() => {
+    const handleSettingsUpdate = (event: CustomEvent) => {
+      const newMargin = event.detail?.default_desired_margin_percent
+      setDefaultDesiredMargin(newMargin ?? null)
+    }
+    
+    window.addEventListener('operational-settings-updated', handleSettingsUpdate as EventListener)
+    return () => window.removeEventListener('operational-settings-updated', handleSettingsUpdate as EventListener)
+  }, [])
+
   // Helper para obter margem desejada (específica do serviço ou padrão)
   const getEffectiveDesiredMargin = useCallback((serviceDesiredMargin: number | null): number | undefined => {
     if (serviceDesiredMargin !== null) return Number(serviceDesiredMargin)

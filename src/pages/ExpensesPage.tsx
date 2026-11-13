@@ -218,6 +218,12 @@ export default function ExpensesPage() {
       })
       setSettingsSaved(true)
       setNotice('Parâmetros operacionais salvos.')
+      
+      // Dispara evento customizado para atualizar outras páginas
+      window.dispatchEvent(new CustomEvent('operational-settings-updated', { 
+        detail: { default_desired_margin_percent: marginValue } 
+      }))
+      
       await refresh()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível salvar os parâmetros.')

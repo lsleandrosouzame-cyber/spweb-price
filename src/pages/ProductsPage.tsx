@@ -111,6 +111,17 @@ export default function ProductsPage() {
   useEffect(() => { void refresh() }, [refresh])
   useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
 
+  // Escuta mudanças nos Parâmetros Operacionais
+  useEffect(() => {
+    const handleSettingsUpdate = (event: CustomEvent) => {
+      const newMargin = event.detail?.default_desired_margin_percent
+      setDefaultDesiredMargin(newMargin ?? null)
+    }
+    
+    window.addEventListener('operational-settings-updated', handleSettingsUpdate as EventListener)
+    return () => window.removeEventListener('operational-settings-updated', handleSettingsUpdate as EventListener)
+  }, [])
+
   // Helper para obter margem desejada (específica do produto ou padrão)
   const getEffectiveDesiredMargin = useCallback((productDesiredMargin: number | null): number | undefined => {
     if (productDesiredMargin !== null) return Number(productDesiredMargin)
