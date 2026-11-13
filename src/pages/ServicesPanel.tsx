@@ -506,8 +506,6 @@ export default function ServicesPanel() {
     {panel === 'details' && selectedDetails && (() => {
       const cost = calculateServiceCost({ hours: Number(selectedDetails.hours), hourlyLaborCostCents: Number(selectedDetails.hourly_labor_cost_cents), materialsCents: Number(selectedDetails.materials_cents), otherCostCents: Number(selectedDetails.other_cost_cents), fixedCostPerHourCents: Number(selectedDetails.fixed_cost_per_hour_cents), includeFixedCostPerHour: selectedDetails.include_fixed_cost_per_hour })
       const pricing = selectedDetails.current_price_cents !== null ? calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(selectedDetails.variable_fees_percent), taxPercent: Number(selectedDetails.tax_percent), desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent), sellingPriceCents: Number(selectedDetails.current_price_cents) }) : null
-      const margin = pricing?.contributionMarginPercent ?? null
-      const isNeg = margin !== null && margin < 0
       const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
       const minimum = pricing?.minimumPriceCents ?? null
       const recommended = pricing?.recommendedPriceCents ?? null
@@ -522,19 +520,23 @@ export default function ServicesPanel() {
         sellingPriceCents: recommended ?? undefined
       }) : null
 
-      // Pie data
-      const pieData = [
-        { name: 'Custo total', value: cost, fill: DETAIL_COLORS.cost },
-        { name: 'Taxas/encargos', value: pricing?.feesCents ?? 0, fill: TAG_COLORS[2] },
-        { name: 'Margem de contribuição', value: Math.max(0, contribution ?? 0), fill: isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution },
-      ].filter(d => d.value > 0)
+      // Usar margem do PREÇO RECOMENDADO
+      const recommendedMargin = recommendedPricing?.contributionMarginPercent ?? null
+      const isNegRecommended = recommendedMargin !== null && recommendedMargin < 0
 
-      // Smart footnote
+      // Pie data - baseado no preço RECOMENDADO
+      const pieData = recommendedPricing ? [
+        { name: 'Custo total', value: cost, fill: DETAIL_COLORS.cost },
+        { name: 'Taxas/encargos', value: recommendedPricing.feesCents ?? 0, fill: TAG_COLORS[2] },
+        { name: 'Margem de contribuição', value: Math.max(0, recommendedPricing.contributionCents ?? 0), fill: isNegRecommended ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution },
+      ].filter(d => d.value > 0) : []
+
+      // Smart footnote - baseado no preço RECOMENDADO
       let footnote: { text: string; tone: 'ok' | 'warn' | 'bad' } | null = null
-      if (margin === null) footnote = { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem.', tone: 'warn' }
-      else if (margin < 0) footnote = { text: `⚠️ Margem negativa (${formatPercent(margin)}). Cada execução gera prejuízo. Revise os custos ou ajuste o preço para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-      else if (desired !== null && margin < desired) footnote = { text: `Abaixo da meta de margem (${formatPercent(desired)}). Preço recomendado: ${formatBRLFromCents(recommended)}.`, tone: 'warn' }
-      else footnote = { text: `✓ Margem saudável de ${formatPercent(margin)}. Continue monitorando os custos para preservar este resultado.`, tone: 'ok' }
+      if (!recommendedPricing) footnote = { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem.', tone: 'warn' }
+      else if (recommendedMargin !== null && recommendedMargin < 0) footnote = { text: `⚠️ Margem negativa (${formatPercent(recommendedMargin)}). Cada execução gera prejuízo. Revise os custos ou ajuste o preço para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
+      else if (desired !== null && recommendedMargin !== null && recommendedMargin < desired) footnote = { text: `Abaixo da meta de margem (${formatPercent(desired)}). Preço recomendado: ${formatBRLFromCents(recommended)}.`, tone: 'warn' }
+      else if (recommendedMargin !== null) footnote = { text: `✓ Margem saudável de ${formatPercent(recommendedMargin)}. Continue monitorando os custos para preservar este resultado.`, tone: 'ok' }
 
       return (
         <section className="surface p-5 sm:p-7 space-y-6">
@@ -558,8 +560,8 @@ export default function ServicesPanel() {
                     </p>
                     <p className="mt-0.5 text-[10px]" style={{ color: (contribution ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
                       {(contribution ?? 0) >= 0 
-                        ? `${formatBRLFromCents(contribution)} por serviço · ${formatPercent(margin)} de margem` 
-                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo · ${formatPercent(margin)} de margem`}
+                        ? `${formatBRLFromCents(contribution)} por serviço · ${formatPercent(pricing?.contributionMarginPercent ?? 0)} de margem` 
+                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo · ${formatPercent(pricing?.contributionMarginPercent ?? 0)} de margem`}
                     </p>
                   </div>
                 </div>
@@ -602,7 +604,7 @@ export default function ServicesPanel() {
                   <p className="text-center text-sm text-muted py-2">Nenhum custo cadastrado</p>
                 ) : (
                   serviceCosts.map((cost) => {
-                    const price = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : 0
+                    const price = recommended ? Number(recommended) : 0
                     const percentOfPrice = price > 0 ? ((Number(cost.amount_cents) / price) * 100).toFixed(1) : '0'
                     
                     return (
@@ -644,7 +646,7 @@ export default function ServicesPanel() {
                   <p className="text-center text-sm text-muted py-2">Nenhuma taxa cadastrada</p>
                 ) : (
                   serviceFees.map((fee) => {
-                    const price = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : 0
+                    const price = recommended ? Number(recommended) : 0
                     const amountCents = Math.round((price * Number(fee.percent)) / 100)
                     
                     return (
@@ -686,7 +688,7 @@ export default function ServicesPanel() {
                 ['Preço mínimo', formatBRLFromCents(minimum), '#6b7280'],
                 ['Preço recomendado', formatBRLFromCents(recommended), '#22c55e'],
                 ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
-                ['Margem de contribuição', formatPercent(margin), isNeg ? DETAIL_COLORS.contributionNeg : DETAIL_COLORS.contribution],
+                ['Margem de contribuição', formatPercent(recommendedPricing?.contributionMarginPercent ?? 0), (recommendedPricing?.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                 ['Markup', formatMarkup(recommendedPricing?.markup ?? null), '#a855f7'],
               ] as [string, string, string][]).map(([label, value, color]) => (
                 <div key={label} className="rounded-xl border border-line bg-panel p-4 hover:border-teal-border transition-colors">

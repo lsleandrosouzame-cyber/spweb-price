@@ -132,15 +132,15 @@ export default function ProductsPage() {
     sellingPriceCents: selectedPricing.recommendedPriceCents ?? undefined,
   }) : null
 
-  // Build pie chart data for details panel
+  // Build pie chart data for details panel - BASEADO NO PREÇO RECOMENDADO
   const detailsPieData = useMemo(() => {
-    if (!selectedDetails || !selectedPricing || !selectedDetails.current_price_cents) return []
-    const price = Number(selectedDetails.current_price_cents)
+    if (!selectedDetails || !selectedPricing || !recommendedPricing) return []
+    const price = selectedPricing.recommendedPriceCents ?? 0
     const acq = Number(selectedDetails.acquisition_cost_cents)
     const other = Number(selectedDetails.other_cost_cents)
-    const fees = selectedPricing.feesCents ?? 0
-    const taxes = selectedPricing.taxesCents ?? 0
-    const contribution = selectedPricing.contributionCents ?? 0
+    const fees = recommendedPricing.feesCents ?? 0
+    const taxes = recommendedPricing.taxesCents ?? 0
+    const contribution = recommendedPricing.contributionCents ?? 0
     const pct = (v: number) => price > 0 ? `${((Math.abs(v) / price) * 100).toFixed(1)}` : '0'
     const data = [
       { name: 'Custo de aquisição', value: acq, fill: DETAIL_COLORS.acquisition, pct: pct(acq) },
@@ -150,26 +150,29 @@ export default function ProductsPage() {
       { name: 'Margem de contribuição', value: Math.max(0, contribution), fill: contribution >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg, pct: pct(contribution) },
     ].filter(d => d.value > 0)
     return data
-  }, [selectedDetails, selectedPricing])
+  }, [selectedDetails, selectedPricing, recommendedPricing])
 
-  // Smart footnote for product details - considera margem de CONTRIBUIÇÃO (lucro direto por venda)
+  // Smart footnote for product details - usa margem do PREÇO RECOMENDADO
   function getFootnote(): { text: string; tone: 'ok' | 'warn' | 'bad' } | null {
-    if (!selectedDetails || !selectedPricing) return null
-    const contributionMargin = selectedPricing.contributionMarginPercent ?? 0
-    const contributionCents = selectedPricing.contributionCents ?? 0
+    if (!selectedDetails || !selectedPricing || !recommendedPricing) return null
+    const contributionMargin = recommendedPricing.contributionMarginPercent ?? 0
+    const contributionCents = recommendedPricing.contributionCents ?? 0
     const current = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : null
     const recommended = selectedPricing.recommendedPriceCents
     const minimum = selectedPricing.minimumPriceCents
-
-    if (current === null || contributionMargin === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
-    
-    // Mensagens baseadas em margem de CONTRIBUIÇÃO (lucro direto, sem despesas fixas)
-    if (contributionCents < 0) return { text: `⚠️ Atenção: você está vendendo este produto com prejuízo de ${formatBRLFromCents(Math.abs(contributionCents))} por unidade. O preço atual não cobre nem os custos variáveis. Ajuste o preço imediatamente para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-    if (current < minimum) return { text: `Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Considere reajustar para pelo menos ${formatBRLFromCents(minimum)}.`, tone: 'bad' }
-    
     const desired = selectedDetails.desired_margin_percent !== null ? Number(selectedDetails.desired_margin_percent) : null
+
+    if (current === null) return { text: 'Cadastre um Preço praticado hoje para visualizar a análise de margem deste produto.', tone: 'warn' }
+    
+    // Verifica se preço atual está abaixo do mínimo
+    if (current < minimum) return { text: `⚠️ Seu Preço praticado hoje (${formatBRLFromCents(current)}) está abaixo do preço mínimo (${formatBRLFromCents(minimum)}). Você está operando no prejuízo. Ajuste o preço imediatamente.`, tone: 'bad' }
+    
+    // Verifica se está abaixo da margem desejada
     if (desired !== null && contributionMargin < desired) return { text: `Você está com margem de ${formatPercent(contributionMargin)}, abaixo da sua meta de ${formatPercent(desired)}. Para atingir essa meta, o preço recomendado é ${formatBRLFromCents(recommended)}. Avalie um reajuste gradual ou renegociação de custos.`, tone: 'warn' }
+    
+    // Verifica se há espaço para aumentar o preço
     if (recommended && current < recommended) return { text: `Há espaço para aumentar seu preço. O preço recomendado para atingir sua margem desejada é ${formatBRLFromCents(recommended)} — ${formatBRLFromCents(recommended - current)} acima do atual.`, tone: 'warn' }
+    
     return { text: `✓ Excelente! Sua margem de contribuição de ${formatPercent(contributionMargin)} está saudável e dentro do esperado. Cada venda contribui com ${formatBRLFromCents(contributionCents)} para cobrir despesas fixas e gerar lucro.`, tone: 'ok' }
   }
 
@@ -755,7 +758,7 @@ export default function ProductsPage() {
                     <p className="text-center text-sm text-muted py-2">Nenhum custo cadastrado</p>
                   ) : (
                     productCosts.map((cost) => {
-                      const price = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : 0
+                      const price = selectedPricing?.recommendedPriceCents ? Number(selectedPricing.recommendedPriceCents) : 0
                       const percentOfPrice = price > 0 ? ((Number(cost.amount_cents) / price) * 100).toFixed(1) : '0'
                       
                       return (
@@ -797,7 +800,7 @@ export default function ProductsPage() {
                     <p className="text-center text-sm text-muted py-2">Nenhuma taxa cadastrada</p>
                   ) : (
                     productFees.map((fee) => {
-                      const price = selectedDetails.current_price_cents ? Number(selectedDetails.current_price_cents) : 0
+                      const price = selectedPricing?.recommendedPriceCents ? Number(selectedPricing.recommendedPriceCents) : 0
                       const amountCents = Math.round((price * Number(fee.percent)) / 100)
                       
                       return (
@@ -837,7 +840,7 @@ export default function ProductsPage() {
                   ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
                   ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
-                  ['Margem de contribuição', formatPercent(selectedPricing.contributionMarginPercent), (selectedPricing.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
+                  ['Margem de contribuição', formatPercent(recommendedPricing?.contributionMarginPercent ?? 0), (recommendedPricing?.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
                   ['Markup', formatMarkup(recommendedPricing?.markup ?? null), '#a855f7'],
                 ] as [string, string, string][]).map(([label, value, color]) => (
