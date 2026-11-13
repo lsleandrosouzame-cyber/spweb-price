@@ -1,28 +1,31 @@
 ﻿import { useState, type FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { InlineNotice } from '../components/Feedback'
 
+// MacBook on a desk — Unsplash free-to-use photo (Gabriel Beaudry)
+const BG_IMAGE = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1920&q=80'
+
 type Mode = 'login' | 'signup' | 'recovery'
 const copy: Record<Mode, { title: string; subtitle: string; button: string }> = {
-  login: { title: 'Entre na sua conta', subtitle: 'Acesse seus indicadores e decisões financeiras.', button: 'Entrar com segurança' },
-  signup: { title: 'Crie sua conta', subtitle: 'Comece a entender o resultado por trás dos seus preços.', button: 'Criar minha conta' },
-  recovery: { title: 'Recupere o acesso', subtitle: 'Enviaremos um link para redefinir sua senha.', button: 'Enviar link de recuperação' },
+  login:    { title: 'Login',              subtitle: '',                                                      button: 'Entrar com segurança'       },
+  signup:   { title: 'Criar conta',        subtitle: 'Comece a entender o resultado por trás dos seus preços.', button: 'Criar minha conta'          },
+  recovery: { title: 'Recuperar acesso',   subtitle: 'Enviaremos um link para redefinir sua senha.',           button: 'Enviar link de recuperação' },
 }
 
 export default function AuthPage({ mode }: { mode: Mode }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<{ text: string; tone: 'error' | 'info' | 'success' } | null>(null)
-  const navigate = useNavigate()
-  const location = useLocation()
-  const configMissing = !hasSupabaseConfig || !supabase
+  const [busy, setBusy]                 = useState(false)
+  const [notice, setNotice]             = useState<{ text: string; tone: 'error' | 'info' | 'success' } | null>(null)
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const configMissing   = !hasSupabaseConfig || !supabase
   const updatingPassword = mode === 'recovery' && new URLSearchParams(location.search).get('update') === '1'
   const pageCopy = updatingPassword
-    ? { title: 'Defina uma nova senha', subtitle: 'Escolha uma senha nova para voltar a acessar sua conta.', button: 'Atualizar senha' }
+    ? { title: 'Nova senha', subtitle: 'Escolha uma senha nova para voltar a acessar sua conta.', button: 'Atualizar senha' }
     : copy[mode]
 
   async function submit(event: FormEvent) {
@@ -59,113 +62,147 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     } finally { setBusy(false) }
   }
 
-  return <main className="relative grid min-h-screen overflow-hidden">
-    {/* Background com gradiente animado vibrante */}
-    <div className="fixed inset-0 z-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Esferas coloridas flutuantes para criar o efeito glassmorphism */}
-      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-      <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      <div className="absolute bottom-8 right-20 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-6000"></div>
-      
-      {/* Overlay preto 65% para escurecer o fundo */}
-      <div className="absolute inset-0 bg-black/65"></div>
-    </div>
+  return (
+    <main className="relative min-h-screen overflow-hidden">
 
-    {/* Formulário centralizado */}
-    <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10">
-      {/* Logo acima do formulário */}
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-white drop-shadow-2xl sm:text-5xl" style={{ fontFamily: 'Sora, sans-serif', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
-          SPWeb
-        </h1>
-        <p className="mt-3 text-sm font-medium uppercase tracking-[0.3em] text-white/90 drop-shadow-lg" style={{ fontFamily: 'Sora, sans-serif', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-          Precificação Lucrativa
-        </p>
-      </div>
+      {/* ── Foto de fundo full-screen ── */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('${BG_IMAGE}')` }}
+      />
+      {/* Overlay escuro para contraste */}
+      <div className="fixed inset-0 z-10 bg-black/60" />
 
-      {/* Card do formulário - branco com texto preto */}
-      <div className="w-full max-w-[440px] rounded-3xl p-10 shadow-2xl bg-white/90 backdrop-blur-2xl border border-white/60" style={{ boxShadow: '0 8px 40px 0 rgba(0,0,0,0.25)' }}>
+      {/* ── Conteúdo centralizado ── */}
+      <section className="relative z-20 flex min-h-screen flex-col items-center justify-center px-5 py-12">
 
-        {/* Título do formulário - apenas para signup e recovery */}
-        {mode !== 'login' && (
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-gray-900 sm:text-3xl">{pageCopy.title}</h2>
-            <p className="mt-2 text-sm text-gray-600">{pageCopy.subtitle}</p>
-          </div>
-        )}
-
-        {/* Notices */}
-        <div className="space-y-3">
-          {configMissing && <InlineNotice tone="info">A autenticação real aguarda a configuração segura do projeto Supabase. Os dados não são simulados.</InlineNotice>}
-          {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
+        {/* Logo */}
+        <div className="mb-10 text-center">
+          <h1 className="text-5xl font-extrabold tracking-tight text-white drop-shadow-xl sm:text-6xl">
+            SPWeb
+          </h1>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-[0.35em] text-white/70">
+            Precificação Lucrativa
+          </p>
         </div>
 
-        {/* Formulário */}
-        <form className="mt-6 space-y-5" onSubmit={submit}>
-          {!updatingPassword && (
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-gray-800">E-mail</span>
-              <span className="relative block">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                <input 
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 pl-12 text-base text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-300 focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
-                  type="email" 
-                  autoComplete="email" 
-                  required 
-                  value={email} 
-                  onChange={e => setEmail(e.target.value)} 
-                  placeholder="voce@empresa.com.br" 
+        {/* ── Card glassmorphism ── */}
+        <div
+          className="w-full max-w-[420px] rounded-2xl px-10 py-10 backdrop-blur-md"
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.22)',
+            boxShadow: '0 8px 32px 0 rgba(0,0,0,0.45)',
+          }}
+        >
+          {/* Título do modo */}
+          <h2 className="mb-8 text-center text-3xl font-bold text-white tracking-wide">
+            {pageCopy.title}
+          </h2>
+
+          {/* Notices */}
+          {(configMissing || notice) && (
+            <div className="mb-5 space-y-2">
+              {configMissing && <InlineNotice tone="info">Autenticação aguarda configuração do Supabase.</InlineNotice>}
+              {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
+            </div>
+          )}
+
+          {/* Formulário com inputs estilo "underline" */}
+          <form className="space-y-7" onSubmit={submit}>
+
+            {!updatingPassword && (
+              <div className="group">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-white/60">
+                  E-mail
+                </label>
+                <input
+                  className="w-full border-0 border-b border-white/40 bg-transparent py-2.5 text-base text-white placeholder:text-white/35 transition-all focus:border-white focus:outline-none group-hover:border-white/60"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="voce@empresa.com.br"
                 />
-              </span>
-            </label>
-          )}
-          {(mode !== 'recovery' || updatingPassword) && (
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-gray-800">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
-              <span className="relative block">
-                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
-                <input 
-                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 pl-12 pr-12 text-base text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-300 focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
-                  type={showPassword ? 'text' : 'password'} 
-                  autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
-                  minLength={8} 
-                  required 
-                  value={password} 
-                  onChange={e => setPassword(e.target.value)} 
-                  placeholder="Mínimo de 8 caracteres"
-                />
-                <button 
-                  type="button" 
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors" 
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
-                </button>
-              </span>
-            </label>
-          )}
-          
-          {!hasSupabaseConfig && (
-            <button 
-              type="button" 
-              className="mt-6 w-full rounded-xl bg-gold/40 px-6 py-4 text-base font-bold text-gold-dark transition-all" 
-              disabled
-            >
-              {pageCopy.button}
-            </button>
-          )}
-          {hasSupabaseConfig && (
-            <button 
-              className="mt-6 w-full rounded-xl bg-gradient-to-br from-gold via-[#BAEC00] to-gold px-6 py-4 text-base font-bold text-black shadow-lg shadow-gold/30 transition-all hover:shadow-xl hover:shadow-gold/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
-              disabled={busy}
-            >
-              {busy ? 'Aguarde…' : pageCopy.button}
-            </button>
-          )}
-        </form>
-      </div>
-    </section>
-  </main>
+              </div>
+            )}
+
+            {(mode !== 'recovery' || updatingPassword) && (
+              <div className="group">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-white/60">
+                  {updatingPassword ? 'Nova senha' : 'Senha'}
+                </label>
+                <div className="relative">
+                  <input
+                    className="w-full border-0 border-b border-white/40 bg-transparent py-2.5 pr-10 text-base text-white placeholder:text-white/35 transition-all focus:border-white focus:outline-none group-hover:border-white/60"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'}
+                    minLength={8}
+                    required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo de 8 caracteres"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-white/50 transition-colors hover:text-white"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Link "Esqueceu a senha?" — apenas no login */}
+            {mode === 'login' && !updatingPassword && (
+              <div className="text-right -mt-3">
+                <a href="/recovery" className="text-xs text-white/55 hover:text-white transition-colors">
+                  Esqueceu a senha?
+                </a>
+              </div>
+            )}
+
+            {/* Botão */}
+            {hasSupabaseConfig ? (
+              <button
+                className="mt-2 w-full rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#BAEC00] py-3.5 text-base font-bold text-black shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] disabled:opacity-60"
+                disabled={busy}
+              >
+                {busy ? 'Aguarde…' : pageCopy.button}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="mt-2 w-full rounded-xl bg-white/20 py-3.5 text-base font-bold text-white/60 cursor-not-allowed"
+                disabled
+              >
+                {pageCopy.button}
+              </button>
+            )}
+          </form>
+
+          {/* Rodapé do card */}
+          <div className="mt-7 text-center text-sm text-white/50">
+            {mode === 'login' && (
+              <p>Não tem conta?{' '}
+                <a href="/signup" className="font-semibold text-white/80 hover:text-white transition-colors underline underline-offset-2">
+                  Cadastre-se
+                </a>
+              </p>
+            )}
+            {mode === 'signup' && (
+              <p>Já tem conta?{' '}
+                <a href="/login" className="font-semibold text-white/80 hover:text-white transition-colors underline underline-offset-2">
+                  Entrar
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+    </main>
+  )
 }
