@@ -607,7 +607,7 @@ export default function ProductsPage() {
                             <th className="px-3 py-2">Custo aquis.</th>
                             <th className="px-3 py-2">Taxas</th>
                             <th className="px-3 py-2">% Lucro</th>
-                            <th className="px-3 py-2">Lucro Unit.</th>
+                            <th className="px-3 py-2">Preço recomendado</th>
                             <th className="px-4 py-2"></th>
                           </tr>
                         </thead>
@@ -639,18 +639,18 @@ export default function ProductsPage() {
                                 <td className="px-3 py-2.5 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs">
-                                  {margin !== null ? (
-                                    <span className={isNeg ? 'text-red-400' : margin >= 20 ? 'text-emerald-400' : 'text-paper'}>
-                                      {formatPercent(margin)}
+                                  {effectiveMargin !== undefined ? (
+                                    <span className="text-paper">
+                                      {formatPercent(effectiveMargin)}
                                     </span>
                                   ) : (
                                     <span className="text-muted">—</span>
                                   )}
                                 </td>
                                 <td className="px-3 py-2.5 font-mono text-xs">
-                                  {result ? (
-                                    <span className={isNeg ? 'text-red-400' : (result.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}>
-                                      {formatBRLFromCents(result.contributionCents)}
+                                  {result?.recommendedPriceCents ? (
+                                    <span className="text-gold">
+                                      {formatBRLFromCents(result.recommendedPriceCents)}
                                     </span>
                                   ) : (
                                     <span className="text-muted">—</span>
