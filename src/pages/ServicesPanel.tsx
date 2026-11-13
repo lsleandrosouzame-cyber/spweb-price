@@ -552,6 +552,22 @@ export default function ServicesPanel() {
               <div className={`rounded-2xl border-2 p-4 ${(contribution ?? 0) >= 0 ? 'border-teal-border bg-teal-light/10' : 'border-red-200 bg-red-50/25'}`}>
                 <p className="eyebrow mb-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
                 <p className="font-mono text-4xl font-bold mt-2" style={{ color: (contribution ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                
+                {/* Lucro Bruto */}
+                <div className="mt-3 pt-3 border-t border-line/30">
+                  <p className="text-[9px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: (contribution ?? 0) >= 0 ? '#065f46' : '#991b1b' }}>
+                    Lucro Bruto
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono text-2xl font-bold" style={{ color: (contribution ?? 0) >= 0 ? '#047857' : '#DC2626' }}>
+                      {formatBRLFromCents(contribution)}
+                    </span>
+                    <span className="font-mono text-base font-semibold" style={{ color: (contribution ?? 0) >= 0 ? '#047857' : '#DC2626' }}>
+                      {formatPercent(pricing?.contributionMarginPercent ?? 0)}
+                    </span>
+                  </div>
+                </div>
+                
                 <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 ${(contribution ?? 0) >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
                   {(contribution ?? 0) >= 0 ? <CheckCircle2 size={16} style={{ color: '#047857' }}/> : <AlertTriangle size={16} style={{ color: '#991b1b' }}/>}
                   <div className="flex-1">
@@ -560,8 +576,8 @@ export default function ServicesPanel() {
                     </p>
                     <p className="mt-0.5 text-[10px]" style={{ color: (contribution ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
                       {(contribution ?? 0) >= 0 
-                        ? `${formatBRLFromCents(contribution)} por serviço · ${formatPercent(pricing?.contributionMarginPercent ?? 0)} de margem` 
-                        : `${formatBRLFromCents(Math.abs(contribution ?? 0))} prejuízo · ${formatPercent(pricing?.contributionMarginPercent ?? 0)} de margem`}
+                        ? `Margem de contribuição positiva`
+                        : `Ajuste o preço imediatamente`}
                     </p>
                   </div>
                 </div>
@@ -571,6 +587,22 @@ export default function ServicesPanel() {
               <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/25 p-4">
                 <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
                 <p className="font-mono text-4xl font-bold text-emerald-700 mt-2">{formatBRLFromCents(recommended)}</p>
+                
+                {/* Lucro Bruto */}
+                <div className="mt-3 pt-3 border-t border-emerald-200/50">
+                  <p className="text-[9px] uppercase tracking-wider font-semibold text-emerald-800 mb-1.5">
+                    Lucro Bruto
+                  </p>
+                  <div className="flex items-baseline gap-3">
+                    <span className="font-mono text-2xl font-bold text-emerald-700">
+                      {formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}
+                    </span>
+                    <span className="font-mono text-base font-semibold text-emerald-700">
+                      {formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}
+                    </span>
+                  </div>
+                </div>
+                
                 <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2">
                   <TrendingUp size={16} className="text-emerald-700"/>
                   <div className="flex-1">
@@ -595,9 +627,17 @@ export default function ServicesPanel() {
               <div className="surface p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-line pb-3">
                   <p className="text-sm font-semibold text-paper">Custos</p>
-                  <p className="font-mono text-sm font-bold text-emerald-400">
-                    {formatBRLFromCents(serviceCosts.reduce((sum, c) => sum + Number(c.amount_cents), 0))}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-xs text-paper">
+                      {recommended && serviceCosts.length > 0
+                        ? `${((serviceCosts.reduce((sum, c) => sum + Number(c.amount_cents), 0) / Number(recommended)) * 100).toFixed(1)}%`
+                        : '—'}
+                    </p>
+                    <span className="text-muted text-xs">·</span>
+                    <p className="font-mono text-sm font-bold text-emerald-400">
+                      {formatBRLFromCents(serviceCosts.reduce((sum, c) => sum + Number(c.amount_cents), 0))}
+                    </p>
+                  </div>
                 </div>
                 
                 {serviceCosts.length === 0 ? (
