@@ -84,14 +84,14 @@ export default function AuthPage({ mode }: { mode: Mode }) {
         </p>
       </div>
 
-      {/* Card do formulário - Glassmorphism effect */}
-      <div className="w-full max-w-[440px] rounded-3xl p-10 shadow-2xl backdrop-blur-2xl bg-white/10 border border-white/20" style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' }}>
+      {/* Card do formulário - branco com texto preto */}
+      <div className="w-full max-w-[440px] rounded-3xl p-10 shadow-2xl bg-white/90 backdrop-blur-2xl border border-white/60" style={{ boxShadow: '0 8px 40px 0 rgba(0,0,0,0.25)' }}>
 
         {/* Título do formulário - apenas para signup e recovery */}
         {mode !== 'login' && (
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-white sm:text-3xl drop-shadow-lg">{pageCopy.title}</h2>
-            <p className="mt-2 text-sm text-white/80 drop-shadow">{pageCopy.subtitle}</p>
+            <h2 className="text-2xl font-semibold text-gray-900 sm:text-3xl">{pageCopy.title}</h2>
+            <p className="mt-2 text-sm text-gray-600">{pageCopy.subtitle}</p>
           </div>
         )}
 
@@ -101,15 +101,15 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
         </div>
 
-        {/* Formulário estilo glassmorphism */}
+        {/* Formulário */}
         <form className="mt-6 space-y-5" onSubmit={submit}>
           {!updatingPassword && (
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-white drop-shadow">E-mail</span>
+              <span className="mb-2 block text-sm font-semibold text-gray-800">E-mail</span>
               <span className="relative block">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18}/>
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-4 py-3.5 pl-12 text-base text-white placeholder:text-white/50 transition-all hover:border-white/50 focus:border-white/70 focus:outline-none focus:ring-4 focus:ring-white/10"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 pl-12 text-base text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-300 focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
                   type="email" 
                   autoComplete="email" 
                   required 
@@ -122,11 +122,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {(mode !== 'recovery' || updatingPassword) && (
             <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-white drop-shadow">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
+              <span className="mb-2 block text-sm font-semibold text-gray-800">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
               <span className="relative block">
-                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18}/>
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-4 py-3.5 pl-12 pr-12 text-base text-white placeholder:text-white/50 transition-all hover:border-white/50 focus:border-white/70 focus:outline-none focus:ring-4 focus:ring-white/10"
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 pl-12 pr-12 text-base text-gray-900 placeholder:text-gray-400 transition-all hover:border-gray-300 focus:border-purple-400 focus:outline-none focus:ring-4 focus:ring-purple-100"
                   type={showPassword ? 'text' : 'password'} 
                   autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
                   minLength={8} 
@@ -138,7 +138,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
                 <button 
                   type="button" 
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors" 
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
@@ -158,7 +158,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {hasSupabaseConfig && (
             <button 
-              className="mt-6 w-full rounded-xl bg-gradient-to-br from-gold via-[#BAEC00] to-gold px-6 py-4 text-base font-bold text-gold-dark shadow-lg shadow-gold/30 transition-all hover:shadow-xl hover:shadow-gold/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
+              className="mt-6 w-full rounded-xl bg-gradient-to-br from-gold via-[#BAEC00] to-gold px-6 py-4 text-base font-bold text-black shadow-lg shadow-gold/30 transition-all hover:shadow-xl hover:shadow-gold/50 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60" 
               disabled={busy}
             >
               {busy ? 'Aguarde…' : pageCopy.button}
