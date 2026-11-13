@@ -60,17 +60,17 @@ export default function AuthPage({ mode }: { mode: Mode }) {
   }
 
   return <main className="relative grid min-h-screen">
-    {/* Background cinematográfico - sala de reunião com gráficos e apresentação */}
+    {/* Background cinematográfico - MacBook Pro com gráficos, iPhone Pro Max, mesa executiva em escritório moderno */}
     <div 
       className="fixed inset-0 z-0 h-full w-full"
       style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1552664730-d307ca884978?w=1600&q=80)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&q=95)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
     >
-      {/* Overlay escuro cinematográfico */}
+      {/* Overlay escuro cinematográfico mantido */}
       <div className="absolute inset-0 h-full w-full bg-gradient-to-br from-black/75 via-black/70 to-black/80"></div>
     </div>
 
