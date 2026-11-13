@@ -712,15 +712,15 @@ export default function ProductsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-muted">Lucro Bruto</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold text-paper">{formatBRLFromCents(Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
-                        <span className="font-mono text-[10px] text-muted">{formatPercent(((Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / Number(selectedDetails.current_price_cents)) * 100)}</span>
+                        <span className="font-mono text-base font-semibold text-paper">{formatBRLFromCents(Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
+                        <span className="font-mono text-sm font-medium text-muted">{formatPercent(((Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / Number(selectedDetails.current_price_cents)) * 100)}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className={(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}>Lucro Operacional</span>
                       <div className="flex items-center gap-2">
-                        <span className={`font-mono font-bold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBRLFromCents(selectedPricing.contributionCents)}</span>
-                        <span className={`font-mono text-[10px] font-semibold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatPercent(selectedPricing.contributionMarginPercent)}</span>
+                        <span className={`font-mono text-base font-bold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBRLFromCents(selectedPricing.contributionCents)}</span>
+                        <span className={`font-mono text-sm font-semibold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatPercent(selectedPricing.contributionMarginPercent)}</span>
                       </div>
                     </div>
                   </div>
@@ -736,15 +736,15 @@ export default function ProductsPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-emerald-800">Lucro Bruto</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold text-emerald-700">{formatBRLFromCents((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
-                        <span className="font-mono text-[10px] text-emerald-700">{formatPercent((((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / (selectedPricing.recommendedPriceCents ?? 1)) * 100)}</span>
+                        <span className="font-mono text-base font-semibold text-emerald-700">{formatBRLFromCents((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
+                        <span className="font-mono text-sm font-medium text-emerald-700">{formatPercent((((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / (selectedPricing.recommendedPriceCents ?? 1)) * 100)}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-emerald-800">Lucro Operacional</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-emerald-700">{formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}</span>
-                        <span className="font-mono text-[10px] font-semibold text-emerald-700">{formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}</span>
+                        <span className="font-mono text-base font-bold text-emerald-700">{formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}</span>
+                        <span className="font-mono text-sm font-semibold text-emerald-700">{formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}</span>
                       </div>
                     </div>
                   </div>

@@ -558,15 +558,15 @@ export default function ServicesPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-muted">Lucro Bruto</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-paper">{formatBRLFromCents(Number(selectedDetails.current_price_cents) - cost)}</span>
-                      <span className="font-mono text-[10px] text-muted">{formatPercent(((Number(selectedDetails.current_price_cents) - cost) / Number(selectedDetails.current_price_cents)) * 100)}</span>
+                      <span className="font-mono text-base font-semibold text-paper">{formatBRLFromCents(Number(selectedDetails.current_price_cents) - cost)}</span>
+                      <span className="font-mono text-sm font-medium text-muted">{formatPercent(((Number(selectedDetails.current_price_cents) - cost) / Number(selectedDetails.current_price_cents)) * 100)}</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className={(contribution ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}>Lucro Operacional</span>
                     <div className="flex items-center gap-2">
-                      <span className={`font-mono font-bold ${(contribution ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBRLFromCents(contribution)}</span>
-                      <span className={`font-mono text-[10px] font-semibold ${(contribution ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatPercent(pricing?.contributionMarginPercent ?? 0)}</span>
+                      <span className={`font-mono text-base font-bold ${(contribution ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBRLFromCents(contribution)}</span>
+                      <span className={`font-mono text-sm font-semibold ${(contribution ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatPercent(pricing?.contributionMarginPercent ?? 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -582,15 +582,15 @@ export default function ServicesPanel() {
                   <div className="flex items-center justify-between">
                     <span className="text-emerald-800">Lucro Bruto</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-emerald-700">{formatBRLFromCents((recommended ?? 0) - cost)}</span>
-                      <span className="font-mono text-[10px] text-emerald-700">{formatPercent((((recommended ?? 0) - cost) / (recommended ?? 1)) * 100)}</span>
+                      <span className="font-mono text-base font-semibold text-emerald-700">{formatBRLFromCents((recommended ?? 0) - cost)}</span>
+                      <span className="font-mono text-sm font-medium text-emerald-700">{formatPercent((((recommended ?? 0) - cost) / (recommended ?? 1)) * 100)}</span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-emerald-800">Lucro Operacional</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-emerald-700">{formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}</span>
-                      <span className="font-mono text-[10px] font-semibold text-emerald-700">{formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}</span>
+                      <span className="font-mono text-base font-bold text-emerald-700">{formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}</span>
+                      <span className="font-mono text-sm font-semibold text-emerald-700">{formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}</span>
                     </div>
                   </div>
                 </div>
