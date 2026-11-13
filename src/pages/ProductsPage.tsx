@@ -606,9 +606,6 @@ export default function ProductsPage() {
                             <th className="px-3 py-2">Preço praticado</th>
                             <th className="px-3 py-2">Custo aquis.</th>
                             <th className="px-3 py-2">Taxas</th>
-                            <th className="px-3 py-2">Impostos</th>
-                            <th className="px-3 py-2">Margem Contrib.</th>
-                            <th className="px-3 py-2">Resultado / un.</th>
                             <th className="px-4 py-2"></th>
                           </tr>
                         </thead>
@@ -639,9 +636,6 @@ export default function ProductsPage() {
                                 <td className="px-3 py-2.5 font-mono text-xs">{formatBRLFromCents(row.current_price_cents)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs text-muted">{formatBRLFromCents(row.acquisition_cost_cents)}</td>
                                 <td className="px-3 py-2.5 font-mono text-xs text-amber-400">{formatPercent(row.variable_fees_percent)}</td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-red-400">{formatPercent(row.tax_percent)}</td>
-                                <td className={`px-3 py-2.5 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : margin !== null && margin >= 20 ? 'text-emerald-400' : 'text-paper'}`}>{formatPercent(margin)}</td>
-                                <td className={`px-3 py-2.5 font-mono text-xs font-semibold ${isNeg ? 'text-red-400' : (result?.contributionCents ?? 0) > 0 ? 'text-emerald-400' : 'text-paper'}`}>{formatBRLFromCents(result?.contributionCents)}</td>
                                 <td className="px-3 py-2.5">
                                   <div className="flex justify-end gap-1">
                                     <button aria-label={`Detalhes de ${row.name}`} title="Detalhes" className="rounded p-2 text-muted hover:text-gold transition-colors" onClick={() => openDetails(row)}><Eye size={14}/></button>
