@@ -1163,7 +1163,7 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
   return (
     <div className="space-y-4">
       {/* Cards de resumo do inventário */}
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {/* Total de produtos */}
         <div className="surface p-4">
           <div className="flex items-center justify-between mb-2">
@@ -1182,28 +1182,6 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
           </div>
           <p className="font-mono text-2xl font-bold text-blue-600">{formatBRLFromCents(inventoryStats.totalStockValue)}</p>
           <p className="mt-1 text-[10px] text-muted">custo × quantidade</p>
-        </div>
-        
-        {/* Valor total de venda */}
-        <div className="surface p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted">Valor estoque (venda)</p>
-            <TrendingUp size={15} className="text-emerald-500"/>
-          </div>
-          <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(inventoryStats.totalSalesValue)}</p>
-          <p className="mt-1 text-[10px] text-muted">preço × quantidade</p>
-        </div>
-        
-        {/* Lucro potencial do estoque */}
-        <div className="surface p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted">Lucro Bruto Potencial</p>
-            <TrendingUp size={15} className="text-gold"/>
-          </div>
-          <p className="font-mono text-2xl font-bold text-gold">
-            {formatBRLFromCents(inventoryStats.totalSalesValue - inventoryStats.totalStockValue)}
-          </p>
-          <p className="mt-1 text-[10px] text-muted">venda total - custo total</p>
         </div>
       </div>
       
@@ -1243,15 +1221,13 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
           {/* Tabela de produtos */}
           <div className="surface overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-[600px] text-left">
                 <thead>
                   <tr className="border-b border-line text-[9px] uppercase tracking-[.12em] text-muted">
                     <th className="px-5 py-2">Produto</th>
                     <th className="px-3 py-2 text-center">Qtd</th>
                     <th className="px-3 py-2">Custo Unit.</th>
                     <th className="px-3 py-2">Valor Estoque</th>
-                    <th className="px-3 py-2">Valor Venda</th>
-                    <th className="px-3 py-2">Lucro Bruto</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -1259,21 +1235,10 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                     const acquisitionCost = Number(product.acquisition_cost_cents)
                     const otherCosts = Number(product.other_cost_cents)
                     const totalCost = acquisitionCost + otherCosts
-                    const sellingPrice = Number(product.current_price_cents || 0)
                     const quantity = Number(product.stock_quantity || 0)
                     
                     // Valores totais
                     const totalStockValue = totalCost * quantity
-                    const totalSalesValue = sellingPrice * quantity
-                    
-                    // Lucro Bruto = Preço - Custo (SEM taxas)
-                    const grossProfitUnit = sellingPrice - totalCost
-                    const grossProfitTotal = grossProfitUnit * quantity
-                    
-                    // Cálculo do percentual de lucro bruto
-                    const grossProfitPercent = sellingPrice > 0 
-                      ? ((grossProfitUnit / sellingPrice) * 100)
-                      : 0
                     
                     return (
                       <tr key={product.id} className="hover:bg-teal-light/20 transition-colors">
@@ -1291,22 +1256,6 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs font-semibold text-blue-700">
                           {formatBRLFromCents(totalStockValue)}
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-emerald-700">
-                          {formatBRLFromCents(totalSalesValue)}
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
-                          <div className="flex items-center gap-2">
-                            <span className={grossProfitUnit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                              {formatBRLFromCents(grossProfitTotal)}
-                            </span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded ${grossProfitPercent >= 0 ? 'bg-emerald-600/10 text-emerald-600' : 'bg-red-600/10 text-red-600'}`}>
-                              {grossProfitPercent >= 0 ? '+' : ''}{grossProfitPercent.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted mt-0.5">
-                            {formatBRLFromCents(grossProfitUnit)}/un
-                          </div>
                         </td>
                       </tr>
                     )

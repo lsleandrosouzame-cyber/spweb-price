@@ -1,4 +1,4 @@
-# 📋 Instruções para Atualizar o Banco de Dados
+ça # 📋 Instruções para Atualizar o Banco de Dados
 
 ## ⚠️ IMPORTANTE: Execute estas queries no Supabase SQL Editor
 
