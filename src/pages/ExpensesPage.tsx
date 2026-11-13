@@ -460,12 +460,44 @@ export default function ExpensesPage() {
   return <div className="space-y-6">
     {/* Header */}
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-      <div><p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2><p className="mt-2 text-sm text-muted">Dashboard completo de custos fixos, variáveis e capacidade produtiva.</p></div>
-      <label className="block"><span className="mb-1 block text-[10px] text-muted">Período de referência</span><span className="flex items-center gap-2 rounded-lg border border-line bg-graphite px-3"><CalendarDays size={15} className="text-gold"/><input aria-label="Mês de referência" type="month" className="bg-white py-2 text-sm text-paper outline-none" value={month} onChange={e => setMonth(e.target.value)}/></span></label>
+      <div>
+        <p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2>
+        <p className="mt-2 text-sm text-muted">Dashboard completo de custos fixos, variáveis e capacidade produtiva.</p>
+      </div>
+      <label className="block">
+        <span className="mb-1 block text-[10px] text-muted">Período de referência</span>
+        <span className="flex items-center gap-2 rounded-lg border border-line bg-graphite px-3">
+          <CalendarDays size={15} className="text-gold"/>
+          <input aria-label="Mês de referência" type="month" className="bg-white py-2 text-sm text-paper outline-none" value={month} onChange={e => setMonth(e.target.value)}/>
+        </span>
+      </label>
     </div>
 
     {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
-    {error && !showExpenseForm && !showSaleForm && <InlineNotice>{error}</InlineNotice>}
+    {error && !showExpenseForm && !showSaleForm && !showVariableCostForm && !showAssetLiabilityForm && <InlineNotice>{error}</InlineNotice>}
+
+    {/* Tabs de navegação - mesmo estilo de Produtos/Serviços */}
+    <div className="inline-flex rounded-xl border border-line bg-panel p-1">
+      <button 
+        onClick={() => setTab('expenses')} 
+        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-black' : 'text-muted'}`}
+      >
+        <ReceiptText size={14} className="mr-2 inline"/>Despesas fixas
+      </button>
+      <button 
+        onClick={() => setTab('variableCosts')} 
+        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'variableCosts' ? 'bg-gold text-black' : 'text-muted'}`}
+      >
+        <TrendingDown size={14} className="mr-2 inline"/>Custos variáveis
+      </button>
+      <button 
+        onClick={() => setTab('assetsLiabilities')} 
+        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'assetsLiabilities' ? 'bg-gold text-black' : 'text-muted'}`}
+      >
+        <Scale size={14} className="mr-2 inline"/>Ativos/Passivos
+      </button>
+    </div>
 
     {/* ══════════════════════════════════════════════════════════════
         DASHBOARD CONSOLIDADO — Todos os KPIs no topo
@@ -652,28 +684,6 @@ export default function ExpensesPage() {
         </label>
       </div>
     </form>
-
-    {/* Tabs — Despesas fixas, Custos Variáveis, and Ativos/Passivos */}
-    <div className="inline-flex rounded-xl border border-line bg-panel p-1">
-      <button 
-        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
-        onClick={() => setTab('expenses')}
-      >
-        <ReceiptText size={15}/>Despesas fixas
-      </button>
-      <button 
-        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'variableCosts' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
-        onClick={() => setTab('variableCosts')}
-      >
-        <TrendingDown size={15}/>Custos Variáveis
-      </button>
-      <button 
-        className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'assetsLiabilities' ? 'bg-gold text-ink' : 'text-muted hover:text-paper'}`}
-        onClick={() => setTab('assetsLiabilities')}
-      >
-        <Scale size={15}/>Ativos/Passivos
-      </button>
-    </div>
 
     {/* ── DESPESAS FIXAS ──────────────────────────────────────────────── */}
     {tab === 'expenses' && <div className="space-y-5">
