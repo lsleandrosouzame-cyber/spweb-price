@@ -68,8 +68,8 @@ export default function AuthPage({ mode }: { mode: Mode }) {
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       <div className="absolute bottom-8 right-20 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-6000"></div>
       
-      {/* Overlay escuro suave para melhor contraste */}
-      <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/40"></div>
+      {/* Overlay preto 65% para escurecer o fundo */}
+      <div className="absolute inset-0 bg-black/65"></div>
     </div>
 
     {/* Formulário centralizado */}
