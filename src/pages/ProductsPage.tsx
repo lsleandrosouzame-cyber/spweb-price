@@ -281,7 +281,22 @@ export default function ProductsPage() {
         listProductFees(row.id)
       ])
       setProductCosts(costs)
-      setProductFees(fees)
+      
+      // If no specific fees, load default fees from Variable Costs
+      if (fees.length === 0 && defaultFeesBreakdown.length > 0) {
+        setProductFees(defaultFeesBreakdown.map(({ label, percent }) => ({
+          id: crypto.randomUUID(),
+          product_id: row.id,
+          company_id: currentCompany!.id,
+          label,
+          percent,
+          fee_type: 'variable' as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })))
+      } else {
+        setProductFees(fees)
+      }
     } catch (err) {
       // Tabelas podem não existir ainda - usar fallback vazio
       console.warn('Itemized data not available:', err)

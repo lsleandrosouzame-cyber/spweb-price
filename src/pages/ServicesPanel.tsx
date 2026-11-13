@@ -87,7 +87,22 @@ export default function ServicesPanel() {
         listServiceFees(row.id)
       ])
       setServiceCosts(costs)
-      setServiceFees(fees)
+      
+      // If no specific fees, load default fees from Variable Costs
+      if (fees.length === 0 && defaultFeesBreakdown.length > 0) {
+        setServiceFees(defaultFeesBreakdown.map(({ label, percent }) => ({
+          id: crypto.randomUUID(),
+          service_id: row.id,
+          company_id: currentCompany!.id,
+          label,
+          percent,
+          fee_type: 'variable' as const,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })))
+      } else {
+        setServiceFees(fees)
+      }
     } catch (err) {
       // Tabelas podem não existir ainda - usar fallback vazio
       console.warn('Itemized data not available:', err)
