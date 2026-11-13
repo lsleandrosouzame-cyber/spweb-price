@@ -1,6 +1,7 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Copy, Eye, History, LoaderCircle, Package, Pencil, Plus, Search, Trash2, Wrench, ChevronLeft, AlertTriangle, CheckCircle2, TrendingUp, LayoutGrid, List, Info, Box } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
@@ -44,6 +45,7 @@ function PieTooltip({ active, payload }: any) {
 
 export default function ProductsPage() {
   const { currentCompany, configReady } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [rows, setRows] = useState<ProductRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -110,6 +112,28 @@ export default function ProductsPage() {
 
   useEffect(() => { void refresh() }, [refresh])
   useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
+
+  // Detectar ID na URL e abrir produto/serviço automaticamente
+  useEffect(() => {
+    const productId = searchParams.get('id')
+    const tabParam = searchParams.get('tab')
+    
+    if (productId && rows.length > 0) {
+      // Se tem parâmetro tab=services, troca para aba de serviços
+      if (tabParam === 'services') {
+        setTab('services')
+      }
+      
+      // Encontrar e abrir o produto
+      const product = rows.find(p => p.id === productId)
+      if (product) {
+        setSelectedDetails(product)
+        setPanel('details')
+        // Limpar o parâmetro da URL
+        setSearchParams({})
+      }
+    }
+  }, [searchParams, rows, setSearchParams])
 
   // Escuta mudanças nos Parâmetros Operacionais
   useEffect(() => {
