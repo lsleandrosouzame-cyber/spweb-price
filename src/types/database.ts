@@ -8,6 +8,7 @@ export type ProductRecord = {
   tax_percent: number
   desired_margin_percent: number | null
   current_price_cents: number | null
+  stock_quantity: number
   notes: string | null
   created_at: string
   updated_at: string

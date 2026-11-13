@@ -215,7 +215,7 @@ export default function CalculationPage() {
     setSaving(true)
     try {
       if (kind === 'product') {
-        await saveProduct(currentCompany.id, { name: form.name.trim(), acquisition_cost_cents: currency(form.cost) ?? 0, other_cost_cents: totalExtraCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, notes: null })
+        await saveProduct(currentCompany.id, { name: form.name.trim(), acquisition_cost_cents: currency(form.cost) ?? 0, other_cost_cents: totalExtraCostsCents, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price, stock_quantity: 0, notes: null })
       } else {
         await saveService(currentCompany.id, { name: form.name.trim(), hours: Number(form.hours), hourly_labor_cost_cents: currency(form.hourly) ?? 0, materials_cents: currency(form.materials) ?? 0, other_cost_cents: totalExtraCostsCents, fixed_cost_per_hour_cents: currency(form.fixedHourly) ?? 0, include_fixed_cost_per_hour: form.includeFixed, variable_fees_percent: totalFeesPercent, tax_percent: 0, desired_margin_percent: desired, current_price_cents: price })
       }

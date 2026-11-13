@@ -15,7 +15,7 @@ import ServicesPanel from './ServicesPanel'
 import { ProductCostsList, ProductFeesList } from '../components/ItemizedLists'
 import { ProductCostModal, ProductFeeModal } from '../components/ItemizedModals'
 
-const blank = { name: '', acquisition: '', desired: '', price: '', notes: '' }
+const blank = { name: '', acquisition: '', desired: '', price: '', quantity: '0', notes: '' }
 const inputLabel = 'mb-2 block text-xs font-medium text-paper'
 
 type Panel = 'list' | 'form' | 'details' | 'history'
@@ -201,7 +201,7 @@ export default function ProductsPage() {
   async function startEdit(row: ProductRecord) {
     setEditing(row); setError(null); setNotice(null)
     const money = (cents: number | null) => cents === null ? '' : (Number(cents) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-    setForm({ name: row.name, acquisition: '', desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), notes: row.notes ?? '' })
+    setForm({ name: row.name, acquisition: '', desired: row.desired_margin_percent === null ? '' : String(row.desired_margin_percent), price: money(row.current_price_cents), quantity: String(row.stock_quantity || 0), notes: row.notes ?? '' })
     
     // Load itemized costs and fees from database
     try {
@@ -370,6 +370,7 @@ export default function ProductsPage() {
     }
     
     setSaving(true); setError(null)
+    const quantity = parseInt(form.quantity) || 0
     const draft: ProductDraft = { 
       name: form.name.trim(), 
       acquisition_cost_cents: acquisitionCents, 
@@ -377,7 +378,8 @@ export default function ProductsPage() {
       variable_fees_percent: variableFeesPercent, 
       tax_percent: taxPercent, 
       desired_margin_percent: desired, 
-      current_price_cents: price, 
+      current_price_cents: price,
+      stock_quantity: quantity,
       notes: form.notes.trim() || null 
     }
     
@@ -771,6 +773,7 @@ export default function ProductsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label><span className={inputLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
               <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
+              <label><span className={inputLabel}>Quantidade em estoque</span><input className="field" type="number" min="0" step="1" required value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="0"/></label>
               <label className="sm:col-span-2"><span className={inputLabel}>Observação · opcional</span><textarea className="field min-h-20 resize-y" maxLength={1000} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
             </div>
             {error && <InlineNotice>{error}</InlineNotice>}
@@ -1114,20 +1117,28 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
   const inventoryStats = useMemo(() => {
     const totalProducts = rows.length
     const totalStockValue = rows.reduce((sum, p) => {
-      const acquisitionCost = Number(p.acquisition_cost_cents) + Number(p.other_cost_cents)
-      return sum + acquisitionCost
+      const unitCost = Number(p.acquisition_cost_cents) + Number(p.other_cost_cents)
+      const quantity = Number(p.stock_quantity || 0)
+      return sum + (unitCost * quantity)
+    }, 0)
+    
+    const totalSalesValue = rows.reduce((sum, p) => {
+      const unitPrice = Number(p.current_price_cents || 0)
+      const quantity = Number(p.stock_quantity || 0)
+      return sum + (unitPrice * quantity)
     }, 0)
     
     return {
       totalProducts,
       totalStockValue,
+      totalSalesValue,
     }
   }, [rows])
   
   return (
     <div className="space-y-4">
       {/* Cards de resumo do inventário */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         {/* Total de produtos */}
         <div className="surface p-4">
           <div className="flex items-center justify-between mb-2">
@@ -1138,29 +1149,36 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
           <p className="mt-1 text-[10px] text-muted">produtos cadastrados</p>
         </div>
         
-        {/* Valor total do estoque */}
+        {/* Valor total do estoque (custo) */}
         <div className="surface p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted">Valor do estoque</p>
-            <Box size={15} className="text-emerald-500"/>
+            <p className="text-xs text-muted">Valor estoque (custo)</p>
+            <Box size={15} className="text-blue-500"/>
           </div>
-          <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(inventoryStats.totalStockValue)}</p>
-          <p className="mt-1 text-[10px] text-muted">custo de aquisição total</p>
+          <p className="font-mono text-2xl font-bold text-blue-600">{formatBRLFromCents(inventoryStats.totalStockValue)}</p>
+          <p className="mt-1 text-[10px] text-muted">custo × quantidade</p>
         </div>
         
-        {/* Custo médio por produto */}
+        {/* Valor total de venda */}
         <div className="surface p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted">Custo médio/produto</p>
-            <TrendingUp size={15} className="text-blue-500"/>
+            <p className="text-xs text-muted">Valor estoque (venda)</p>
+            <TrendingUp size={15} className="text-emerald-500"/>
           </div>
-          <p className="font-mono text-2xl font-bold text-blue-600">
-            {inventoryStats.totalProducts > 0 
-              ? formatBRLFromCents(Math.round(inventoryStats.totalStockValue / inventoryStats.totalProducts))
-              : 'R$ 0,00'
-            }
+          <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(inventoryStats.totalSalesValue)}</p>
+          <p className="mt-1 text-[10px] text-muted">preço × quantidade</p>
+        </div>
+        
+        {/* Lucro potencial do estoque */}
+        <div className="surface p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted">Lucro Bruto Potencial</p>
+            <TrendingUp size={15} className="text-gold"/>
+          </div>
+          <p className="font-mono text-2xl font-bold text-gold">
+            {formatBRLFromCents(inventoryStats.totalSalesValue - inventoryStats.totalStockValue)}
           </p>
-          <p className="mt-1 text-[10px] text-muted">média por item</p>
+          <p className="mt-1 text-[10px] text-muted">venda total - custo total</p>
         </div>
       </div>
       
@@ -1200,14 +1218,17 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
           {/* Tabela de produtos */}
           <div className="surface overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-[1200px] text-left">
                 <thead>
-                  <tr className="border-b border-line text-[10px] uppercase tracking-[.14em] text-muted">
+                  <tr className="border-b border-line text-[9px] uppercase tracking-[.12em] text-muted">
                     <th className="px-5 py-2">Produto</th>
-                    <th className="px-3 py-2">Custo de Aquisição</th>
-                    <th className="px-3 py-2">Custos Adicionais</th>
-                    <th className="px-3 py-2">Custo Total</th>
-                    <th className="px-3 py-2">Preço Praticado</th>
+                    <th className="px-3 py-2 text-center">Qtd</th>
+                    <th className="px-3 py-2">Custo Unit.</th>
+                    <th className="px-3 py-2">Valor Estoque</th>
+                    <th className="px-3 py-2">Preço Unit.</th>
+                    <th className="px-3 py-2">Valor Venda</th>
+                    <th className="px-3 py-2">Lucro Bruto</th>
+                    <th className="px-3 py-2">Lucro Oper.</th>
                     <th className="px-3 py-2">Markup</th>
                   </tr>
                 </thead>
@@ -1217,6 +1238,22 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                     const otherCosts = Number(product.other_cost_cents)
                     const totalCost = acquisitionCost + otherCosts
                     const sellingPrice = Number(product.current_price_cents || 0)
+                    const quantity = Number(product.stock_quantity || 0)
+                    
+                    // Valores totais
+                    const totalStockValue = totalCost * quantity
+                    const totalSalesValue = sellingPrice * quantity
+                    
+                    // Lucro Bruto = Preço - Custo (SEM taxas)
+                    const grossProfitUnit = sellingPrice - totalCost
+                    const grossProfitTotal = grossProfitUnit * quantity
+                    
+                    // Lucro Operacional = considera as taxas
+                    const feesPercent = Number(product.variable_fees_percent) + Number(product.tax_percent)
+                    const feesCents = Math.round((sellingPrice * feesPercent) / 100)
+                    const operationalProfitUnit = sellingPrice - totalCost - feesCents
+                    const operationalProfitTotal = operationalProfitUnit * quantity
+                    
                     const markup = totalCost > 0 && sellingPrice > 0 
                       ? ((sellingPrice - totalCost) / totalCost) * 100 
                       : 0
@@ -1229,17 +1266,40 @@ function InventoryPanel({ rows }: { rows: ProductRecord[] }) {
                             <p className="mt-0.5 text-[10px] text-muted line-clamp-1">{product.notes}</p>
                           )}
                         </td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-center font-semibold text-paper">
+                          {quantity}
+                        </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-blue-600">
-                          {formatBRLFromCents(acquisitionCost)}
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs text-purple-600">
-                          {formatBRLFromCents(otherCosts)}
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-paper">
                           {formatBRLFromCents(totalCost)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-blue-700">
+                          {formatBRLFromCents(totalStockValue)}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-emerald-600">
                           {formatBRLFromCents(sellingPrice)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold text-emerald-700">
+                          {formatBRLFromCents(totalSalesValue)}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
+                          <div>
+                            <span className={grossProfitUnit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                              {formatBRLFromCents(grossProfitTotal)}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted mt-0.5">
+                            {formatBRLFromCents(grossProfitUnit)}/un
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-xs font-semibold">
+                          <div>
+                            <span className={operationalProfitUnit >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                              {formatBRLFromCents(operationalProfitTotal)}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted mt-0.5">
+                            {formatBRLFromCents(operationalProfitUnit)}/un
+                          </div>
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs font-semibold">
                           <span className={markup > 0 ? 'text-emerald-600' : 'text-muted'}>
