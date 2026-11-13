@@ -703,69 +703,49 @@ export default function ProductsPage() {
             {selectedDetails.current_price_cents && (
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Current price (what they charge today) */}
-                <div className={`rounded-2xl border-2 p-4 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'border-teal-border bg-teal-light/10' : 'border-red-200 bg-red-50/25'}`}>
-                  <p className="eyebrow mb-2" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
-                  <p className="font-mono text-4xl font-bold mt-2" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#1A3C34' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
+                <div className={`rounded-xl border-2 p-3 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'border-teal-border bg-teal-light/10' : 'border-red-200 bg-red-50/25'}`}>
+                  <p className="text-[9px] uppercase tracking-wider font-semibold mb-1" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#065f46' : '#991b1b' }}>PREÇO PRATICADO HOJE</p>
+                  <p className="font-mono text-2xl font-bold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#DC2626' }}>{formatBRLFromCents(selectedDetails.current_price_cents)}</p>
                   
-                  {/* Lucro Bruto */}
-                  <div className="mt-3 pt-3 border-t border-line/30">
-                    <p className="text-[9px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#065f46' : '#991b1b' }}>
-                      Lucro Bruto
-                    </p>
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-mono text-2xl font-bold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#DC2626' }}>
-                        {formatBRLFromCents(selectedPricing.contributionCents)}
-                      </span>
-                      <span className="font-mono text-base font-semibold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#DC2626' }}>
-                        {formatPercent(selectedPricing.contributionMarginPercent)}
-                      </span>
+                  {/* Lucros */}
+                  <div className="mt-2 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted">Lucro Bruto</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-semibold text-paper">{formatBRLFromCents(Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
+                        <span className="font-mono text-[10px] text-muted">{formatPercent(((Number(selectedDetails.current_price_cents) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / Number(selectedDetails.current_price_cents)) * 100)}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
-                    {(selectedPricing.contributionCents ?? 0) >= 0 ? <CheckCircle2 size={16} style={{ color: '#047857' }}/> : <AlertTriangle size={16} style={{ color: '#991b1b' }}/>}
-                    <div className="flex-1">
-                      <p className="text-xs font-bold" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#047857' : '#991b1b' }}>
-                        {(selectedPricing.contributionCents ?? 0) >= 0 ? 'Gerando lucro' : 'Gerando prejuízo'}
-                      </p>
-                      <p className="mt-0.5 text-[10px]" style={{ color: (selectedPricing.contributionCents ?? 0) >= 0 ? '#065f46' : '#7f1d1d' }}>
-                        {(selectedPricing.contributionCents ?? 0) >= 0 
-                          ? `Margem de contribuição positiva`
-                          : `Ajuste o preço imediatamente`}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <span className={(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}>Lucro Operacional</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-mono font-bold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBRLFromCents(selectedPricing.contributionCents)}</span>
+                        <span className={`font-mono text-[10px] font-semibold ${(selectedPricing.contributionCents ?? 0) >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatPercent(selectedPricing.contributionMarginPercent)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Recommended price (by the system) */}
-                <div className="rounded-2xl border-2 border-emerald-200 bg-emerald-50/25 p-4">
-                  <p className="eyebrow mb-2 text-emerald-900">PREÇO RECOMENDADO</p>
-                  <p className="font-mono text-4xl font-bold text-emerald-700 mt-2">{formatBRLFromCents(selectedPricing.recommendedPriceCents)}</p>
+                <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50/25 p-3">
+                  <p className="text-[9px] uppercase tracking-wider font-semibold text-emerald-800 mb-1">PREÇO RECOMENDADO</p>
+                  <p className="font-mono text-2xl font-bold text-emerald-700">{formatBRLFromCents(selectedPricing.recommendedPriceCents)}</p>
                   
-                  {/* Lucro Bruto */}
-                  <div className="mt-3 pt-3 border-t border-emerald-200/50">
-                    <p className="text-[9px] uppercase tracking-wider font-semibold text-emerald-800 mb-1.5">
-                      Lucro Bruto
-                    </p>
-                    <div className="flex items-baseline gap-3">
-                      <span className="font-mono text-2xl font-bold text-emerald-700">
-                        {formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}
-                      </span>
-                      <span className="font-mono text-base font-semibold text-emerald-700">
-                        {formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}
-                      </span>
+                  {/* Lucros */}
+                  <div className="mt-2 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-emerald-800">Lucro Bruto</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-semibold text-emerald-700">{formatBRLFromCents((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents))}</span>
+                        <span className="font-mono text-[10px] text-emerald-700">{formatPercent((((selectedPricing.recommendedPriceCents ?? 0) - Number(selectedDetails.acquisition_cost_cents) - Number(selectedDetails.other_cost_cents)) / (selectedPricing.recommendedPriceCents ?? 1)) * 100)}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2">
-                    <TrendingUp size={16} className="text-emerald-700"/>
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-emerald-900">Sistema calculado</p>
-                      <p className="mt-0.5 text-[10px] text-emerald-800">
-                        {selectedDetails.desired_margin_percent 
-                          ? `Atinge margem de ${formatPercent(selectedDetails.desired_margin_percent)}`
-                          : 'Baseado em custo + taxas + impostos'}
-                      </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-emerald-800">Lucro Operacional</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-emerald-700">{formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)}</span>
+                        <span className="font-mono text-[10px] font-semibold text-emerald-700">{formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
