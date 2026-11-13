@@ -59,41 +59,39 @@ export default function AuthPage({ mode }: { mode: Mode }) {
     } finally { setBusy(false) }
   }
 
-  return <main className="relative grid min-h-screen">
-    {/* Background cinematográfico - Reunião executiva no escritório da empresa */}
-    <div 
-      className="fixed inset-0 z-0 h-full w-full"
-      style={{
-        backgroundImage: 'url(https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=95)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      {/* Overlay escuro cinematográfico mantido */}
-      <div className="absolute inset-0 h-full w-full bg-gradient-to-br from-black/75 via-black/70 to-black/80"></div>
+  return <main className="relative grid min-h-screen overflow-hidden">
+    {/* Background com gradiente animado vibrante */}
+    <div className="fixed inset-0 z-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Esferas coloridas flutuantes para criar o efeito glassmorphism */}
+      <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+      <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+      <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+      <div className="absolute bottom-8 right-20 w-72 h-72 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-6000"></div>
+      
+      {/* Overlay escuro suave para melhor contraste */}
+      <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-transparent to-black/40"></div>
     </div>
 
     {/* Formulário centralizado */}
     <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-5 py-10">
       {/* Logo acima do formulário */}
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold text-white drop-shadow-lg sm:text-5xl" style={{ fontFamily: 'Sora, sans-serif' }}>
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-bold text-white drop-shadow-2xl sm:text-5xl" style={{ fontFamily: 'Sora, sans-serif', textShadow: '0 4px 20px rgba(0,0,0,0.5)' }}>
           SPWeb
         </h1>
-        <p className="mt-3 text-sm font-medium uppercase tracking-wider text-white/80 drop-shadow" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <p className="mt-3 text-sm font-medium uppercase tracking-[0.3em] text-white/90 drop-shadow-lg" style={{ fontFamily: 'Sora, sans-serif', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
           Precificação Lucrativa
         </p>
       </div>
 
-      {/* Card do formulário - estilo Apple: branco puro, minimalista, clean */}
-      <div className="w-full max-w-[440px] rounded-3xl bg-white p-10 shadow-2xl">
+      {/* Card do formulário - Glassmorphism effect */}
+      <div className="w-full max-w-[440px] rounded-3xl p-10 shadow-2xl backdrop-blur-2xl bg-white/10 border border-white/20" style={{ boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)' }}>
 
         {/* Título do formulário - apenas para signup e recovery */}
         {mode !== 'login' && (
           <div className="mb-8 text-center">
-            <h2 className="text-2xl font-semibold text-slate-900 sm:text-3xl">{pageCopy.title}</h2>
-            <p className="mt-2 text-sm text-slate-600">{pageCopy.subtitle}</p>
+            <h2 className="text-2xl font-semibold text-white sm:text-3xl drop-shadow-lg">{pageCopy.title}</h2>
+            <p className="mt-2 text-sm text-white/80 drop-shadow">{pageCopy.subtitle}</p>
           </div>
         )}
 
@@ -103,16 +101,15 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           {notice && <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice>}
         </div>
 
-        {/* Formulário estilo Apple com paleta do sistema */}
+        {/* Formulário estilo glassmorphism */}
         <form className="mt-6 space-y-5" onSubmit={submit}>
           {!updatingPassword && (
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-paper">E-mail</span>
+              <span className="mb-2 block text-sm font-semibold text-white drop-shadow">E-mail</span>
               <span className="relative block">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 text-base placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10"
-                  style={{ color: '#0D1F1A' }}
+                  className="w-full rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-4 py-3.5 pl-12 text-base text-white placeholder:text-white/50 transition-all hover:border-white/50 focus:border-white/70 focus:outline-none focus:ring-4 focus:ring-white/10"
                   type="email" 
                   autoComplete="email" 
                   required 
@@ -125,12 +122,11 @@ export default function AuthPage({ mode }: { mode: Mode }) {
           )}
           {(mode !== 'recovery' || updatingPassword) && (
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-paper">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
+              <span className="mb-2 block text-sm font-semibold text-white drop-shadow">{updatingPassword ? 'Nova senha' : 'Senha'}</span>
               <span className="relative block">
-                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-muted/60" size={18}/>
+                <LockKeyhole className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18}/>
                 <input 
-                  className="w-full rounded-xl border border-teal-border bg-white px-4 py-3.5 pl-12 pr-12 text-base placeholder:text-muted/60 transition-all hover:border-teal-mid focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10"
-                  style={{ color: '#0D1F1A' }}
+                  className="w-full rounded-xl border border-white/30 bg-white/20 backdrop-blur-sm px-4 py-3.5 pl-12 pr-12 text-base text-white placeholder:text-white/50 transition-all hover:border-white/50 focus:border-white/70 focus:outline-none focus:ring-4 focus:ring-white/10"
                   type={showPassword ? 'text' : 'password'} 
                   autoComplete={mode === 'signup' || updatingPassword ? 'new-password' : 'current-password'} 
                   minLength={8} 
@@ -142,7 +138,7 @@ export default function AuthPage({ mode }: { mode: Mode }) {
                 <button 
                   type="button" 
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} 
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/60 hover:text-paper transition-colors" 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors" 
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}
