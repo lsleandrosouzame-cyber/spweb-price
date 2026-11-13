@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { AlertTriangle, CheckCircle2, Copy, Eye, History, LoaderCircle, Plus, Search, Trash2, Pencil, Wrench, ChevronLeft, TrendingUp } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Copy, Eye, History, Info, LoaderCircle, Plus, Search, Trash2, Pencil, Wrench, ChevronLeft, TrendingUp } from 'lucide-react'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
@@ -13,6 +13,7 @@ import type { ServiceRecord, ServiceCostRecord, ServiceFeeRecord } from '../type
 import { TAG_COLORS, COST_COLORS } from './CalculationPage'
 import { ServiceCostsList, ServiceFeesList } from '../components/ItemizedLists'
 import { ServiceCostModal, ServiceFeeModal } from '../components/ItemizedModals'
+import { calculateDefaultFeesPercent, getDefaultFeesBreakdown } from '../services/defaultFees'
 
 const empty = { name: '', hours: '1', hourly: '', materials: '', fixedHourly: '', includeFixed: false, desired: '', price: '' }
 const fieldLabel = 'mb-2 block text-xs font-medium text-paper'
@@ -45,6 +46,8 @@ export default function ServicesPanel() {
   const [feeModalOpen, setFeeModalOpen] = useState(false)
   const [editingCost, setEditingCost] = useState<ServiceCostRecord | null>(null)
   const [editingFee, setEditingFee] = useState<ServiceFeeRecord | null>(null)
+  const [defaultFeesPercent, setDefaultFeesPercent] = useState(0)
+  const [defaultFeesBreakdown, setDefaultFeesBreakdown] = useState<Array<{ label: string; percent: number }>>([])
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -54,6 +57,23 @@ export default function ServicesPanel() {
     finally { setLoading(false) }
   }, [currentCompany?.id])
   useEffect(() => { void refresh() }, [refresh])
+
+  // Load default fees from Variable Costs (Expenses tab)
+  const loadDefaultFees = useCallback(async () => {
+    if (!currentCompany) return
+    try {
+      const percent = await calculateDefaultFeesPercent(currentCompany.id)
+      const breakdown = await getDefaultFeesBreakdown(currentCompany.id)
+      setDefaultFeesPercent(percent)
+      setDefaultFeesBreakdown(breakdown)
+    } catch (err) {
+      console.warn('Could not load default fees:', err)
+      setDefaultFeesPercent(0)
+      setDefaultFeesBreakdown([])
+    }
+  }, [currentCompany?.id])
+  
+  useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
 
   const filtered = useMemo(() => rows.filter(row => row.name.toLowerCase().includes(search.toLowerCase())), [rows, search])
 
@@ -97,7 +117,22 @@ export default function ServicesPanel() {
           listServiceFees(row.id)
         ])
         setServiceCosts(costs)
-        setServiceFees(fees)
+        
+        // If no specific fees, pre-fill with default fees from Variable Costs
+        if (fees.length === 0 && defaultFeesBreakdown.length > 0) {
+          setServiceFees(defaultFeesBreakdown.map(({ label, percent }) => ({
+            id: crypto.randomUUID(), // temporary ID for display
+            service_id: row.id,
+            company_id: currentCompany!.id,
+            label,
+            percent,
+            fee_type: 'variable' as const,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })))
+        } else {
+          setServiceFees(fees)
+        }
       } catch (err) {
         // Tabelas podem não existir ainda - usar fallback vazio
         console.warn('Itemized data not available:', err)
@@ -386,20 +421,47 @@ export default function ServicesPanel() {
         {/* Custos + Taxas lado a lado */}
         {/* Custos + Taxas lado a lado como TABELAS */}
         {editing && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ServiceCostsList
-              costs={serviceCosts}
-              onEdit={handleEditCost}
-              onDelete={handleDeleteCost}
-              onAdd={handleAddCost}
-            />
-            <ServiceFeesList
-              fees={serviceFees}
-              onEdit={handleEditFee}
-              onDelete={handleDeleteFee}
-              onAdd={handleAddFee}
-            />
-          </div>
+          <>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <ServiceCostsList
+                costs={serviceCosts}
+                onEdit={handleEditCost}
+                onDelete={handleDeleteCost}
+                onAdd={handleAddCost}
+              />
+              <ServiceFeesList
+                fees={serviceFees}
+                onEdit={handleEditFee}
+                onDelete={handleDeleteFee}
+                onAdd={handleAddFee}
+              />
+            </div>
+            
+            {/* Info panel: Default fees from Variable Costs */}
+            {defaultFeesBreakdown.length > 0 && (
+              <div className="surface p-4 border border-blue-500/20 bg-blue-500/5">
+                <div className="flex items-start gap-3">
+                  <Info size={18} className="text-blue-500 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-2">
+                    <p className="text-sm font-semibold text-paper">
+                      Taxas padrão da aba Custos Variáveis ({formatPercent(defaultFeesPercent)})
+                    </p>
+                    <div className="space-y-1">
+                      {defaultFeesBreakdown.map((fee, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                          <span className="text-muted">{fee.label}</span>
+                          <span className="font-mono font-semibold text-paper">{formatPercent(fee.percent)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted mt-2">
+                      💡 Estas taxas são carregadas automaticamente. Você pode adicionar taxas adicionais específicas deste serviço usando o botão + acima.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* For new services, show message */}
