@@ -7,7 +7,7 @@ import { CurrencyInput } from '../components/CurrencyInput'
 import { calculateProductPricing, calculateServiceCost } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
 import { supabase } from '../lib/supabase'
-import { listServices, removeService, saveService } from '../services/companyData'
+import { listServices, removeService, saveService, readOperatingSettings } from '../services/companyData'
 import { listServiceCosts, listServiceFees, saveServiceCost, saveServiceFee, removeServiceCost, removeServiceFee } from '../services/itemizedData'
 import type { ServiceRecord, ServiceCostRecord, ServiceFeeRecord } from '../types/database'
 import { TAG_COLORS, COST_COLORS } from './CalculationPage'
@@ -48,6 +48,9 @@ export default function ServicesPanel() {
   const [editingFee, setEditingFee] = useState<ServiceFeeRecord | null>(null)
   const [defaultFeesPercent, setDefaultFeesPercent] = useState(0)
   const [defaultFeesBreakdown, setDefaultFeesBreakdown] = useState<Array<{ label: string; percent: number }>>([])
+  
+  // Margem de lucratividade padrão dos Parâmetros Operacionais
+  const [defaultDesiredMargin, setDefaultDesiredMargin] = useState<number | null>(null)
 
   const refresh = useCallback(async () => {
     if (!currentCompany) { setLoading(false); return }
@@ -62,18 +65,30 @@ export default function ServicesPanel() {
   const loadDefaultFees = useCallback(async () => {
     if (!currentCompany) return
     try {
-      const percent = await calculateDefaultFeesPercent(currentCompany.id)
-      const breakdown = await getDefaultFeesBreakdown(currentCompany.id)
+      const [percent, breakdown, settings] = await Promise.all([
+        calculateDefaultFeesPercent(currentCompany.id),
+        getDefaultFeesBreakdown(currentCompany.id),
+        readOperatingSettings(currentCompany.id)
+      ])
       setDefaultFeesPercent(percent)
       setDefaultFeesBreakdown(breakdown)
+      setDefaultDesiredMargin(settings?.default_desired_margin_percent ?? null)
     } catch (err) {
       console.warn('Could not load default fees:', err)
       setDefaultFeesPercent(0)
       setDefaultFeesBreakdown([])
+      setDefaultDesiredMargin(null)
     }
   }, [currentCompany?.id])
   
   useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
+
+  // Helper para obter margem desejada (específica do serviço ou padrão)
+  const getEffectiveDesiredMargin = useCallback((serviceDesiredMargin: number | null): number | undefined => {
+    if (serviceDesiredMargin !== null) return Number(serviceDesiredMargin)
+    if (defaultDesiredMargin !== null && defaultDesiredMargin > 0) return Number(defaultDesiredMargin)
+    return undefined
+  }, [defaultDesiredMargin])
 
   const filtered = useMemo(() => rows.filter(row => row.name.toLowerCase().includes(search.toLowerCase())), [rows, search])
 
@@ -312,11 +327,12 @@ export default function ServicesPanel() {
             {/* Grid de cards de serviços */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map(row => {
+                const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
                 const cost = calculateServiceCost({ hours: Number(row.hours), hourlyLaborCostCents: Number(row.hourly_labor_cost_cents), materialsCents: Number(row.materials_cents), otherCostCents: Number(row.other_cost_cents), fixedCostPerHourCents: Number(row.fixed_cost_per_hour_cents), includeFixedCostPerHour: row.include_fixed_cost_per_hour })
-                const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), sellingPriceCents: Number(row.current_price_cents) })
+                const result = row.current_price_cents === null ? null : calculateProductPricing({ acquisitionCostCents: cost, variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) })
                 const margin = result?.contributionMarginPercent ?? null
                 const isNeg = margin !== null && margin < 0
-                const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                const isBelowDesired = margin !== null && !isNeg && effectiveMargin !== undefined && margin < effectiveMargin
                 const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
                 const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
                 const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
@@ -491,7 +507,7 @@ export default function ServicesPanel() {
         {/* Preço e margem */}
         <div className="grid gap-4 sm:grid-cols-2">
           <label><span className={fieldLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="0,00"/></label>
-          <label><span className={fieldLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
+          <label><span className={fieldLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder={defaultDesiredMargin ? `Padrão: ${defaultDesiredMargin}%` : "Ex.: 20"}/></label>
         </div>
 
         {error && <InlineNotice>{error}</InlineNotice>}

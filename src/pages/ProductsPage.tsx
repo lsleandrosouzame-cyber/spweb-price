@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { EmptyState, InlineNotice, LoadingScreen } from '../components/Feedback'
 import { calculateProductPricing } from '../finance/pricing'
 import { formatBRLFromCents, formatMarkup, formatPercent, parseBrazilianCurrency } from '../lib/money'
-import { listProducts, removeProduct, saveProduct } from '../services/companyData'
+import { listProducts, removeProduct, saveProduct, readOperatingSettings } from '../services/companyData'
 import { listProductCosts, listProductFees, saveProductCost, saveProductFee, removeProductCost, removeProductFee } from '../services/itemizedData'
 import { calculateDefaultFeesPercent, getDefaultFeesBreakdown } from '../services/defaultFees'
 import type { ProductDraft, ProductRecord, ProductCostRecord, ProductFeeRecord } from '../types/database'
@@ -76,7 +76,9 @@ export default function ProductsPage() {
   // Taxas padrão da aba Lançamentos
   const [defaultFeesPercent, setDefaultFeesPercent] = useState<number>(0)
   const [defaultFeesBreakdown, setDefaultFeesBreakdown] = useState<Array<{ label: string; percent: number }>>([])
-
+  
+  // Margem de lucratividade padrão dos Parâmetros Operacionais
+  const [defaultDesiredMargin, setDefaultDesiredMargin] = useState<number | null>(null)
 
   const refresh = useCallback(async () => {
     if (!currentCompany || !configReady) { setRows([]); setLoading(false); return }
@@ -93,12 +95,14 @@ export default function ProductsPage() {
   const loadDefaultFees = useCallback(async () => {
     if (!currentCompany) return
     try {
-      const [totalPercent, breakdown] = await Promise.all([
+      const [totalPercent, breakdown, settings] = await Promise.all([
         calculateDefaultFeesPercent(currentCompany.id),
-        getDefaultFeesBreakdown(currentCompany.id)
+        getDefaultFeesBreakdown(currentCompany.id),
+        readOperatingSettings(currentCompany.id)
       ])
       setDefaultFeesPercent(totalPercent)
       setDefaultFeesBreakdown(breakdown)
+      setDefaultDesiredMargin(settings?.default_desired_margin_percent ?? null)
     } catch (error) {
       console.error('Erro ao carregar taxas padrão:', error)
     }
@@ -107,15 +111,23 @@ export default function ProductsPage() {
   useEffect(() => { void refresh() }, [refresh])
   useEffect(() => { void loadDefaultFees() }, [loadDefaultFees])
 
+  // Helper para obter margem desejada (específica do produto ou padrão)
+  const getEffectiveDesiredMargin = useCallback((productDesiredMargin: number | null): number | undefined => {
+    if (productDesiredMargin !== null) return Number(productDesiredMargin)
+    if (defaultDesiredMargin !== null && defaultDesiredMargin > 0) return Number(defaultDesiredMargin)
+    return undefined
+  }, [defaultDesiredMargin])
+
   const filtered = useMemo(() => rows.filter(row => {
     if (!row.name.toLowerCase().includes(search.toLowerCase())) return false
-    const margin = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }).contributionMarginPercent : null
+    const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
+    const margin = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) }).contributionMarginPercent : null
     if (filter === 'todos') return true
     if (margin === null) return false
     if (filter === 'negativa') return margin < 0
-    if (filter === 'atencao') return margin >= 0 && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
-    return margin >= 0 && (row.desired_margin_percent === null || margin >= Number(row.desired_margin_percent))
-  }), [rows, search, filter])
+    if (filter === 'atencao') return margin >= 0 && effectiveMargin !== undefined && margin < effectiveMargin
+    return margin >= 0 && (effectiveMargin === undefined || margin >= effectiveMargin)
+  }), [rows, search, filter, getEffectiveDesiredMargin])
 
   // Pagination logic
   const totalPages = Math.ceil(filtered.length / itemsPerPage)
@@ -134,7 +146,7 @@ export default function ProductsPage() {
     otherCostCents: Number(selectedDetails.other_cost_cents),
     variableFeesPercent: Number(selectedDetails.variable_fees_percent),
     taxPercent: Number(selectedDetails.tax_percent),
-    desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
+    desiredMarginPercent: getEffectiveDesiredMargin(selectedDetails.desired_margin_percent),
     sellingPriceCents: selectedDetails.current_price_cents === null ? undefined : Number(selectedDetails.current_price_cents),
   }) : null
 
@@ -144,7 +156,7 @@ export default function ProductsPage() {
     otherCostCents: Number(selectedDetails.other_cost_cents),
     variableFeesPercent: Number(selectedDetails.variable_fees_percent),
     taxPercent: Number(selectedDetails.tax_percent),
-    desiredMarginPercent: selectedDetails.desired_margin_percent === null ? undefined : Number(selectedDetails.desired_margin_percent),
+    desiredMarginPercent: getEffectiveDesiredMargin(selectedDetails.desired_margin_percent),
     sellingPriceCents: selectedPricing.recommendedPriceCents ?? undefined,
   }) : null
 
@@ -489,10 +501,11 @@ export default function ProductsPage() {
                 {viewMode === 'cards' ? (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {paginatedRows.map(row => {
-                      const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
+                      const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
+                      const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) }) : null
                       const margin = result?.contributionMarginPercent ?? null
                       const isNeg = margin !== null && margin < 0
-                      const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                      const isBelowDesired = margin !== null && !isNeg && effectiveMargin !== undefined && margin < effectiveMargin
                       const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
                       const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
                       const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
@@ -590,10 +603,11 @@ export default function ProductsPage() {
                         </thead>
                         <tbody className="divide-y divide-line">
                           {paginatedRows.map(row => {
-                            const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: row.desired_margin_percent === null ? undefined : Number(row.desired_margin_percent), sellingPriceCents: Number(row.current_price_cents) }) : null
+                            const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
+                            const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) }) : null
                             const margin = result?.contributionMarginPercent ?? null
                             const isNeg = margin !== null && margin < 0
-                            const isBelowDesired = margin !== null && !isNeg && row.desired_margin_percent !== null && margin < Number(row.desired_margin_percent)
+                            const isBelowDesired = margin !== null && !isNeg && effectiveMargin !== undefined && margin < effectiveMargin
                             const statusLabel = margin === null ? 'Preço pendente' : isNeg ? 'Margem negativa' : isBelowDesired ? 'Abaixo da meta' : 'Saudável'
                             const statusColor = margin === null ? 'border-muted bg-muted/5' : isNeg ? 'border-red-400 bg-red-400/5' : isBelowDesired ? 'border-amber-400 bg-amber-400/5' : 'border-emerald-400 bg-emerald-400/5'
                             const statusTextColor = margin === null ? 'text-muted' : isNeg ? 'text-red-400' : isBelowDesired ? 'text-amber-400' : 'text-emerald-400'
@@ -772,7 +786,7 @@ export default function ProductsPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label><span className={inputLabel}>Preço praticado hoje (R$) · opcional</span><CurrencyInput className="field" value={form.price} onChange={value => setForm({ ...form, price: value })} placeholder="Deixe em branco se ainda não vende"/></label>
-              <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder="Ex.: 20"/></label>
+              <label><span className={inputLabel}>Margem desejada (%) · opcional</span><input className="field" type="number" min="0" max="100" step="0.01" value={form.desired} onChange={e => setForm({ ...form, desired: e.target.value })} placeholder={defaultDesiredMargin ? `Padrão: ${defaultDesiredMargin}%` : "Ex.: 20"}/></label>
               <label><span className={inputLabel}>Quantidade em estoque</span><input className="field" type="number" min="0" step="1" required value={form.quantity} onChange={e => setForm({ ...form, quantity: e.target.value })} placeholder="0"/></label>
               <label className="sm:col-span-2"><span className={inputLabel}>Observação · opcional</span><textarea className="field min-h-20 resize-y" maxLength={1000} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></label>
             </div>
@@ -954,7 +968,7 @@ export default function ProductsPage() {
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
                   ['Resultado est. / unidade', `${formatBRLFromCents(recommendedPricing?.contributionCents ?? 0)} lucro · ${formatPercent(recommendedPricing?.contributionMarginPercent ?? 0)}`, (recommendedPricing?.contributionCents ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
                   ['Margem de contribuição', formatPercent(recommendedPricing?.contributionMarginPercent ?? 0), (recommendedPricing?.contributionMarginPercent ?? 0) >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg],
-                  ['Margem desejada', formatPercent(selectedDetails.desired_margin_percent), '#D4AF37'],
+                  ['Margem desejada', `${formatPercent(getEffectiveDesiredMargin(selectedDetails.desired_margin_percent) ?? 0)}${selectedDetails.desired_margin_percent === null && defaultDesiredMargin ? ' (padrão)' : ''}`, '#D4AF37'],
                   ['Markup', formatMarkup(recommendedPricing?.markup ?? null), '#a855f7'],
                 ] as [string, string, string][]).map(([label, value, color]) => (
                   <div key={label} className="rounded-xl border border-line bg-panel p-4 transition hover:border-teal-border">
