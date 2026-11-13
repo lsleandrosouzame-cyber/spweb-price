@@ -853,7 +853,7 @@ export default function ProductsPage() {
                 {/* Custos Individuais - DETALHADO */}
                 <div className="surface p-5 space-y-3">
                   <div className="flex items-center justify-between border-b border-line pb-3">
-                    <p className="text-sm font-semibold text-paper">Custos</p>
+                    <p className="text-sm font-semibold text-paper">Custo Aquisição Mercadoria</p>
                     <div className="flex items-center gap-2">
                       <p className="font-mono text-xs text-paper">
                         {selectedPricing?.recommendedPriceCents && productCosts.length > 0

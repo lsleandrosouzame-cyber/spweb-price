@@ -77,6 +77,7 @@ export async function readOperatingSettings(companyId: string) {
     productive_hours_per_day: number
     revenue_forecast_cents: number | null
     pro_labore_cents: number | null
+    default_desired_margin_percent: number | null
     fee_tags: Array<{ label: string; percent: string }> | null
   } | null
 }
@@ -86,6 +87,7 @@ export async function saveOperatingSettings(companyId: string, settings: {
   productive_hours_per_day: number
   revenue_forecast_cents?: number | null
   pro_labore_cents?: number | null
+  default_desired_margin_percent?: number | null
   fee_tags?: Array<{ label: string; percent: string }> | null
 }) {
   const { error } = await requireClient().from('operational_settings').upsert({ company_id: companyId, ...settings }, { onConflict: 'company_id' })

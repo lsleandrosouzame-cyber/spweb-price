@@ -37,10 +37,10 @@ export default function ExpensesPage() {
   const [productiveHours, setProductiveHours] = useState('')
   const [revenueForecast, setRevenueForecast] = useState('')
   const [proLabore, setProLabore] = useState('')
+  const [defaultDesiredMargin, setDefaultDesiredMargin] = useState('')
   const [defaultVariableFees] = useState('')
   const [defaultTaxRate] = useState('')
-  const [defaultDesiredMargin] = useState('')
-  void defaultVariableFees; void defaultTaxRate; void defaultDesiredMargin
+  void defaultVariableFees; void defaultTaxRate
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   const [loading, setLoading] = useState(true)
@@ -113,6 +113,9 @@ export default function ExpensesPage() {
           : '')
         setProLabore(settingsResult.pro_labore_cents
           ? (settingsResult.pro_labore_cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+          : '')
+        setDefaultDesiredMargin(settingsResult.default_desired_margin_percent
+          ? String(settingsResult.default_desired_margin_percent)
           : '')
         setSettingsSaved(true)
       }
@@ -199,6 +202,11 @@ export default function ExpensesPage() {
     }
     const forecastValue = revenueForecast ? parseBrazilianCurrency(revenueForecast) : null
     const proLaboreValue = proLabore ? parseBrazilianCurrency(proLabore) : null
+    const marginValue = defaultDesiredMargin ? parseFloat(defaultDesiredMargin.replace(',', '.')) : null
+    if (marginValue !== null && (marginValue < 0 || marginValue > 100)) {
+      setError('Informe um percentual de lucratividade entre 0 e 100.')
+      return
+    }
     setBusy(true); setError(null)
     try {
       await saveOperatingSettings(currentCompany.id, {
@@ -206,6 +214,7 @@ export default function ExpensesPage() {
         productive_hours_per_day: hours,
         revenue_forecast_cents: forecastValue,
         pro_labore_cents: proLaboreValue,
+        default_desired_margin_percent: marginValue,
       })
       setSettingsSaved(true)
       setNotice('Parâmetros operacionais salvos.')
@@ -681,6 +690,16 @@ export default function ExpensesPage() {
         <label>
           <span className={labelClass}>Previsão de faturamento (R$)</span>
           <CurrencyInput className="field" value={revenueForecast} onChange={setRevenueForecast} placeholder="Ex.: 15.000,00"/>
+        </label>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <label>
+          <span className={labelClass}>Percentual de Lucratividade Padrão (%)</span>
+          <input className="field" type="number" min="0" max="100" step="0.01"
+            value={defaultDesiredMargin} onChange={e => setDefaultDesiredMargin(e.target.value)} 
+            placeholder="Ex.: 30"/>
+          <p className="mt-1 text-[10px] text-muted">Aplicado por padrão a todos produtos/serviços</p>
         </label>
       </div>
     </form>
