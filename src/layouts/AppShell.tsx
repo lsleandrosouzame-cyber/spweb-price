@@ -1,9 +1,10 @@
 ﻿import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package, Calculator } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CircleUserRound, Command, LayoutDashboard, LogOut, Menu, ReceiptText, Settings2, Shield, Video, X, Package, Calculator, Activity } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 const primaryNav = [
+  { to: '/diagnostico', label: 'Diagnóstico', icon: Activity, color: '#00B87A' },
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, color: '#3b82f6' },
   { to: '/simulador', label: 'Simulador', icon: Calculator, color: '#D4AF37' },
   { to: '/cadastro', label: 'Cadastro', icon: Package, color: '#8b5cf6' },
@@ -16,6 +17,7 @@ const footerNav = [
   { to: '/configuracoes', label: 'Configurações', icon: Settings2, color: '#6B7E78' },
 ]
 const titles: Record<string, string> = {
+  '/diagnostico': 'Diagnóstico',
   '/dashboard': 'Dashboard', '/simulador': 'Simulador', '/cadastro': 'Cadastro', '/produtos': 'Precificação', '/videos': 'Central de conhecimento',
   '/lancamentos': 'Lançamentos', '/perfil': 'Perfil', '/configuracoes': 'Configurações', '/admin': 'Painel Administrativo',
 }
@@ -50,7 +52,7 @@ export default function AppShell() {
 
         {/* Logo */}
         <div className={`flex h-[72px] items-center border-b border-line ${collapsed ? 'justify-center px-3' : 'justify-between px-5'}`}>
-          <button className="flex items-center gap-3" onClick={() => navigate('/dashboard')} aria-label="Dashboard">
+          <button className="flex items-center gap-3" onClick={() => navigate('/diagnostico')} aria-label="Diagnóstico">
             {!collapsed && (
               <div className="text-left leading-tight">
                 <span className="block text-sm font-extrabold tracking-tight" style={{ color: '#0D1F1A', fontFamily: 'Sora, sans-serif' }}>SPWeb <span style={{ color: '#1A3C34' }}>Lucro</span></span>
@@ -91,7 +93,7 @@ export default function AppShell() {
                   <>
                     <Icon size={17} strokeWidth={2} style={{ color: isActive ? '#0D1F1A' : color }} />
                     <span className={collapsed ? 'sr-only' : ''}>{label}</span>
-                    {to === '/dashboard' && !collapsed && (
+                    {to === '/diagnostico' && !collapsed && (
                       <span className="ml-auto size-2 rounded-full" style={{ background: '#1A3C34' }} />
                     )}
                   </>

@@ -6,6 +6,7 @@ import { lazy, Suspense, type ReactNode } from 'react'
 const AppShell = lazy(() => import('./layouts/AppShell'))
 const AuthPage = lazy(() => import('./pages/AuthPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
+const DiagnosticoPage = lazy(() => import('./pages/DiagnosticoPage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const CadastroPage = lazy(() => import('./pages/CadastroPage'))
@@ -33,7 +34,7 @@ function CompanyLookupFailure({ onRetry }: { onRetry: () => void }) {
 function LandingRedirect() {
   const { user, loading } = useAuth()
   if (loading) return <LoadingScreen label="Carregando SPWeb Lucro" />
-  return <Navigate to={user ? '/dashboard' : '/login'} replace />
+  return <Navigate to={user ? '/diagnostico' : '/login'} replace />
 }
 
 export default function App() {
@@ -46,6 +47,7 @@ export default function App() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/admin" element={<Protected><AdminPage /></Protected>} />
       <Route element={<Protected><AppShell /></Protected>}>
+        <Route path="/diagnostico" element={<DiagnosticoPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/simulador" element={<SimulatorPage />} />
         <Route path="/cadastro" element={<CadastroPage />} />
