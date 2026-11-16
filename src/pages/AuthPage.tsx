@@ -4,8 +4,8 @@ import { Eye, EyeOff } from 'lucide-react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { InlineNotice } from '../components/Feedback'
 
-// MacBook on a desk — Unsplash free-to-use photo (Gabriel Beaudry)
-const BG_IMAGE = 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1920&q=80'
+// MacBook Pro with financial charts in modern office — Unsplash (Luke Chesser)
+const BG_IMAGE = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1920&q=80'
 
 type Mode = 'login' | 'signup' | 'recovery'
 const copy: Record<Mode, { title: string; subtitle: string; button: string }> = {
