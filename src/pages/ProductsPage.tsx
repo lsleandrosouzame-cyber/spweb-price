@@ -190,11 +190,20 @@ export default function ProductsPage() {
     setCurrentPage(1)
   }, [search, filter, itemsPerPage])
 
+  // Soma das taxas itemizadas carregadas em productFees (mesma fonte exibida no bloco
+  // "Taxas e encargos"), agrupadas por fee_type. Substitui os campos salvos
+  // variable_fees_percent/tax_percent do registro do produto, que podem estar
+  // desatualizados/zerados, garantindo que taxas adicionadas/editadas/removidas
+  // atualizem todos os cards do painel de detalhes em tempo real.
+  const itemizedVariableFeesPercent = productFees.filter(f => f.fee_type === 'variable').reduce((sum, f) => sum + Number(f.percent), 0)
+  const itemizedTaxPercent = productFees.filter(f => f.fee_type === 'tax').reduce((sum, f) => sum + Number(f.percent), 0)
+  const itemizedFeesPercent = itemizedVariableFeesPercent + itemizedTaxPercent
+
   const selectedPricing = selectedDetails ? calculateProductPricing({
     acquisitionCostCents: Number(selectedDetails.acquisition_cost_cents),
     otherCostCents: Number(selectedDetails.other_cost_cents),
-    variableFeesPercent: Number(selectedDetails.variable_fees_percent),
-    taxPercent: Number(selectedDetails.tax_percent),
+    variableFeesPercent: itemizedVariableFeesPercent,
+    taxPercent: itemizedTaxPercent,
     desiredMarginPercent: getEffectiveDesiredMargin(selectedDetails.desired_margin_percent),
     sellingPriceCents: selectedDetails.current_price_cents === null ? undefined : Number(selectedDetails.current_price_cents),
   }) : null
@@ -203,31 +212,30 @@ export default function ProductsPage() {
   const recommendedPricing = selectedDetails && selectedPricing ? calculateProductPricing({
     acquisitionCostCents: Number(selectedDetails.acquisition_cost_cents),
     otherCostCents: Number(selectedDetails.other_cost_cents),
-    variableFeesPercent: Number(selectedDetails.variable_fees_percent),
-    taxPercent: Number(selectedDetails.tax_percent),
+    variableFeesPercent: itemizedVariableFeesPercent,
+    taxPercent: itemizedTaxPercent,
     desiredMarginPercent: getEffectiveDesiredMargin(selectedDetails.desired_margin_percent),
     sellingPriceCents: selectedPricing.recommendedPriceCents ?? undefined,
   }) : null
 
   // Build pie chart data for details panel - BASEADO NO PREÇO RECOMENDADO
+  // Composição do preço em 3 fatias (custo de aquisição, taxas variáveis e margem
+  // de contribuição), que somam 100% do preço recomendado.
   const detailsPieData = useMemo(() => {
     if (!selectedDetails || !selectedPricing || !recommendedPricing) return []
     const price = selectedPricing.recommendedPriceCents ?? 0
-    const acq = Number(selectedDetails.acquisition_cost_cents)
-    const other = Number(selectedDetails.other_cost_cents)
-    const fees = recommendedPricing.feesCents ?? 0
-    const taxes = recommendedPricing.taxesCents ?? 0
+    if (price <= 0) return []
+    const totalCost = Number(selectedDetails.acquisition_cost_cents) + Number(selectedDetails.other_cost_cents)
+    // Taxas variáveis = soma de todas as taxas (variáveis + impostos) sobre o preço recomendado
+    const fees = (price * itemizedFeesPercent) / 100
     const contribution = recommendedPricing.contributionCents ?? 0
-    const pct = (v: number) => price > 0 ? `${((Math.abs(v) / price) * 100).toFixed(1)}` : '0'
-    const data = [
-      { name: 'Custo de aquisição', value: acq, fill: DETAIL_COLORS.acquisition, pct: pct(acq) },
-      { name: 'Custos adicionais', value: other, fill: DETAIL_COLORS.other, pct: pct(other) },
+    const pct = (v: number) => `${((Math.abs(v) / price) * 100).toFixed(1)}`
+    return [
+      { name: 'Custo de aquisição', value: totalCost, fill: DETAIL_COLORS.acquisition, pct: pct(totalCost) },
       { name: 'Taxas variáveis', value: fees, fill: DETAIL_COLORS.fees, pct: pct(fees) },
-      { name: 'Impostos', value: taxes, fill: DETAIL_COLORS.taxes, pct: pct(taxes) },
       { name: 'Margem de contribuição', value: Math.max(0, contribution), fill: contribution >= 0 ? DETAIL_COLORS.contribution : DETAIL_COLORS.contributionNeg, pct: pct(contribution) },
     ].filter(d => d.value > 0)
-    return data
-  }, [selectedDetails, selectedPricing, recommendedPricing])
+  }, [selectedDetails, selectedPricing, recommendedPricing, itemizedFeesPercent])
 
   // Smart footnote for product details - usa margem do PREÇO RECOMENDADO
   function getFootnote(): { text: string; tone: 'ok' | 'warn' | 'bad' } | null {
@@ -1053,7 +1061,7 @@ export default function ProductsPage() {
                 {([
                   ['Custo de aquisição/produção', formatBRLFromCents(Number(selectedDetails.acquisition_cost_cents) + Number(selectedDetails.other_cost_cents)), DETAIL_COLORS.acquisition],
                   ['Custo total', formatBRLFromCents(selectedPricing.totalCostCents), '#6b7280'],
-                  ['Taxas variáveis', `${formatPercent(selectedDetails.variable_fees_percent)} · ${formatBRLFromCents(selectedPricing.feesCents)}`, DETAIL_COLORS.fees],
+                  ['Taxas variáveis', `${formatPercent(itemizedFeesPercent)} · ${formatBRLFromCents(selectedPricing.recommendedPriceCents ? (Number(selectedPricing.recommendedPriceCents) * itemizedFeesPercent) / 100 : 0)}`, DETAIL_COLORS.fees],
                   ['Preço praticado hoje', formatBRLFromCents(selectedDetails.current_price_cents), '#D4AF37'],
                   ['Preço mínimo', formatBRLFromCents(selectedPricing.minimumPriceCents), '#6b7280'],
                   ['Preço recomendado', formatBRLFromCents(selectedPricing.recommendedPriceCents), '#22c55e'],
