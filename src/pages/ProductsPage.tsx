@@ -32,17 +32,7 @@ const DETAIL_COLORS = {
   contributionNeg: '#ef4444', // red — negative contribution
 }
 
-function PieTooltip({ active, payload }: any) {
-  if (!active || !payload?.length) return null
-  const item = payload[0]
-  return (
-    <div className="rounded-xl border border-line bg-graphite px-4 py-3 shadow-xl text-xs z-50">
-      <p className="font-semibold text-paper">{item.name}</p>
-      <p className="mt-1 font-mono" style={{ color: item.payload.fill }}>{formatBRLFromCents(Math.abs(item.value))}</p>
-      <p className="mt-0.5 text-muted">{item.payload.pct ? `${item.payload.pct}% do preço` : ''}</p>
-    </div>
-  )
-}
+
 
 export default function ProductsPage() {
   const { currentCompany, configReady } = useAuth()
@@ -1089,7 +1079,7 @@ export default function ProductsPage() {
                           dataKey="value"
                           nameKey="name"
                           cx="50%" cy="50%"
-                          innerRadius={52} outerRadius={88}
+                          innerRadius="62%" outerRadius="90%"
                           paddingAngle={3}
                           stroke="none"
                           onMouseEnter={(_, index) => setActiveSlice(index)}
@@ -1109,20 +1099,21 @@ export default function ProductsPage() {
                             />
                           ))}
                         </Pie>
-                        <RechartsTooltip content={<PieTooltip/>}/>
+                        <RechartsTooltip content={() => null}/>
                       </PieChart>
                     </ResponsiveContainer>
-                    {/* Center label */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    {/* Center label - dynamic content based on hover state */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-0.5">
                       {activeSlice !== null && detailsPieData[activeSlice] ? (
                         <>
-                          <span className="text-[9px] text-muted text-center px-2 leading-3">{detailsPieData[activeSlice].name}</span>
-                          <span className="font-mono text-sm font-bold mt-1" style={{ color: detailsPieData[activeSlice].fill }}>{detailsPieData[activeSlice].pct}%</span>
+                          <span className="text-[11px] text-[#64748B] text-center px-2 leading-tight">{detailsPieData[activeSlice].name}</span>
+                          <span className="font-mono text-[15px] font-bold leading-tight" style={{ color: detailsPieData[activeSlice].fill || '#0F172A' }}>{formatBRLFromCents(detailsPieData[activeSlice].value)}</span>
+                          <span className="font-mono text-xs font-semibold text-[#475569] leading-tight">{detailsPieData[activeSlice].pct}% do preço</span>
                         </>
                       ) : (
                         <>
-                          <TrendingUp size={16} className="text-gold"/>
-                          <span className="text-[9px] text-muted mt-1">passe o mouse</span>
+                          <span className="font-mono text-[17px] font-bold text-[#1E293B] leading-tight">{formatBRLFromCents(selectedPricing?.recommendedPriceCents ?? 0)}</span>
+                          <span className="text-[11px] text-[#64748B] leading-tight">Preço recomendado</span>
                         </>
                       )}
                     </div>
@@ -1140,7 +1131,7 @@ export default function ProductsPage() {
                           <span className="size-2.5 rounded-full shrink-0" style={{ background: entry.fill }}/>
                           {entry.name}
                         </span>
-                        <span className="font-mono" style={{ color: entry.fill }}>{entry.pct}%</span>
+                        <span className="font-mono tabular-nums" style={{ color: entry.fill }}>{entry.pct}%</span>
                       </div>
                     ))}
                   </div>
