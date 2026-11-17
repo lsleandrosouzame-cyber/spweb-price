@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Clock, AlertTriangle, CheckCircle2, ChevronRight, Package } from 'lucide-react'
+import { Clock, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
@@ -133,31 +133,28 @@ export default function DiagnosticoPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="eyebrow">SPWEB LUCRO / DIAGNÓSTICO</p>
-          <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>
-            Diagnóstico Financeiro
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Raio-X cirúrgico da sua operação e plano de ação do CFO Digital.
-          </p>
-        </div>
+      {/* Header - Single, Clean */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>
+          Diagnóstico Financeiro
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          Raio-X cirúrgico da sua operação e plano de ação do CFO Digital.
+        </p>
       </div>
 
-      {/* Block 1: CFO Verdict */}
-      <div className="surface p-4 sm:p-6 relative overflow-hidden">
-        <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-          {/* Left: Health Score Gauge */}
+      {/* Block 1: CFO Verdict - Compact 3-Zone Layout */}
+      <div className="surface p-6 relative overflow-hidden">
+        <div className="grid gap-6 md:grid-cols-[200px_1fr_280px]">
+          {/* Zone 1: Health Score Gauge */}
           <div className="flex flex-col items-center justify-center text-center">
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={160}>
               <RadialBarChart
                 cx="50%"
                 cy="50%"
                 innerRadius="60%"
                 outerRadius="90%"
-                barSize={16}
+                barSize={14}
                 data={gaugeData}
                 startAngle={180}
                 endAngle={0}
@@ -169,7 +166,7 @@ export default function DiagnosticoPage() {
                 />
               </RadialBarChart>
             </ResponsiveContainer>
-            <div className="mt-[-90px] mb-[60px]">
+            <div className="mt-[-80px] mb-[50px]">
               <p className="text-4xl font-extrabold" style={{ color: healthColor }}>
                 {diagnosis.healthScore}
               </p>
@@ -186,42 +183,54 @@ export default function DiagnosticoPage() {
             </div>
           </div>
 
-          {/* Right: Insights */}
-          <div className="space-y-4">
-            {/* Hour cost pill */}
-            <div className="flex items-center gap-2 text-xs" style={{ color: '#3D5048' }}>
-              <Clock size={14} />
-              <span className="font-semibold">
-                Custo da Hora Parada: {formatBRLFromCents(diagnosis.costPerHourCents)}/h
-              </span>
-              <span className="text-muted">
-                (2h ociosas/dia = -{formatBRLFromCents(diagnosis.idleCost2HoursCents)}/mês)
+          {/* Zone 2: Executive Insights */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#1A3C34' }}>
+              Insights Executivos
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 text-sm">
+                <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
+                <p>
+                  <span className="font-semibold">
+                    Margem de segurança {diagnosis.healthStatus === 'critical' ? 'crítica' : 'atual'}:
+                  </span>{' '}
+                  apenas <strong>{diagnosis.safetyMarginPercent.toFixed(1)}%</strong> (
+                  {formatBRLFromCents(diagnosis.safetyMarginCents)}) acima do ponto de equilíbrio.
+                </p>
+              </div>
+              <div className="flex items-start gap-2 text-sm">
+                <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
+                <p>
+                  Você trabalha <strong>{diagnosis.daysToPayExpenses.toFixed(1)} dias</strong> do mês só para pagar contas.
+                  Sobram <strong>{diagnosis.daysProfitable.toFixed(1)} dias</strong> para lucro real.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Zone 3: Hour Cost Highlight Box */}
+          <div className="rounded-xl p-4 border" style={{ background: '#F8FAFC', borderColor: '#E2E8F0' }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Clock size={16} style={{ color: '#3D5048' }} />
+              <span className="text-xs font-bold uppercase tracking-wider text-muted">
+                Custo da Hora Parada
               </span>
             </div>
-
-            {/* Executive insights */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#1A3C34' }}>
-                Insights Executivos
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 text-sm">
-                  <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
-                  <p>
-                    <span className="font-semibold">
-                      Margem de segurança {diagnosis.healthStatus === 'critical' ? 'crítica' : 'atual'}:
-                    </span>{' '}
-                    apenas <strong>{diagnosis.safetyMarginPercent.toFixed(1)}%</strong> (
-                    {formatBRLFromCents(diagnosis.safetyMarginCents)}) acima do ponto de equilíbrio.
-                  </p>
-                </div>
-                <div className="flex items-start gap-2 text-sm">
-                  <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
-                  <p>
-                    Você trabalha <strong>{diagnosis.daysToPayExpenses.toFixed(1)} dias</strong> do mês só para pagar contas.
-                    Sobram <strong>{diagnosis.daysProfitable.toFixed(1)} dias</strong> para lucro real.
-                  </p>
-                </div>
+            <div className="space-y-2">
+              <div>
+                <p className="text-2xl font-extrabold" style={{ color: '#0D1F1A' }}>
+                  {formatBRLFromCents(diagnosis.costPerHourCents)}/h
+                </p>
+                <p className="text-xs text-muted">Custo fixo por hora produtiva</p>
+              </div>
+              <div className="pt-3 border-t border-line">
+                <p className="text-xs font-semibold" style={{ color: '#DC2626' }}>
+                  Impacto da Ociosidade
+                </p>
+                <p className="text-sm font-bold" style={{ color: '#DC2626' }}>
+                  2h ociosas/dia = -{formatBRLFromCents(diagnosis.idleCost2HoursCents)}/mês
+                </p>
               </div>
             </div>
           </div>
@@ -237,7 +246,7 @@ export default function DiagnosticoPage() {
           </h2>
           <div className="mt-4 h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData} margin={{ top: 10, right: 10, bottom: 20, left: 10 }}>
+              <BarChart data={comparisonData} margin={{ top: 20, right: 10, bottom: 20, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="category" tick={{ fontSize: 11, fill: '#6B7E78' }} />
                 <YAxis tick={{ fontSize: 11, fill: '#6B7E78' }} />
@@ -250,24 +259,38 @@ export default function DiagnosticoPage() {
                   }}
                   formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                 />
-                <Bar dataKey="atual" fill="#64748B" name="Atual" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="meta" fill="#10B981" name="Meta" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="atual" fill="#64748B" name="Atual" radius={[6, 6, 0, 0]} barSize={32}>
+                  {/* @ts-ignore */}
+                  {comparisonData.map((entry, index) => (
+                    <text
+                      key={`label-atual-${index}`}
+                      x={0}
+                      y={0}
+                      fill="#64748B"
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fontSize={10}
+                      fontWeight="600"
+                    />
+                  ))}
+                </Bar>
+                <Bar dataKey="meta" fill="#10B981" name="Meta" radius={[6, 6, 0, 0]} barSize={32} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Table */}
-          <div className="mt-4 space-y-2 text-sm">
+          <div className="mt-4 space-y-2 text-sm font-mono">
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <span className="font-semibold">Faturamento</span>
               <div className="flex items-center gap-3">
-                <span className="text-muted">{formatBRLFromCents(currentRevenue)}</span>
+                <span className="text-muted tabular-nums">{formatBRLFromCents(currentRevenue)}</span>
                 <span>→</span>
-                <span className="font-semibold" style={{ color: '#10B981' }}>
+                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
                   {formatBRLFromCents(diagnosis.idealRevenueCents)}
                 </span>
                 {diagnosis.revenueIncreaseNeeded > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 tabular-nums">
                     +{diagnosis.revenueIncreaseNeeded.toFixed(0)}%
                   </span>
                 )}
@@ -276,13 +299,13 @@ export default function DiagnosticoPage() {
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <span className="font-semibold">Despesas Fixas</span>
               <div className="flex items-center gap-3">
-                <span className="text-muted">{formatBRLFromCents(currentExpenses)}</span>
+                <span className="text-muted tabular-nums">{formatBRLFromCents(currentExpenses)}</span>
                 <span>→</span>
-                <span className="font-semibold" style={{ color: '#10B981' }}>
+                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
                   {formatBRLFromCents(diagnosis.idealExpensesCents)}
                 </span>
                 {diagnosis.expenseCutNeeded > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 tabular-nums">
                     -{formatBRLFromCents(diagnosis.expenseCutNeeded)}
                   </span>
                 )}
@@ -291,11 +314,11 @@ export default function DiagnosticoPage() {
             <div className="flex items-center justify-between">
               <span className="font-semibold">Lucro Líquido</span>
               <div className="flex items-center gap-3">
-                <span className="text-muted">
+                <span className="text-muted tabular-nums">
                   {formatBRLFromCents(diagnosis.netProfitCents)} [{diagnosis.netProfitPercent.toFixed(1)}%]
                 </span>
                 <span>→</span>
-                <span className="font-semibold" style={{ color: '#10B981' }}>
+                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
                   {formatBRLFromCents(diagnosis.idealProfitCents)} [{operatingSettings?.default_desired_margin_percent ?? 30}%]
                 </span>
               </div>
@@ -377,59 +400,128 @@ export default function DiagnosticoPage() {
         </div>
       </div>
 
-      {/* Block 3: Product Mix + Action Plan */}
+      {/* Block 3: Revenue Distribution + Action Plan */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Left: Product Mix */}
+        {/* Left: Para Onde Vai Seu Faturamento */}
         <div className="surface p-4 sm:p-6">
           <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
-            Mix de Sobrevivência
+            Para Onde Vai Seu Faturamento
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Para pagar {formatBRLFromCents(currentExpenses)}, precisa vender:
+            Distribuição de {formatBRLFromCents(currentRevenue)} previsto no mês
           </p>
 
-          {diagnosis.lowestMarginProduct && diagnosis.highestMarginProduct ? (
-            <div className="mt-4 flex items-center gap-3">
-              {/* Lowest margin */}
-              <div className="flex-1 bg-red-50 border border-red-200 rounded-xl p-4 text-center">
-                <Package size={20} className="mx-auto text-red-600" />
-                <p className="mt-2 text-2xl font-extrabold text-red-900">
-                  {diagnosis.lowestMarginProduct.quantityToPayExpenses.toLocaleString('pt-BR')}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-red-800 truncate">
-                  {diagnosis.lowestMarginProduct.name}
-                </p>
-                <span className="mt-2 inline-block px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold">
-                  {diagnosis.lowestMarginProduct.marginPercent.toFixed(1)}% margem
-                </span>
+          {currentRevenue > 0 ? (
+            <>
+              {/* Stacked Bar */}
+              <div className="mt-4 space-y-2">
+                <div className="relative h-12 rounded-lg overflow-hidden" style={{ background: '#E2E8F0' }}>
+                  {/* Custos Variáveis */}
+                  <div
+                    className="absolute top-0 left-0 h-full flex items-center justify-center text-white text-xs font-bold"
+                    style={{
+                      background: '#64748B',
+                      width: `${variableCostPercent}%`
+                    }}
+                  >
+                    {variableCostPercent > 8 && `${variableCostPercent.toFixed(1)}%`}
+                  </div>
+                  {/* Despesas Fixas */}
+                  <div
+                    className="absolute top-0 h-full flex items-center justify-center text-white text-xs font-bold"
+                    style={{
+                      background: '#F59E0B',
+                      left: `${variableCostPercent}%`,
+                      width: `${((currentExpenses / currentRevenue) * 100).toFixed(1)}%`
+                    }}
+                  >
+                    {(currentExpenses / currentRevenue) * 100 > 8 && `${((currentExpenses / currentRevenue) * 100).toFixed(1)}%`}
+                  </div>
+                  {/* Lucro Líquido */}
+                  <div
+                    className="absolute top-0 right-0 h-full flex items-center justify-center text-white text-xs font-bold"
+                    style={{
+                      background: '#10B981',
+                      width: `${diagnosis.netProfitPercent.toFixed(1)}%`
+                    }}
+                  >
+                    {diagnosis.netProfitPercent > 8 && `${diagnosis.netProfitPercent.toFixed(1)}%`}
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="size-3 rounded" style={{ background: '#64748B' }} />
+                    <div>
+                      <p className="font-semibold">Custos Variáveis</p>
+                      <p className="text-muted">{formatBRLFromCents((currentRevenue * variableCostPercent) / 100)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="size-3 rounded" style={{ background: '#F59E0B' }} />
+                    <div>
+                      <p className="font-semibold">Despesas Fixas</p>
+                      <p className="text-muted">{formatBRLFromCents(currentExpenses)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="size-3 rounded" style={{ background: '#10B981' }} />
+                    <div>
+                      <p className="font-semibold">Lucro Líquido</p>
+                      <p className="text-muted">{formatBRLFromCents(diagnosis.netProfitCents)}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* VS */}
-              <div className="shrink-0 text-sm font-bold text-muted">vs</div>
-
-              {/* Highest margin */}
-              <div className="flex-1 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
-                <Package size={20} className="mx-auto text-emerald-600" />
-                <p className="mt-2 text-2xl font-extrabold text-emerald-900">
-                  {diagnosis.highestMarginProduct.quantityToPayExpenses.toLocaleString('pt-BR')}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-emerald-800 truncate">
-                  {diagnosis.highestMarginProduct.name}
-                </p>
-                <span className="mt-2 inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">
-                  {diagnosis.highestMarginProduct.marginPercent.toFixed(1)}% margem
-                </span>
+              {/* Top 3 Expense Villains */}
+              <div className="mt-4 pt-4 border-t border-line">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
+                  Top 3 Vilões do Orçamento
+                </h3>
+                <div className="space-y-2">
+                  {expenses
+                    .sort((a, b) => (b.amount_cents ?? 0) - (a.amount_cents ?? 0))
+                    .slice(0, 3)
+                    .map((exp, idx) => {
+                      const value = exp.amount_cents ?? 0
+                      const percentOfRevenue = currentRevenue > 0 ? (value / currentRevenue) * 100 : 0
+                      return (
+                        <div key={exp.id} className="flex items-center gap-3">
+                          <div
+                            className="size-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            style={{ background: idx === 0 ? '#DC2626' : idx === 1 ? '#F59E0B' : '#64748B' }}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">{exp.description}</p>
+                            <p className="text-xs text-muted">{exp.category}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold">{formatBRLFromCents(value)}</p>
+                            <p className="text-xs text-muted">{percentOfRevenue.toFixed(1)}% do FAT</p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
               </div>
-            </div>
+
+              {/* Critical Products Alert */}
+              {diagnosis.criticalProductsCount > 0 && (
+                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                  <strong>{diagnosis.criticalProductsCount} produtos</strong> com margem abaixo da mínima necessária.{' '}
+                  <Link to="/precificacao" className="font-semibold underline hover:text-amber-700">
+                    Revisar preços →
+                  </Link>
+                </div>
+              )}
+            </>
           ) : (
             <div className="mt-4 text-center text-sm text-muted py-8">
-              Nenhum produto cadastrado com margem positiva.
-            </div>
-          )}
-
-          {diagnosis.criticalProductsCount > 0 && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
-              <strong>{diagnosis.criticalProductsCount} produtos críticos</strong> com margem abaixo da mínima necessária.
+              Configure a previsão de faturamento em Configurações para visualizar a distribuição.
             </div>
           )}
         </div>
