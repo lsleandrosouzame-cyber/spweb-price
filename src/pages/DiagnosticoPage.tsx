@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Clock, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
+import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { LoadingScreen } from '../components/Feedback'
 import { listExpenses, listProducts, listVariableCosts, readOperatingSettings, listAssetsLiabilities } from '../services/companyData'
@@ -130,6 +130,27 @@ export default function DiagnosticoPage() {
   const totalAssets = assetsLiabilities.filter(a => a.type === 'asset').reduce((sum, a) => sum + (a.amount_cents ?? 0), 0)
   const totalLiabilities = assetsLiabilities.filter(a => a.type === 'liability').reduce((sum, a) => sum + (a.amount_cents ?? 0), 0)
   const missingPatrimony = assetsLiabilities.length === 0 || (totalAssets === 0 && totalLiabilities === 0)
+
+  // Calculate Real Average Profit Margin (based on current_price_cents, not recommended)
+  const productsWithProfit = products.filter(p => (p.current_price_cents ?? 0) > 0)
+  const realAverageProfitData = productsWithProfit.length > 0 ? productsWithProfit.reduce((acc, p) => {
+    const price = p.current_price_cents ?? 0
+    const cost = p.acquisition_cost_cents ?? 0
+    const variableFees = price * ((p.variable_fees_percent ?? 0) / 100)
+    const taxes = price * ((p.tax_percent ?? 0) / 100)
+    const profit = price - cost - variableFees - taxes
+    
+    return {
+      totalProfit: acc.totalProfit + profit,
+      totalRevenue: acc.totalRevenue + price,
+      count: acc.count + 1
+    }
+  }, { totalProfit: 0, totalRevenue: 0, count: 0 }) : null
+
+  const realAverageProfitPercent = realAverageProfitData && realAverageProfitData.totalRevenue > 0 
+    ? (realAverageProfitData.totalProfit / realAverageProfitData.totalRevenue) * 100 
+    : 0
+  const realAverageProfitCents = realAverageProfitData ? Math.round(realAverageProfitData.totalProfit / realAverageProfitData.count) : 0
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -460,6 +481,93 @@ export default function DiagnosticoPage() {
         </div>
       </div>
 
+      {/* Block 2.5: Real Average Profit Margin */}
+      <div className="surface p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-sm sm:text-base font-bold" style={{ color: '#0D1F1A' }}>
+              Média de Lucro Real dos Produtos
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-muted">
+              Baseado nos preços praticados atualmente ({productsWithProfit.length} produtos)
+            </p>
+          </div>
+        </div>
+
+        {productsWithProfit.length > 0 ? (
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Average Profit Percent */}
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                Lucro Médio %
+              </p>
+              <p className="mt-2 text-3xl font-extrabold" style={{ color: '#059669' }}>
+                {realAverageProfitPercent.toFixed(1)}%
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                {realAverageProfitPercent >= (operatingSettings?.default_desired_margin_percent ?? 30) 
+                  ? '✓ Acima da meta' 
+                  : '⚠ Abaixo da meta'}
+              </p>
+            </div>
+
+            {/* Average Profit Value */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+              <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+                Lucro Médio R$
+              </p>
+              <p className="mt-2 text-2xl font-extrabold text-blue-900">
+                {formatBRLFromCents(realAverageProfitCents)}
+              </p>
+              <p className="mt-1 text-xs text-blue-700">
+                por produto vendido
+              </p>
+            </div>
+
+            {/* Total Products */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+              <p className="text-xs font-bold uppercase tracking-wider text-purple-700">
+                Produtos Analisados
+              </p>
+              <p className="mt-2 text-3xl font-extrabold text-purple-900">
+                {productsWithProfit.length}
+              </p>
+              <p className="mt-1 text-xs text-purple-700">
+                com preço cadastrado
+              </p>
+            </div>
+
+            {/* Comparison with Target */}
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-4 border border-amber-200">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+                vs. Meta de Lucro
+              </p>
+              <p className="mt-2 text-3xl font-extrabold text-amber-900">
+                {realAverageProfitPercent >= (operatingSettings?.default_desired_margin_percent ?? 30)
+                  ? `+${(realAverageProfitPercent - (operatingSettings?.default_desired_margin_percent ?? 30)).toFixed(1)}`
+                  : `${(realAverageProfitPercent - (operatingSettings?.default_desired_margin_percent ?? 30)).toFixed(1)}`}
+                <span className="text-xl">pp</span>
+              </p>
+              <p className="mt-1 text-xs text-amber-700">
+                pontos percentuais
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-sm text-muted">
+            Nenhum produto com preço cadastrado. Acesse a aba <Link to="/precificacao" className="font-semibold underline">Precificação</Link> para adicionar produtos.
+          </div>
+        )}
+
+        {/* Alert if below target */}
+        {productsWithProfit.length > 0 && realAverageProfitPercent < (operatingSettings?.default_desired_margin_percent ?? 30) && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+            <strong>⚠ Atenção:</strong> Sua margem média real está {((operatingSettings?.default_desired_margin_percent ?? 30) - realAverageProfitPercent).toFixed(1)}pp abaixo da meta de {operatingSettings?.default_desired_margin_percent ?? 30}%. 
+            Considere revisar os preços praticados ou reduzir custos.
+          </div>
+        )}
+      </div>
+
       {/* Block 3: Revenue Distribution + Action Plan */}
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Left: Para Onde Vai Seu Faturamento */}
@@ -538,17 +646,93 @@ export default function DiagnosticoPage() {
               {/* Top 3 Expense Villains */}
               <div className="mt-4 pt-3 sm:pt-4 border-t border-line">
                 <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted mb-2 sm:mb-3">
-                  Top 3 Vilões do Orçamento
+                  Distribuição de Despesas Fixas
                 </h3>
-                <div className="space-y-2">
+                
+                {/* Pie Chart - Fixed Expenses Distribution */}
+                <div className="h-[200px] sm:h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <defs>
+                        <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#DC2626" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
+                        </linearGradient>
+                        <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#D97706" stopOpacity={1} />
+                        </linearGradient>
+                        <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#64748B" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#475569" stopOpacity={1} />
+                        </linearGradient>
+                        <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#059669" stopOpacity={1} />
+                        </linearGradient>
+                        <linearGradient id="grad4" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#7C3AED" stopOpacity={1} />
+                        </linearGradient>
+                        <linearGradient id="grad5" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#06B6D4" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="#0891B2" stopOpacity={1} />
+                        </linearGradient>
+                      </defs>
+                      <Pie
+                        data={expenses.map((exp, idx) => ({
+                          name: exp.description,
+                          value: exp.amount_cents ?? 0,
+                          percent: currentExpenses > 0 ? ((exp.amount_cents ?? 0) / currentExpenses * 100) : 0,
+                          fill: `url(#grad${idx % 6})`
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={60}
+                        innerRadius={35}
+                        dataKey="value"
+                        label={({ percent }) => `${percent.toFixed(1)}%`}
+                        labelLine={{ stroke: '#64748B', strokeWidth: 1 }}
+                      >
+                        {expenses.map((_, idx) => (
+                          <Cell key={`cell-${idx}`} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip
+                        contentStyle={{
+                          background: 'linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%)',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: 12,
+                          fontSize: 12,
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                          padding: '8px 12px'
+                        }}
+                        formatter={(value: number, name: string, props: any) => [
+                          <>
+                            <div className="font-bold">{formatBRLFromCents(value)}</div>
+                            <div className="text-xs text-muted">{props.payload.percent.toFixed(1)}% das despesas</div>
+                          </>,
+                          name
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Top 3 List Below Chart */}
+                <div className="mt-3 space-y-2">
+                  <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted">
+                    Top 3 Vilões do Orçamento
+                  </p>
                   {expenses
                     .sort((a, b) => (b.amount_cents ?? 0) - (a.amount_cents ?? 0))
                     .slice(0, 3)
                     .map((exp, idx) => {
                       const value = exp.amount_cents ?? 0
+                      const percentOfTotal = currentExpenses > 0 ? (value / currentExpenses) * 100 : 0
                       const percentOfRevenue = currentRevenue > 0 ? (value / currentRevenue) * 100 : 0
                       return (
-                        <div key={exp.id} className="flex items-center gap-2 sm:gap-3">
+                        <div key={exp.id} className="flex items-center gap-2 sm:gap-3 bg-slate-50 rounded-lg p-2">
                           <div
                             className="size-5 sm:size-6 shrink-0 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white"
                             style={{ background: idx === 0 ? '#DC2626' : idx === 1 ? '#F59E0B' : '#64748B' }}
@@ -561,6 +745,9 @@ export default function DiagnosticoPage() {
                           </div>
                           <div className="text-right shrink-0">
                             <p className="text-xs sm:text-sm font-bold">{formatBRLFromCents(value)}</p>
+                            <p className="text-[10px] sm:text-xs font-semibold" style={{ color: '#F59E0B' }}>
+                              {percentOfTotal.toFixed(1)}% das despesas
+                            </p>
                             <p className="text-[10px] sm:text-xs text-muted">{percentOfRevenue.toFixed(1)}% do FAT</p>
                           </div>
                         </div>
