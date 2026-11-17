@@ -279,47 +279,58 @@ export default function DiagnosticoPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Table */}
-          <div className="mt-4 space-y-2 text-sm font-mono">
-            <div className="flex items-center justify-between pb-2 border-b border-line">
-              <span className="font-semibold">Faturamento</span>
-              <div className="flex items-center gap-3">
-                <span className="text-muted tabular-nums">{formatBRLFromCents(currentRevenue)}</span>
-                <span>→</span>
-                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
-                  {formatBRLFromCents(diagnosis.idealRevenueCents)}
-                </span>
+          {/* Table - Columnar Layout */}
+          <div className="mt-4">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-sm">
+              {/* Header Row */}
+              <div className="font-bold text-xs uppercase tracking-wider text-muted"></div>
+              <div className="font-bold text-xs uppercase tracking-wider text-center" style={{ color: '#64748B' }}>
+                Realidade
+              </div>
+              <div className="font-bold text-xs uppercase tracking-wider text-center" style={{ color: '#10B981' }}>
+                Meta
+              </div>
+
+              {/* Faturamento */}
+              <div className="font-semibold py-2 border-t border-line">Faturamento</div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
+                {formatBRLFromCents(currentRevenue)}
+              </div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums font-semibold" style={{ color: '#10B981' }}>
+                {formatBRLFromCents(diagnosis.idealRevenueCents)}
                 {diagnosis.revenueIncreaseNeeded > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 tabular-nums">
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
                     +{diagnosis.revenueIncreaseNeeded.toFixed(0)}%
                   </span>
                 )}
               </div>
-            </div>
-            <div className="flex items-center justify-between pb-2 border-b border-line">
-              <span className="font-semibold">Despesas Fixas</span>
-              <div className="flex items-center gap-3">
-                <span className="text-muted tabular-nums">{formatBRLFromCents(currentExpenses)}</span>
-                <span>→</span>
-                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
-                  {formatBRLFromCents(diagnosis.idealExpensesCents)}
-                </span>
+
+              {/* Despesas Fixas */}
+              <div className="font-semibold py-2 border-t border-line">Despesas Fixas</div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
+                {formatBRLFromCents(currentExpenses)}
+              </div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums font-semibold" style={{ color: '#10B981' }}>
+                {formatBRLFromCents(diagnosis.idealExpensesCents)}
                 {diagnosis.expenseCutNeeded > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 tabular-nums">
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-700">
                     -{formatBRLFromCents(diagnosis.expenseCutNeeded)}
                   </span>
                 )}
               </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">Lucro Líquido</span>
-              <div className="flex items-center gap-3">
-                <span className="text-muted tabular-nums">
-                  {formatBRLFromCents(diagnosis.netProfitCents)} [{diagnosis.netProfitPercent.toFixed(1)}%]
+
+              {/* Lucro Líquido */}
+              <div className="font-semibold py-2 border-t border-line">Lucro Líquido</div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
+                {formatBRLFromCents(diagnosis.netProfitCents)}
+                <span className="ml-1 text-xs">
+                  [{diagnosis.netProfitPercent.toFixed(1)}%]
                 </span>
-                <span>→</span>
-                <span className="font-semibold tabular-nums" style={{ color: '#10B981' }}>
-                  {formatBRLFromCents(diagnosis.idealProfitCents)} [{operatingSettings?.default_desired_margin_percent ?? 30}%]
+              </div>
+              <div className="py-2 border-t border-line text-right font-mono tabular-nums font-semibold" style={{ color: '#10B981' }}>
+                {formatBRLFromCents(diagnosis.idealProfitCents)}
+                <span className="ml-1 text-xs">
+                  [{operatingSettings?.default_desired_margin_percent ?? 30}%]
                 </span>
               </div>
             </div>
