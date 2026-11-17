@@ -301,7 +301,7 @@ export default function DiagnosticoPage() {
                   fill="url(#gradientAtual)" 
                   name="Realidade" 
                   radius={[8, 8, 0, 0]} 
-                  barSize={28}
+                  barSize={22}
                   label={{
                     position: 'top',
                     fill: '#475569',
@@ -315,7 +315,7 @@ export default function DiagnosticoPage() {
                   fill="url(#gradientMeta)" 
                   name="Meta" 
                   radius={[8, 8, 0, 0]} 
-                  barSize={28}
+                  barSize={22}
                   label={{
                     position: 'top',
                     fill: '#059669',
@@ -330,7 +330,7 @@ export default function DiagnosticoPage() {
 
           {/* Table - Columnar Layout */}
           <div className="mt-4 overflow-x-auto">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 text-xs sm:text-sm min-w-0">
+            <div className="grid grid-cols-[minmax(80px,1fr)_auto_auto] gap-2 sm:gap-3 text-xs sm:text-sm min-w-0">
               {/* Header Row */}
               <div className="font-bold text-xs uppercase tracking-wider text-muted"></div>
               <div className="font-bold text-xs uppercase tracking-wider text-center" style={{ color: '#64748B' }}>
@@ -341,7 +341,7 @@ export default function DiagnosticoPage() {
               </div>
 
               {/* Faturamento */}
-              <div className="font-semibold py-2 border-t border-line">Faturamento</div>
+              <div className="font-semibold py-2 border-t border-line truncate">Faturamento</div>
               <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
                 {formatBRLFromCents(currentRevenue)}
               </div>
@@ -355,7 +355,7 @@ export default function DiagnosticoPage() {
               </div>
 
               {/* Despesas Fixas */}
-              <div className="font-semibold py-2 border-t border-line">Despesas Fixas</div>
+              <div className="font-semibold py-2 border-t border-line truncate">Despesas Fixas</div>
               <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
                 {formatBRLFromCents(currentExpenses)}
               </div>
@@ -369,7 +369,7 @@ export default function DiagnosticoPage() {
               </div>
 
               {/* Lucro Líquido */}
-              <div className="font-semibold py-2 border-t border-line">Lucro Líquido</div>
+              <div className="font-semibold py-2 border-t border-line truncate">Lucro Líquido</div>
               <div className="py-2 border-t border-line text-right font-mono tabular-nums text-muted">
                 {formatBRLFromCents(diagnosis.netProfitCents)}
                 <span className="ml-1 text-xs">

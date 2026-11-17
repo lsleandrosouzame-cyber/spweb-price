@@ -517,16 +517,16 @@ export default function ProductsPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow text-gold">CATÁLOGO FINANCEIRO</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">Produtos e serviços</h2>
-          <p className="mt-2 text-sm text-muted">Veja quanto cada venda contribui para a operação.</p>
+          <h2 className="mt-2 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Produtos e serviços</h2>
+          <p className="mt-2 text-xs sm:text-sm text-muted">Veja quanto cada venda contribui para a operação.</p>
         </div>
-        {tab === 'products' && panel === 'list' && <button className="btn-primary w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
+        {tab === 'products' && panel === 'list' && <button className="btn-primary w-full sm:w-fit" onClick={startCreate}><Plus size={16}/>Cadastrar produto</button>}
       </div>
 
-      <div className="inline-flex rounded-xl border border-line bg-panel p-1">
-        <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'products' ? 'bg-gold text-black' : 'text-muted'}`}><Package size={14} className="mr-2 inline"/>Produtos</button>
-        <button onClick={() => setTab('services')} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'services' ? 'bg-gold text-black' : 'text-muted'}`}><Wrench size={14} className="mr-2 inline"/>Serviços</button>
-        <button onClick={() => { setTab('inventory'); setPanel('list') }} className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'inventory' ? 'bg-gold text-black' : 'text-muted'}`}><Box size={14} className="mr-2 inline"/>Inventário</button>
+      <div className="inline-flex flex-wrap rounded-xl border border-line bg-panel p-1 gap-1">
+        <button onClick={() => { setTab('products'); setPanel('list') }} className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'products' ? 'bg-gold text-black' : 'text-muted'}`}><Package size={14} className="mr-1 sm:mr-2 inline"/>Produtos</button>
+        <button onClick={() => setTab('services')} className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'services' ? 'bg-gold text-black' : 'text-muted'}`}><Wrench size={14} className="mr-1 sm:mr-2 inline"/>Serviços</button>
+        <button onClick={() => { setTab('inventory'); setPanel('list') }} className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'inventory' ? 'bg-gold text-black' : 'text-muted'}`}><Box size={14} className="mr-1 sm:mr-2 inline"/>Inventário</button>
       </div>
 
       {tab === 'services' ? (
@@ -541,14 +541,14 @@ export default function ProductsPage() {
           {notice && <InlineNotice tone="success">{notice}</InlineNotice>}
           {error && <InlineNotice>{error}</InlineNotice>}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/><input className="field pl-10" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar produto"/></label>
-            <select aria-label="Filtrar situação da margem" className="field sm:w-56" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
+            <label className="relative flex-1"><Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"/><input className="field pl-10 text-sm sm:text-base p-2 sm:p-3" value={search} onChange={e => setSearch(e.target.value)} placeholder="Pesquisar produto"/></label>
+            <select aria-label="Filtrar situação da margem" className="field sm:w-56 text-sm sm:text-base p-2 sm:p-3" value={filter} onChange={e => setFilter(e.target.value as typeof filter)}>
               <option value="todos">Todas as margens</option><option value="saudavel">Margem saudável</option><option value="atencao">Abaixo da desejada</option><option value="negativa">Margem negativa</option>
             </select>
             {/* Items per page selector */}
             <select 
               aria-label="Itens por página" 
-              className="field sm:w-32" 
+              className="field sm:w-32 text-sm sm:text-base p-2 sm:p-3" 
               value={itemsPerPage} 
               onChange={e => setItemsPerPage(Number(e.target.value))}
             >
@@ -559,35 +559,35 @@ export default function ProductsPage() {
             <div className="inline-flex rounded-xl border border-line bg-panel p-1">
               <button 
                 onClick={() => setViewMode('cards')} 
-                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'cards' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                className={`rounded-lg px-2 sm:px-3 py-2 transition-colors ${viewMode === 'cards' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
                 title="Visualizar em cards"
                 aria-label="Visualizar em cards"
               >
-                <LayoutGrid size={16} />
+                <LayoutGrid size={14} className="sm:size-4" />
               </button>
               <button 
                 onClick={() => setViewMode('list')} 
-                className={`rounded-lg px-3 py-2 transition-colors ${viewMode === 'list' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
+                className={`rounded-lg px-2 sm:px-3 py-2 transition-colors ${viewMode === 'list' ? 'bg-gold text-black' : 'text-muted hover:text-paper'}`}
                 title="Visualizar em lista"
                 aria-label="Visualizar em lista"
               >
-                <List size={16} />
+                <List size={14} className="sm:size-4" />
               </button>
             </div>
           </div>
           {rows.length === 0
             ? <EmptyState title="Seu catálogo começa aqui" description="Cadastre um produto com custos detalhados e Preço praticado hoje." action={<button className="btn-primary" onClick={startCreate}><Plus size={15}/>Cadastrar primeiro produto</button>}/>
             : <div className="space-y-4">
-                <div className="surface px-5 py-4">
+                <div className="surface px-4 sm:px-5 py-3 sm:py-4">
                   <div className="flex items-center justify-between">
-                    <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-xs text-muted">{filtered.length} produto(s) {filtered.length !== rows.length && `de ${rows.length} no total`} · Página {currentPage} de {totalPages}</p></div>
-                    <Package className="text-gold" size={18}/>
+                    <div><p className="eyebrow">PRODUTOS DA EMPRESA</p><p className="mt-1 text-[10px] sm:text-xs text-muted">{filtered.length} produto(s) {filtered.length !== rows.length && `de ${rows.length} no total`} · Página {currentPage} de {totalPages}</p></div>
+                    <Package className="text-gold size-4 sm:size-[18px]"/>
                   </div>
                 </div>
 
                 {/* Grid de cards OU tabela de lista */}
                 {viewMode === 'cards' ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {paginatedRows.map(row => {
                       const effectiveMargin = getEffectiveDesiredMargin(row.desired_margin_percent)
                       const result = row.current_price_cents ? calculateProductPricing({ acquisitionCostCents: Number(row.acquisition_cost_cents), otherCostCents: Number(row.other_cost_cents), variableFeesPercent: Number(row.variable_fees_percent), taxPercent: Number(row.tax_percent), desiredMarginPercent: effectiveMargin, sellingPriceCents: Number(row.current_price_cents) }) : null
@@ -740,16 +740,16 @@ export default function ProductsPage() {
 
                 {/* Pagination controls */}
                 {totalPages > 1 && (
-                  <div className="surface px-5 py-4">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <p className="text-xs text-muted">
+                  <div className="surface px-4 sm:px-5 py-3 sm:py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                      <p className="text-[10px] sm:text-xs text-muted">
                         Exibindo {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filtered.length)} de {filtered.length} produto(s)
                       </p>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                           disabled={currentPage === 1}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           Anterior
                         </button>
@@ -771,7 +771,7 @@ export default function ProductsPage() {
                               <button
                                 key={pageNum}
                                 onClick={() => setCurrentPage(pageNum)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                                className={`px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg border transition-colors ${
                                   currentPage === pageNum
                                     ? 'border-gold bg-gold text-black'
                                     : 'border-line bg-panel hover:bg-teal-light/20'
@@ -786,7 +786,7 @@ export default function ProductsPage() {
                         <button
                           onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                           disabled={currentPage === totalPages}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          className="px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg border border-line bg-panel hover:bg-teal-light/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
                           Próxima
                         </button>

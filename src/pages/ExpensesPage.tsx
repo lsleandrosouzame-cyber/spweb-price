@@ -503,8 +503,8 @@ export default function ExpensesPage() {
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <p className="eyebrow text-gold">CUSTO DA OPERAÇÃO</p>
-        <h2 className="mt-2 text-3xl font-bold tracking-tight">Lançamentos</h2>
-        <p className="mt-2 text-sm text-muted">Dashboard completo de custos fixos, variáveis e capacidade produtiva.</p>
+        <h2 className="mt-2 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Lançamentos</h2>
+        <p className="mt-2 text-xs sm:text-sm text-muted">Dashboard completo de custos fixos, variáveis e capacidade produtiva.</p>
       </div>
       <label className="block">
         <span className="mb-1 block text-[10px] text-muted">Período de referência</span>
@@ -519,219 +519,225 @@ export default function ExpensesPage() {
     {error && !showExpenseForm && !showSaleForm && !showVariableCostForm && !showAssetLiabilityForm && <InlineNotice>{error}</InlineNotice>}
 
     {/* Tabs de navegação - mesmo estilo de Produtos/Serviços */}
-    <div className="inline-flex rounded-xl border border-line bg-panel p-1">
+    <div className="inline-flex flex-wrap rounded-xl border border-line bg-panel p-1 gap-1">
       <button 
         onClick={() => setTab('expenses')} 
-        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-black' : 'text-muted'}`}
+        className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'expenses' ? 'bg-gold text-black' : 'text-muted'}`}
       >
-        <ReceiptText size={14} className="mr-2 inline"/>Despesas fixas
+        <ReceiptText size={14} className="mr-1 sm:mr-2 inline"/>
+        <span className="hidden sm:inline">Despesas fixas</span>
+        <span className="inline sm:hidden">Despesas</span>
       </button>
       <button 
         onClick={() => setTab('variableCosts')} 
-        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'variableCosts' ? 'bg-gold text-black' : 'text-muted'}`}
+        className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'variableCosts' ? 'bg-gold text-black' : 'text-muted'}`}
       >
-        <TrendingDown size={14} className="mr-2 inline"/>Custos variáveis
+        <TrendingDown size={14} className="mr-1 sm:mr-2 inline"/>
+        <span className="hidden sm:inline">Custos variáveis</span>
+        <span className="inline sm:hidden">Custos</span>
       </button>
       <button 
         onClick={() => setTab('assetsLiabilities')} 
-        className={`rounded-lg px-4 py-2.5 text-xs font-medium transition-colors ${tab === 'assetsLiabilities' ? 'bg-gold text-black' : 'text-muted'}`}
+        className={`rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium transition-colors ${tab === 'assetsLiabilities' ? 'bg-gold text-black' : 'text-muted'}`}
       >
-        <Scale size={14} className="mr-2 inline"/>Ativos/Passivos
+        <Scale size={14} className="mr-1 sm:mr-2 inline"/>
+        <span className="hidden sm:inline">Ativos/Passivos</span>
+        <span className="inline sm:hidden">A/P</span>
       </button>
     </div>
 
     {/* ══════════════════════════════════════════════════════════════
         DASHBOARD CONSOLIDADO — Todos os KPIs no topo
     ══════════════════════════════════════════════════════════════ */}
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {/* Despesas fixas mensais */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Despesas fixas mensais</p>
-          <ReceiptText size={15} className="text-gold"/>
+          <p className="text-[10px] sm:text-xs text-muted">Despesas fixas mensais</p>
+          <ReceiptText size={14} className="text-gold sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">{formatBRLFromCents(fixedTotal)}</p>
-        <p className="mt-1 text-[10px] text-muted">{expenseRows.length} despesa(s) cadastradas</p>
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">{formatBRLFromCents(fixedTotal)}</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">{expenseRows.length} despesa(s) cadastradas</p>
       </div>
 
       {/* Custos variáveis totais */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Custos variáveis</p>
-          <TrendingDown size={15} className="text-teal-border"/>
+          <p className="text-[10px] sm:text-xs text-muted">Custos variáveis</p>
+          <TrendingDown size={14} className="text-teal-border sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {totalVariableCostsPercent.toFixed(2)}%
         </p>
-        <p className="mt-1 text-[10px] text-muted">
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">
           {variableCosts.filter(vc => vc.percent_value !== null).length} custo(s) cadastrado(s)
         </p>
       </div>
 
       {/* Pró-labore */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Pró-labore mensal</p>
-          <CircleDollarSign size={15} className="text-emerald-500"/>
+          <p className="text-[10px] sm:text-xs text-muted">Pró-labore mensal</p>
+          <CircleDollarSign size={14} className="text-emerald-500 sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {proLaboreCents ? formatBRLFromCents(proLaboreCents) : 'R$ 0,00'}
         </p>
-        <p className="mt-1 text-[10px] text-muted">
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">
           {proLaborePerDayCents ? `${formatBRLFromCents(proLaborePerDayCents)}/dia` : 'Configure abaixo'}
         </p>
       </div>
 
       {/* Previsão de faturamento */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Previsão de faturamento</p>
-          <BarChart3 size={15} className="text-blue-400"/>
+          <p className="text-[10px] sm:text-xs text-muted">Previsão de faturamento</p>
+          <BarChart3 size={14} className="text-blue-400 sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {parseBrazilianCurrency(revenueForecast) ? formatBRLFromCents(parseBrazilianCurrency(revenueForecast)!) : 'R$ 0,00'}
         </p>
-        <p className="mt-1 text-[10px] text-muted">Meta do período</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">Meta do período</p>
       </div>
     </div>
 
     {/* NOVO: Cards de Ativos, Passivos e Patrimônio Líquido - ACIMA dos cards de Ponto/Despesas */}
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
       {/* Ativos */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted">Total de ativos</p>
-          <TrendingUp size={15} className="text-emerald-500"/>
+          <p className="text-[10px] sm:text-xs text-muted">Total de ativos</p>
+          <TrendingUp size={14} className="text-emerald-500 sm:size-[15px]"/>
         </div>
-        <p className="font-mono text-2xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</p>
-        <p className="mt-1 text-[10px] text-muted">{assets.length} ativo(s) cadastrado(s)</p>
+        <p className="font-mono text-xl sm:text-2xl font-bold text-emerald-600">{formatBRLFromCents(totalAssetsCents)}</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">{assets.length} ativo(s) cadastrado(s)</p>
       </div>
 
       {/* Passivos */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted">Total de passivos</p>
-          <TrendingDown size={15} className="text-red-500"/>
+          <p className="text-[10px] sm:text-xs text-muted">Total de passivos</p>
+          <TrendingDown size={14} className="text-red-500 sm:size-[15px]"/>
         </div>
-        <p className="font-mono text-2xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</p>
-        <p className="mt-1 text-[10px] text-muted">{liabilities.length} passivo(s) cadastrado(s)</p>
+        <p className="font-mono text-xl sm:text-2xl font-bold text-red-600">{formatBRLFromCents(totalLiabilitiesCents)}</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">{liabilities.length} passivo(s) cadastrado(s)</p>
       </div>
 
       {/* Patrimônio Líquido */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted">Patrimônio líquido</p>
-          <Scale size={15} className={netWorthCents >= 0 ? 'text-blue-500' : 'text-red-500'}/>
+          <p className="text-[10px] sm:text-xs text-muted">Patrimônio líquido</p>
+          <Scale size={14} className={`${netWorthCents >= 0 ? 'text-blue-500' : 'text-red-500'} sm:size-[15px]`}/>
         </div>
-        <p className={`font-mono text-2xl font-bold ${netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatBRLFromCents(netWorthCents)}</p>
-        <p className="mt-1 text-[10px] text-muted">Ativos - Passivos</p>
+        <p className={`font-mono text-xl sm:text-2xl font-bold ${netWorthCents >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatBRLFromCents(netWorthCents)}</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">Ativos - Passivos</p>
       </div>
     </div>
 
     {/* Segunda linha do dashboard */}
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
       {/* Dias trabalhados */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Dias trabalhados/mês</p>
-          <CalendarDays size={15} className="text-gold"/>
+          <p className="text-[10px] sm:text-xs text-muted">Dias trabalhados/mês</p>
+          <CalendarDays size={14} className="text-gold sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {workingDays || '0'}
         </p>
-        <p className="mt-1 text-[10px] text-muted">dias úteis</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">dias úteis</p>
       </div>
 
       {/* Horas por dia */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Horas trabalhadas/dia</p>
-          <Clock3 size={15} className="text-gold"/>
+          <p className="text-[10px] sm:text-xs text-muted">Horas trabalhadas/dia</p>
+          <Clock3 size={14} className="text-gold sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {productiveHours || '0'}h
         </p>
-        <p className="mt-1 text-[10px] text-muted">jornada diária</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">jornada diária</p>
       </div>
 
       {/* Custo fixo por dia */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Custo fixo por dia</p>
-          <CalendarDays size={15} className="text-amber-500"/>
+          <p className="text-[10px] sm:text-xs text-muted">Custo fixo por dia</p>
+          <CalendarDays size={14} className="text-amber-500 sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {formatBRLFromCents(operating?.fixedDailyCents ?? null)}
         </p>
-        <p className="mt-1 text-[10px] text-muted">despesas ÷ dias</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">despesas ÷ dias</p>
       </div>
 
       {/* Custo fixo por hora */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Custo fixo por hora</p>
-          <Clock3 size={15} className="text-amber-500"/>
+          <p className="text-[10px] sm:text-xs text-muted">Custo fixo por hora</p>
+          <Clock3 size={14} className="text-amber-500 sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {formatBRLFromCents(operating?.fixedHourlyCents ?? null)}
         </p>
-        <p className="mt-1 text-[10px] text-muted">despesas ÷ horas</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">despesas ÷ horas</p>
       </div>
 
       {/* Ponto de equilíbrio */}
-      <div className="surface p-4">
+      <div className="surface p-3 sm:p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted">Ponto de equilíbrio</p>
-          <Wallet size={15} className="text-red-400"/>
+          <p className="text-[10px] sm:text-xs text-muted">Ponto de equilíbrio</p>
+          <Wallet size={14} className="text-red-400 sm:size-[15px]"/>
         </div>
-        <p className="mt-3 font-mono text-2xl font-bold tabular-nums">
+        <p className="mt-2 sm:mt-3 font-mono text-xl sm:text-2xl font-bold tabular-nums">
           {breakEvenRevenueCents !== null ? formatBRLFromCents(breakEvenRevenueCents) : 'R$ 0,00'}
         </p>
-        <p className="mt-1 text-[10px] text-muted">faturamento mínimo</p>
+        <p className="mt-1 text-[9px] sm:text-[10px] text-muted">faturamento mínimo</p>
       </div>
     </div>
 
     {/* ── PARÂMETROS OPERACIONAIS (colapsável) ─────────────────── */}
-    <form className="surface p-5 space-y-4" onSubmit={saveSettings}>
-      <div className="flex items-center justify-between">
+    <form className="surface p-4 sm:p-5 space-y-4" onSubmit={saveSettings}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <p className="eyebrow">PARÂMETROS OPERACIONAIS</p>
-          <h3 className="mt-1 text-sm font-semibold">Configure capacidade produtiva e previsão de faturamento</h3>
+          <h3 className="mt-1 text-xs sm:text-sm font-semibold">Configure capacidade produtiva e previsão de faturamento</h3>
         </div>
-        <button type="submit" className="btn-secondary" disabled={busy}>
+        <button type="submit" className="btn-secondary w-full sm:w-auto" disabled={busy}>
           {busy ? <LoaderCircle className="animate-spin" size={14}/> : <CircleDollarSign size={14}/>}
           {settingsSaved ? 'Atualizar' : 'Salvar'}
         </button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <label>
           <span className={labelClass}>Dias trabalhados no mês</span>
-          <input className="field" type="number" min="1" max="31" step="any" required
+          <input className="field text-sm sm:text-base p-2 sm:p-3" type="number" min="1" max="31" step="any" required
             value={workingDays} onChange={e => setWorkingDays(e.target.value)} placeholder="Ex.: 22"/>
         </label>
         <label>
           <span className={labelClass}>Horas trabalhadas por dia</span>
-          <input className="field" type="number" min="0.01" max="24" step="any" required
+          <input className="field text-sm sm:text-base p-2 sm:p-3" type="number" min="0.01" max="24" step="any" required
             value={productiveHours} onChange={e => setProductiveHours(e.target.value)} placeholder="Ex.: 6"/>
         </label>
         <label>
           <span className={labelClass}>Pró-labore mensal (R$)</span>
-          <CurrencyInput className="field" value={proLabore} onChange={setProLabore} placeholder="Ex.: 5.000,00"/>
+          <CurrencyInput className="field text-sm sm:text-base p-2 sm:p-3" value={proLabore} onChange={setProLabore} placeholder="Ex.: 5.000,00"/>
         </label>
         <label>
           <span className={labelClass}>Previsão de faturamento (R$)</span>
-          <CurrencyInput className="field" value={revenueForecast} onChange={setRevenueForecast} placeholder="Ex.: 15.000,00"/>
+          <CurrencyInput className="field text-sm sm:text-base p-2 sm:p-3" value={revenueForecast} onChange={setRevenueForecast} placeholder="Ex.: 15.000,00"/>
         </label>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <label>
           <span className={labelClass}>Percentual de Lucratividade Padrão (%)</span>
-          <input className="field" type="number" min="0" max="100" step="0.01"
+          <input className="field text-sm sm:text-base p-2 sm:p-3" type="number" min="0" max="100" step="0.01"
             value={defaultDesiredMargin} onChange={e => setDefaultDesiredMargin(e.target.value)} 
             placeholder="Ex.: 30"/>
-          <p className="mt-1 text-[10px] text-muted">Aplicado por padrão a todos produtos/serviços</p>
+          <p className="mt-1 text-[9px] sm:text-[10px] text-muted">Aplicado por padrão a todos produtos/serviços</p>
         </label>
       </div>
     </form>
@@ -745,9 +751,9 @@ export default function ExpensesPage() {
         title={editing ? 'Editar Despesa Fixa' : 'Nova Despesa Fixa'}
         maxWidth="xl"
       >
-        <form onSubmit={submitExpense} className="space-y-4">
-          <label className="block"><span className={labelClass}>Descrição</span><input className="field" required maxLength={160} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} placeholder="Ex.: Aluguel do escritório"/></label>
-          <div className="grid gap-4 sm:grid-cols-2">
+        <form onSubmit={submitExpense} className="space-y-4 p-3 sm:p-0">
+          <label className="block"><span className={labelClass}>Descrição</span><input className="field text-sm sm:text-base p-2 sm:p-3" required maxLength={160} value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} placeholder="Ex.: Aluguel do escritório"/></label>
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
             <label><span className={labelClass}>Categoria</span><select className="field" value={expenseForm.category} onChange={e => setExpenseForm({ ...expenseForm, category: e.target.value })}>{categories.map(c => <option key={c}>{c}</option>)}</select></label>
             <label><span className={labelClass}>Valor mensal (R$)</span><CurrencyInput className="field" required value={expenseForm.amount} onChange={value => setExpenseForm({ ...expenseForm, amount: value })} placeholder="0,00"/></label>
             <label><span className={labelClass}>Data de referência</span><input className="field" type="date" required value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })}/></label>
