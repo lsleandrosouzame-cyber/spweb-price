@@ -244,37 +244,86 @@ export default function DiagnosticoPage() {
           <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
             Meta vs. Realidade (Lucro {operatingSettings?.default_desired_margin_percent ?? 30}%)
           </h2>
-          <div className="mt-4 h-[200px]">
+          <div className="mt-4 h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData} margin={{ top: 20, right: 10, bottom: 20, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="category" tick={{ fontSize: 11, fill: '#6B7E78' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#6B7E78' }} />
+              <BarChart 
+                data={comparisonData} 
+                margin={{ top: 30, right: 20, bottom: 20, left: 20 }}
+                barGap={8}
+              >
+                <defs>
+                  {/* Gradiente para barras Atual (Cinza sofisticado) */}
+                  <linearGradient id="gradientAtual" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#64748B" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#475569" stopOpacity={0.9} />
+                  </linearGradient>
+                  {/* Gradiente para barras Meta (Verde premium) */}
+                  <linearGradient id="gradientMeta" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.95} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid 
+                  strokeDasharray="3 3" 
+                  stroke="#E2E8F0" 
+                  strokeOpacity={0.5}
+                  vertical={false}
+                />
+                <XAxis 
+                  dataKey="category" 
+                  tick={{ fontSize: 12, fill: '#475569', fontWeight: 600 }}
+                  axisLine={{ stroke: '#CBD5E1' }}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: '#64748B' }}
+                  axisLine={{ stroke: '#CBD5E1' }}
+                  tickLine={false}
+                  tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+                />
                 <RechartsTooltip
                   contentStyle={{
-                    background: '#F8FAF9',
+                    background: 'linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%)',
                     border: '1px solid #E2E8F0',
-                    borderRadius: 8,
-                    fontSize: 12
+                    borderRadius: 12,
+                    fontSize: 12,
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    padding: '8px 12px'
                   }}
-                  formatter={(value: number) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                  formatter={(value: number) => [
+                    `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                    ''
+                  ]}
+                  labelStyle={{ fontWeight: 600, marginBottom: 4 }}
                 />
-                <Bar dataKey="atual" fill="#64748B" name="Atual" radius={[6, 6, 0, 0]} barSize={32}>
-                  {/* @ts-ignore */}
-                  {comparisonData.map((entry, index) => (
-                    <text
-                      key={`label-atual-${index}`}
-                      x={0}
-                      y={0}
-                      fill="#64748B"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={10}
-                      fontWeight="600"
-                    />
-                  ))}
-                </Bar>
-                <Bar dataKey="meta" fill="#10B981" name="Meta" radius={[6, 6, 0, 0]} barSize={32} />
+                <Bar 
+                  dataKey="atual" 
+                  fill="url(#gradientAtual)" 
+                  name="Realidade" 
+                  radius={[8, 8, 0, 0]} 
+                  barSize={36}
+                  label={{
+                    position: 'top',
+                    fill: '#475569',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    formatter: (value: number) => `R$ ${(value / 1000).toFixed(0)}k`
+                  }}
+                />
+                <Bar 
+                  dataKey="meta" 
+                  fill="url(#gradientMeta)" 
+                  name="Meta" 
+                  radius={[8, 8, 0, 0]} 
+                  barSize={36}
+                  label={{
+                    position: 'top',
+                    fill: '#059669',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    formatter: (value: number) => `R$ ${(value / 1000).toFixed(0)}k`
+                  }}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
