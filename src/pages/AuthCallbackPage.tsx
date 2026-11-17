@@ -76,8 +76,8 @@ export default function AuthCallbackPage() {
         if (isRecovery) {
           navigate('/recovery?update=1', { replace: true })
         } else if (sessionData.session) {
-          // Email confirmed — go to setup to create company, or dashboard if already has one
-          navigate('/setup', { replace: true })
+          // Email confirmed — go to diagnostico
+          navigate('/diagnostico', { replace: true })
         } else {
           navigate('/login', { replace: true })
         }
