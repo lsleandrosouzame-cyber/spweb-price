@@ -135,20 +135,20 @@ export default function DiagnosticoPage() {
     <div className="space-y-4 md:space-y-6">
       {/* Header - Single, Clean */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#0D1F1A' }}>
           Diagnóstico Financeiro
         </h1>
-        <p className="mt-1 text-sm text-muted">
+        <p className="mt-1 text-xs sm:text-sm text-muted">
           Raio-X cirúrgico da sua operação e plano de ação do CFO Digital.
         </p>
       </div>
 
       {/* Block 1: CFO Verdict - Compact 3-Zone Layout */}
-      <div className="surface p-6 relative overflow-hidden">
-        <div className="grid gap-6 md:grid-cols-[200px_1fr_280px]">
+      <div className="surface p-4 sm:p-6 relative overflow-hidden">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-[200px_1fr_280px]">
           {/* Zone 1: Health Score Gauge */}
-          <div className="flex flex-col items-center justify-center text-center">
-            <ResponsiveContainer width="100%" height={160}>
+          <div className="flex flex-col items-center justify-center text-center md:col-span-2 lg:col-span-1">
+            <ResponsiveContainer width="100%" height={140} minHeight={140}>
               <RadialBarChart
                 cx="50%"
                 cy="50%"
@@ -184,12 +184,12 @@ export default function DiagnosticoPage() {
           </div>
 
           {/* Zone 2: Executive Insights */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#1A3C34' }}>
+          <div className="space-y-3 md:col-span-2 lg:col-span-1">
+            <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ color: '#1A3C34' }}>
               Insights Executivos
             </h3>
             <div className="space-y-2">
-              <div className="flex items-start gap-2 text-sm">
+              <div className="flex items-start gap-2 text-xs sm:text-sm">
                 <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
                 <p>
                   <span className="font-semibold">
@@ -199,7 +199,7 @@ export default function DiagnosticoPage() {
                   {formatBRLFromCents(diagnosis.safetyMarginCents)}) acima do ponto de equilíbrio.
                 </p>
               </div>
-              <div className="flex items-start gap-2 text-sm">
+              <div className="flex items-start gap-2 text-xs sm:text-sm">
                 <div className="mt-0.5 size-1.5 rounded-full shrink-0" style={{ background: healthColor }} />
                 <p>
                   Você trabalha <strong>{diagnosis.daysToPayExpenses.toFixed(1)} dias</strong> do mês só para pagar contas.
@@ -210,7 +210,7 @@ export default function DiagnosticoPage() {
           </div>
 
           {/* Zone 3: Hour Cost Highlight Box */}
-          <div className="rounded-xl p-4 border" style={{ background: '#F8FAFC', borderColor: '#E2E8F0' }}>
+          <div className="rounded-xl p-3 sm:p-4 border md:col-span-2 lg:col-span-1" style={{ background: '#F8FAFC', borderColor: '#E2E8F0' }}>
             <div className="flex items-center gap-2 mb-3">
               <Clock size={16} style={{ color: '#3D5048' }} />
               <span className="text-xs font-bold uppercase tracking-wider text-muted">
@@ -219,16 +219,16 @@ export default function DiagnosticoPage() {
             </div>
             <div className="space-y-2">
               <div>
-                <p className="text-2xl font-extrabold" style={{ color: '#0D1F1A' }}>
+                <p className="text-xl sm:text-2xl font-extrabold" style={{ color: '#0D1F1A' }}>
                   {formatBRLFromCents(diagnosis.costPerHourCents)}/h
                 </p>
-                <p className="text-xs text-muted">Custo fixo por hora produtiva</p>
+                <p className="text-[10px] sm:text-xs text-muted">Custo fixo por hora produtiva</p>
               </div>
-              <div className="pt-3 border-t border-line">
-                <p className="text-xs font-semibold" style={{ color: '#DC2626' }}>
+              <div className="pt-2 sm:pt-3 border-t border-line">
+                <p className="text-[10px] sm:text-xs font-semibold" style={{ color: '#DC2626' }}>
                   Impacto da Ociosidade
                 </p>
-                <p className="text-sm font-bold" style={{ color: '#DC2626' }}>
+                <p className="text-xs sm:text-sm font-bold" style={{ color: '#DC2626' }}>
                   2h ociosas/dia = -{formatBRLFromCents(diagnosis.idleCost2HoursCents)}/mês
                 </p>
               </div>
@@ -238,18 +238,18 @@ export default function DiagnosticoPage() {
       </div>
 
       {/* Block 2: Meta vs Reality + Audit */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Left: Meta vs Reality */}
         <div className="surface p-4 sm:p-6">
-          <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
+          <h2 className="text-sm sm:text-base font-bold" style={{ color: '#0D1F1A' }}>
             Meta vs. Realidade (Lucro {operatingSettings?.default_desired_margin_percent ?? 30}%)
           </h2>
-          <div className="mt-4 h-[240px]">
+          <div className="mt-4 h-[200px] sm:h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={comparisonData} 
-                margin={{ top: 30, right: 20, bottom: 20, left: 20 }}
-                barGap={8}
+                margin={{ top: 20, right: 10, bottom: 10, left: 10 }}
+                barGap={6}
               >
                 <defs>
                   {/* Gradiente para barras Atual (Cinza sofisticado) */}
@@ -301,7 +301,7 @@ export default function DiagnosticoPage() {
                   fill="url(#gradientAtual)" 
                   name="Realidade" 
                   radius={[8, 8, 0, 0]} 
-                  barSize={36}
+                  barSize={28}
                   label={{
                     position: 'top',
                     fill: '#475569',
@@ -315,7 +315,7 @@ export default function DiagnosticoPage() {
                   fill="url(#gradientMeta)" 
                   name="Meta" 
                   radius={[8, 8, 0, 0]} 
-                  barSize={36}
+                  barSize={28}
                   label={{
                     position: 'top',
                     fill: '#059669',
@@ -329,8 +329,8 @@ export default function DiagnosticoPage() {
           </div>
 
           {/* Table - Columnar Layout */}
-          <div className="mt-4">
-            <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-sm">
+          <div className="mt-4 overflow-x-auto">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2 sm:gap-3 text-xs sm:text-sm min-w-0">
               {/* Header Row */}
               <div className="font-bold text-xs uppercase tracking-wider text-muted"></div>
               <div className="font-bold text-xs uppercase tracking-wider text-center" style={{ color: '#64748B' }}>
@@ -388,15 +388,15 @@ export default function DiagnosticoPage() {
 
         {/* Right: Audit */}
         <div className="surface p-4 sm:p-6">
-          <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
+          <h2 className="text-sm sm:text-base font-bold" style={{ color: '#0D1F1A' }}>
             Auditoria & Inconsistências
           </h2>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-2 sm:space-y-3">
             {diagnosis.suspiciousExpenses.length > 0 && (
-              <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
+              <div className="border-l-4 border-red-500 bg-red-50 p-3 sm:p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
-                  <div className="text-sm">
+                  <AlertTriangle size={14} className="text-red-600 shrink-0 mt-0.5 sm:size-4" />
+                  <div className="text-xs sm:text-sm">
                     <p className="font-bold text-red-900">Erro de Classificação Contábil</p>
                     <p className="mt-1 text-red-800">
                       {formatBRLFromCents(diagnosis.suspiciousExpenses.reduce((sum, e) => sum + e.value, 0))} em{' '}
@@ -423,10 +423,10 @@ export default function DiagnosticoPage() {
             )}
 
             {missingPatrimony && (
-              <div className="border-l-4 border-amber-500 bg-amber-50 p-4 rounded-r-lg">
+              <div className="border-l-4 border-amber-500 bg-amber-50 p-3 sm:p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div className="text-sm">
+                  <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5 sm:size-4" />
+                  <div className="text-xs sm:text-sm">
                     <p className="font-bold text-amber-900">Ponto Cego Patrimonial</p>
                     <p className="mt-1 text-amber-800">
                       Ativos e Passivos zerados impedem o cálculo de ROI.
@@ -444,10 +444,10 @@ export default function DiagnosticoPage() {
             )}
 
             {diagnosis.suspiciousExpenses.length === 0 && !missingPatrimony && (
-              <div className="border-l-4 border-emerald-500 bg-emerald-50 p-4 rounded-r-lg">
+              <div className="border-l-4 border-emerald-500 bg-emerald-50 p-3 sm:p-4 rounded-r-lg">
                 <div className="flex items-start gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-                  <div className="text-sm">
+                  <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5 sm:size-4" />
+                  <div className="text-xs sm:text-sm">
                     <p className="font-bold text-emerald-900">Auditoria Limpa</p>
                     <p className="mt-1 text-emerald-800">
                       Nenhuma inconsistência detectada nos lançamentos.
@@ -461,13 +461,13 @@ export default function DiagnosticoPage() {
       </div>
 
       {/* Block 3: Revenue Distribution + Action Plan */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
         {/* Left: Para Onde Vai Seu Faturamento */}
         <div className="surface p-4 sm:p-6">
-          <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
+          <h2 className="text-sm sm:text-base font-bold" style={{ color: '#0D1F1A' }}>
             Para Onde Vai Seu Faturamento
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-xs sm:text-sm text-muted">
             Distribuição de {formatBRLFromCents(currentRevenue)} previsto no mês
           </p>
 
@@ -475,7 +475,7 @@ export default function DiagnosticoPage() {
             <>
               {/* Stacked Bar */}
               <div className="mt-4 space-y-2">
-                <div className="relative h-12 rounded-lg overflow-hidden" style={{ background: '#E2E8F0' }}>
+                <div className="relative h-10 sm:h-12 rounded-lg overflow-hidden" style={{ background: '#E2E8F0' }}>
                   {/* Custos Variáveis */}
                   <div
                     className="absolute top-0 left-0 h-full flex items-center justify-center text-white text-xs font-bold"
@@ -510,7 +510,7 @@ export default function DiagnosticoPage() {
                 </div>
 
                 {/* Legend */}
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="size-3 rounded" style={{ background: '#64748B' }} />
                     <div>
@@ -536,8 +536,8 @@ export default function DiagnosticoPage() {
               </div>
 
               {/* Top 3 Expense Villains */}
-              <div className="mt-4 pt-4 border-t border-line">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted mb-3">
+              <div className="mt-4 pt-3 sm:pt-4 border-t border-line">
+                <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted mb-2 sm:mb-3">
                   Top 3 Vilões do Orçamento
                 </h3>
                 <div className="space-y-2">
@@ -548,20 +548,20 @@ export default function DiagnosticoPage() {
                       const value = exp.amount_cents ?? 0
                       const percentOfRevenue = currentRevenue > 0 ? (value / currentRevenue) * 100 : 0
                       return (
-                        <div key={exp.id} className="flex items-center gap-3">
+                        <div key={exp.id} className="flex items-center gap-2 sm:gap-3">
                           <div
-                            className="size-6 shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                            className="size-5 sm:size-6 shrink-0 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white"
                             style={{ background: idx === 0 ? '#DC2626' : idx === 1 ? '#F59E0B' : '#64748B' }}
                           >
                             {idx + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate">{exp.description}</p>
-                            <p className="text-xs text-muted">{exp.category}</p>
+                            <p className="text-xs sm:text-sm font-semibold truncate">{exp.description}</p>
+                            <p className="text-[10px] sm:text-xs text-muted">{exp.category}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold">{formatBRLFromCents(value)}</p>
-                            <p className="text-xs text-muted">{percentOfRevenue.toFixed(1)}% do FAT</p>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs sm:text-sm font-bold">{formatBRLFromCents(value)}</p>
+                            <p className="text-[10px] sm:text-xs text-muted">{percentOfRevenue.toFixed(1)}% do FAT</p>
                           </div>
                         </div>
                       )
@@ -571,7 +571,7 @@ export default function DiagnosticoPage() {
 
               {/* Critical Products Alert */}
               {diagnosis.criticalProductsCount > 0 && (
-                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-900">
+                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-2 sm:p-3 text-[10px] sm:text-xs text-amber-900">
                   <strong>{diagnosis.criticalProductsCount} produtos</strong> com margem abaixo da mínima necessária.{' '}
                   <Link to="/precificacao" className="font-semibold underline hover:text-amber-700">
                     Revisar preços →
@@ -588,32 +588,32 @@ export default function DiagnosticoPage() {
 
         {/* Right: Action Plan */}
         <div className="surface p-4 sm:p-6">
-          <h2 className="text-base font-bold" style={{ color: '#0D1F1A' }}>
+          <h2 className="text-sm sm:text-base font-bold" style={{ color: '#0D1F1A' }}>
             Plano de Ação Priorizado
           </h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-xs sm:text-sm text-muted">
             Checklist executivo para o mês
           </p>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 space-y-2 sm:space-y-3">
             {diagnosis.suspiciousExpenses.length > 0 && (
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-2 sm:gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={checklist['reclassify'] || false}
                   onChange={() => toggleChecklistItem('reclassify')}
-                  className="mt-1 size-4 rounded border-line text-teal accent-teal"
+                  className="mt-1 size-3 sm:size-4 rounded border-line text-teal accent-teal shrink-0"
                 />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-bold">
+                    <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-red-50 text-red-700 font-bold">
                       ALTO IMPACTO
                     </span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold group-hover:text-teal">
+                  <p className="mt-1 text-xs sm:text-sm font-semibold group-hover:text-teal">
                     Reclassificar {diagnosis.suspiciousExpenses.length} lançamento(s) suspeito(s) de custo variável
                   </p>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-[10px] sm:text-xs text-muted">
                     Reduz PE em {formatBRLFromCents(diagnosis.breakEvenCents - diagnosis.simulatedBreakEvenCents)}
                   </p>
                 </div>
@@ -621,23 +621,23 @@ export default function DiagnosticoPage() {
             )}
 
             {diagnosis.criticalProductsCount > 0 && (
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-2 sm:gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={checklist['adjust-prices'] || false}
                   onChange={() => toggleChecklistItem('adjust-prices')}
-                  className="mt-1 size-4 rounded border-line text-teal accent-teal"
+                  className="mt-1 size-3 sm:size-4 rounded border-line text-teal accent-teal shrink-0"
                 />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold">
+                    <span className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold">
                       MÉDIO IMPACTO
                     </span>
                   </div>
-                  <p className="mt-1 text-sm font-semibold group-hover:text-teal">
+                  <p className="mt-1 text-xs sm:text-sm font-semibold group-hover:text-teal">
                     Reajustar preços de {diagnosis.criticalProductsCount} produtos críticos
                   </p>
-                  <p className="mt-0.5 text-xs text-muted">
+                  <p className="mt-0.5 text-[10px] sm:text-xs text-muted">
                     Margem abaixo do necessário para atingir meta
                   </p>
                 </div>
@@ -645,7 +645,7 @@ export default function DiagnosticoPage() {
             )}
 
             {diagnosis.highestMarginProduct && (
-              <label className="flex items-start gap-3 cursor-pointer group">
+              <label className="flex items-start gap-2 sm:gap-3 cursor-pointer group">
                 <input
                   type="checkbox"
                   checked={checklist['focus-champions'] || false}

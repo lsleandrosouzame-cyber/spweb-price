@@ -45,15 +45,15 @@ function Metric({ title, value, detail, icon: Icon, variant = 'default', to }: {
   const inner = (
     <div className={`surface group relative overflow-hidden p-3 transition hover:border-teal-border ${to ? 'cursor-pointer hover:bg-teal-light/30' : 'cursor-default'}`}>
       <div className="flex items-start justify-between">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-semibold text-muted uppercase tracking-wider">{title}</p>
-          <p className={`mt-2 font-mono text-xl font-bold tracking-tight tabular-nums ${s.value}`}>{value}</p>
+          <p className={`mt-2 font-mono text-lg sm:text-xl font-bold tracking-tight tabular-nums ${s.value}`}>{value}</p>
         </div>
-        <span className={`grid size-9 place-items-center rounded-lg border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110`}>
-          <Icon size={16}/>
+        <span className={`grid size-8 sm:size-9 place-items-center rounded-lg border ${s.border} ${s.bg} ${s.icon} transition-transform group-hover:scale-110 shrink-0`}>
+          <Icon size={14} className="sm:size-4"/>
         </span>
       </div>
-      <p className="mt-2 text-[11px] leading-snug font-medium text-muted">{detail}</p>
+      <p className="mt-2 text-[10px] sm:text-[11px] leading-snug font-medium text-muted">{detail}</p>
       {to && <span className="absolute bottom-2 right-3 text-[9px] text-muted opacity-0 group-hover:opacity-100 transition-opacity">Ver detalhes →</span>}
     </div>
   )
@@ -235,8 +235,8 @@ export default function DashboardPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow text-gold">VISÃO FINANCEIRA · {month.toUpperCase()}</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">Os números do seu negócio, sem adivinhação.</h2>
-          <p className="mt-2 text-sm text-muted">Indicadores vêm dos cadastros e vendas reais da sua empresa.</p>
+          <h2 className="mt-2 text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Os números do seu negócio, sem adivinhação.</h2>
+          <p className="mt-2 text-xs sm:text-sm text-muted">Indicadores vêm dos cadastros e vendas reais da sua empresa.</p>
         </div>
       </div>
 
@@ -244,7 +244,7 @@ export default function DashboardPage() {
         <InlineNotice tone="info">Seu painel ainda não tem dados. Cadastre um produto, lance uma despesa e registre vendas para liberar indicadores reais.</InlineNotice>}
 
       {/* Metric cards - Cards da aba Lançamentos */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Produtos cadastrados" value={String(products.length)} detail={products.length ? `Total de ${products.length} produto(s) nesta empresa` : 'Nenhum produto cadastrado ainda'} icon={Package} variant={products.length > 0 ? 'blue' : 'default'} to="/produtos"/>
         <Metric title="Serviços cadastrados" value={String(services.length)} detail={services.length ? `Total de ${services.length} serviço(s) nesta empresa` : 'Nenhum serviço cadastrado ainda'} icon={Wallet} variant={services.length > 0 ? 'green' : 'default'} to="/produtos"/>
         <Metric title="Despesas fixas mensais" value={formatBRLFromCents(fixedTotal)} detail={monthExpenses.length ? `${monthExpenses.length} lançamento(s) neste período` : 'Cadastre despesas para acompanhar'} icon={Scale} variant={fixedTotal !== null ? 'red' : 'default'} to="/lancamentos"/>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Segunda linha - mais cards da aba Lançamentos */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <Metric title="Pró-labore mensal" value={formatBRLFromCents(proLaboreCents)} detail={proLaboreCents ? `${formatBRLFromCents(Math.floor(proLaboreCents / (Number(operatingSettings?.working_days_per_month) || 22)))}/dia` : 'Configure em Lançamentos'} icon={Wallet} variant={proLaboreCents !== null ? 'green' : 'default'} to="/lancamentos"/>
         <Metric title="Previsão de faturamento" value={formatBRLFromCents(revenueForecastCents)} detail={revenueForecastCents !== null ? 'Meta de faturamento cadastrada nos parâmetros' : 'Cadastre em Lançamentos → Parâmetros'} icon={TrendingUp} variant={revenueForecastCents !== null ? 'gold' : 'default'} to="/lancamentos"/>
         <Metric title="Ponto de equilíbrio" value={effectiveBreakEvenCents ? formatBRLFromCents(effectiveBreakEvenCents) : '—'} detail={breakEven ? 'Baseado nas despesas fixas e mix real de vendas' : breakEvenEstimated ? 'Estimado pelos custos variáveis e despesas fixas' : 'Exige despesas e mix de vendas suficientes'} icon={Target} variant={breakEvenVariant} to="/lancamentos"/>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
       </section>
 
       {/* Terceira linha - Passivos e Patrimônio */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         <Metric title="Total de passivos" value={formatBRLFromCents(totalLiabilitiesCents)} detail={assetsLiabilities.filter(al => al.type === 'liability').length ? `${assetsLiabilities.filter(al => al.type === 'liability').length} passivo(s) cadastrado(s)` : 'Configure em Lançamentos'} icon={TrendingDown} variant={totalLiabilitiesCents > 0 ? 'red' : 'default'} to="/lancamentos"/>
         <Metric title="Patrimônio líquido" value={formatBRLFromCents(netWorthCents)} detail="Ativos - Passivos" icon={Scale} variant={netWorthCents >= 0 ? 'blue' : 'red'} to="/lancamentos"/>
         <Metric title="Dias trabalhados/mês" value={operatingSettings?.working_days_per_month ? String(operatingSettings.working_days_per_month) : '0'} detail={operatingSettings?.productive_hours_per_day ? `${operatingSettings.productive_hours_per_day}h produtivas/dia` : 'Configure em Lançamentos'} icon={Wallet} variant="default" to="/lancamentos"/>
@@ -268,7 +268,7 @@ export default function DashboardPage() {
 
       {/* Menores/Maiores margens - ORDEM: Menores à esquerda, Maiores à direita */}
       {(products.length > 0 || services.length > 0) && (
-        <section className="grid gap-4 md:grid-cols-2">
+        <section className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {/* Menores margens - PRIMEIRO CARD (esquerda) */}
           <div className="surface p-4">
             <div className="flex items-start justify-between mb-3">
