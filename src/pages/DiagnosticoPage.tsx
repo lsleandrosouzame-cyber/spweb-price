@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Clock, AlertTriangle, CheckCircle2, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, PieChart, Pie, Cell } from 'recharts'
+import { RadialBarChart, RadialBar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts'
 import { useAuth } from '../contexts/AuthContext'
 import { LoadingScreen } from '../components/Feedback'
 import { listExpenses, listProducts, listVariableCosts, readOperatingSettings, listAssetsLiabilities } from '../services/companyData'
@@ -643,83 +643,69 @@ export default function DiagnosticoPage() {
                 </div>
               </div>
 
-              {/* Top 3 Expense Villains */}
+              {/* Fixed Expenses Distribution Bar */}
               <div className="mt-4 pt-3 sm:pt-4 border-t border-line">
                 <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted mb-2 sm:mb-3">
                   Distribuição de Despesas Fixas
                 </h3>
                 
-                {/* Pie Chart - Fixed Expenses Distribution */}
-                <div className="h-[200px] sm:h-[240px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <defs>
-                        <linearGradient id="grad0" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#DC2626" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#B91C1C" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#D97706" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#64748B" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#475569" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="grad3" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#10B981" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#059669" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="grad4" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#7C3AED" stopOpacity={1} />
-                        </linearGradient>
-                        <linearGradient id="grad5" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#06B6D4" stopOpacity={0.9} />
-                          <stop offset="100%" stopColor="#0891B2" stopOpacity={1} />
-                        </linearGradient>
-                      </defs>
-                      <Pie
-                        data={expenses.map((exp, idx) => ({
-                          name: exp.description,
-                          value: exp.amount_cents ?? 0,
-                          percent: currentExpenses > 0 ? ((exp.amount_cents ?? 0) / currentExpenses * 100) : 0,
-                          fill: `url(#grad${idx % 6})`
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={60}
-                        innerRadius={35}
-                        dataKey="value"
-                        label={({ percent }) => `${percent.toFixed(1)}%`}
-                        labelLine={{ stroke: '#64748B', strokeWidth: 1 }}
-                      >
-                        {expenses.map((_, idx) => (
-                          <Cell key={`cell-${idx}`} />
-                        ))}
-                      </Pie>
-                      <RechartsTooltip
-                        contentStyle={{
-                          background: 'linear-gradient(135deg, #F8FAF9 0%, #FFFFFF 100%)',
-                          border: '1px solid #E2E8F0',
-                          borderRadius: 12,
-                          fontSize: 12,
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                          padding: '8px 12px'
-                        }}
-                        formatter={(value: number, name: string, props: any) => [
-                          <>
-                            <div className="font-bold">{formatBRLFromCents(value)}</div>
-                            <div className="text-xs text-muted">{props.payload.percent.toFixed(1)}% das despesas</div>
-                          </>,
-                          name
-                        ]}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                {/* Stacked Bar - Expenses Distribution */}
+                <div className="space-y-2">
+                  <div className="relative h-10 sm:h-12 rounded-lg overflow-hidden" style={{ background: '#E2E8F0' }}>
+                    {expenses
+                      .sort((a, b) => (b.amount_cents ?? 0) - (a.amount_cents ?? 0))
+                      .reduce((acc, exp, idx) => {
+                        const value = exp.amount_cents ?? 0
+                        const percent = currentExpenses > 0 ? (value / currentExpenses) * 100 : 0
+                        const colors = ['#DC2626', '#F59E0B', '#64748B', '#10B981', '#8B5CF6', '#06B6D4']
+                        const color = colors[idx % colors.length]
+                        
+                        acc.bars.push(
+                          <div
+                            key={exp.id}
+                            className="absolute top-0 h-full flex items-center justify-center text-white text-xs font-bold"
+                            style={{
+                              background: color,
+                              left: `${acc.leftOffset}%`,
+                              width: `${percent}%`
+                            }}
+                            title={`${exp.description}: ${percent.toFixed(1)}%`}
+                          >
+                            {percent > 8 && `${percent.toFixed(1)}%`}
+                          </div>
+                        )
+                        
+                        acc.leftOffset += percent
+                        return acc
+                      }, { bars: [] as JSX.Element[], leftOffset: 0 }).bars
+                    }
+                  </div>
+
+                  {/* Legend */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+                    {expenses
+                      .sort((a, b) => (b.amount_cents ?? 0) - (a.amount_cents ?? 0))
+                      .slice(0, 6)
+                      .map((exp, idx) => {
+                        const value = exp.amount_cents ?? 0
+                        const percent = currentExpenses > 0 ? (value / currentExpenses) * 100 : 0
+                        const colors = ['#DC2626', '#F59E0B', '#64748B', '#10B981', '#8B5CF6', '#06B6D4']
+                        const color = colors[idx % colors.length]
+                        
+                        return (
+                          <div key={exp.id} className="flex items-center gap-2">
+                            <div className="size-3 rounded shrink-0" style={{ background: color }} />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold truncate">{exp.description}</p>
+                              <p className="text-muted">{formatBRLFromCents(value)} · {percent.toFixed(1)}%</p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
                 </div>
 
-                {/* Top 3 List Below Chart */}
+                {/* Top 3 List Below Bar */}
                 <div className="mt-3 space-y-2">
                   <p className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-muted">
                     Top 3 Vilões do Orçamento
