@@ -147,7 +147,7 @@ export default function DiagnosticoPage() {
       <div className="surface p-4 sm:p-6 relative overflow-hidden">
         <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-[200px_1fr_280px]">
           {/* Zone 1: Health Score Gauge */}
-          <div className="flex flex-col items-center justify-center text-center md:col-span-2 lg:col-span-1">
+          <div className="flex flex-col items-center justify-center text-center">
             <ResponsiveContainer width="100%" height={140} minHeight={140}>
               <RadialBarChart
                 cx="50%"
@@ -184,7 +184,7 @@ export default function DiagnosticoPage() {
           </div>
 
           {/* Zone 2: Executive Insights */}
-          <div className="space-y-3 md:col-span-2 lg:col-span-1">
+          <div className="space-y-3">
             <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider" style={{ color: '#1A3C34' }}>
               Insights Executivos
             </h3>
